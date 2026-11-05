@@ -2,11 +2,13 @@ import { count, desc, eq, inArray } from "drizzle-orm";
 import { db } from "./db/client";
 import { customers, schools, vouchers } from "./db/schema";
 import { writeAudit } from "./audit";
+import { allCustomerBanks, countCustomerBanks, type CustomerBankRow } from "./customerBankList";
 import { banksOf, customerOrder, customerWhere } from "./customerList";
 import { joinCustomerRows } from "./exportRows";
 import { allSchools } from "./schools";
 import { voucherBase, voucherWhere } from "./vouchers";
 import { buildExcel, EXCEL_GROUP_COLORS, type ExcelColumn } from "@/lib/excel";
+import { CUSTOMER_BANK_STATUS_LABEL, type CustomerBankFilters } from "@/lib/customerBankFilters";
 import { CUSTOMER_STATUS_LABEL, type CustomerFilters } from "@/lib/customerFilters";
 import { formatDateTime } from "@/lib/dates";
 import { studentLink } from "@/lib/links";
@@ -88,6 +90,35 @@ export async function exportCustomers(actor: SessionUser, f: CustomerFilters, ip
   const bytes = await buildExcel({ sheetName: "Hồ sơ học sinh", columns: CUSTOMER_COLUMNS, rows });
   await writeAudit(db, { userId: actor.id, action: "export_excel", targetType: "customers", targetId: "list", detail: { filters: f, rows: rows.length }, ip });
   return { ok: true, bytes, fileName: `ho-so-hoc-sinh-${today()}.xlsx` };
+}
+
+const BANK = { group: "NGÂN HÀNG", groupColor: EXCEL_GROUP_COLORS.account };
+const CHECK_TEXT = { pending: "Đang kiểm", failed: "Không kiểm được" } as const;
+const CUSTOMER_BANK_COLUMNS: ExcelColumn<CustomerBankRow>[] = [
+  { ...STUDENT, header: "STT", width: 6, value: (_, i) => i + 1, total: (rows) => rows.length },
+  { ...STUDENT, header: "NGÀY", width: 17, value: (r) => formatDateTime(r.createdAt) },
+  { ...STUDENT, header: "HỌ TÊN", width: 24, transform: "name", value: (r) => r.fullName },
+  { ...STUDENT, header: "LỚP", width: 8, value: (r) => r.className },
+  { ...STUDENT, header: "TRƯỜNG", width: 26, value: (r) => r.schoolName },
+  { ...STUDENT, header: "SĐT", width: 13, type: "text", value: (r) => r.phone },
+  { ...STUDENT, header: "PHỤ HUYNH", width: 24, transform: "name", value: (r) => r.parentName },
+  { ...STUDENT, header: "SĐT PHỤ HUYNH", width: 14, type: "text", value: (r) => r.parentPhone },
+  { ...BANK, header: "NGÂN HÀNG", width: 16, value: (r) => r.bankName },
+  { ...BANK, header: "MÃ GIỚI THIỆU", width: 16, type: "text", value: (r) => r.referralCode },
+  { ...BANK, header: "TRẠNG THÁI", width: 14, value: (r) => CUSTOMER_BANK_STATUS_LABEL[r.status], total: (rows) => rows.filter((r) => r.status === "passed").length },
+  { ...BANK, header: "XÁC THỰC ẢNH", width: 14, value: (r) => (!r.check ? "" : r.check.status === "done" ? `${r.check.passed}/${r.check.total}` : CHECK_TEXT[r.check.status]) },
+  { ...BANK, header: "NGƯỜI KIỂM", width: 20, value: (r) => r.reviewer ?? "" },
+  { ...BANK, header: "KIỂM LÚC", width: 17, value: (r) => (r.reviewedAt ? formatDateTime(r.reviewedAt) : "") },
+];
+
+export async function exportCustomerBanks(actor: SessionUser, f: CustomerBankFilters, ip: string | null): Promise<ExportResult> {
+  if (!can(actor, "export_excel") || !can(actor, "customers")) return DENIED;
+  const n = await countCustomerBanks(actor, f);
+  if (n > EXPORT_LIMIT) return tooMany(n);
+  const rows = await allCustomerBanks(actor, f);
+  const bytes = await buildExcel({ sheetName: "Ngân hàng", columns: CUSTOMER_BANK_COLUMNS, rows });
+  await writeAudit(db, { userId: actor.id, action: "export_excel", targetType: "customer_banks", targetId: "list", detail: { filters: f, rows: rows.length }, ip });
+  return { ok: true, bytes, fileName: `ngan-hang-${today()}.xlsx` };
 }
 
 type SchoolExportRow = Awaited<ReturnType<typeof allSchools>>[number];

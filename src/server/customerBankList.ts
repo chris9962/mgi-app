@@ -21,8 +21,12 @@ export type CustomerBankRow = {
   fullName: string;
   className: string;
   schoolName: string;
+  phone: string;
+  parentName: string;
+  parentPhone: string;
   createdAt: Date;
   reviewer: string | null;
+  reviewedAt: Date | null;
   check: BankCheck | null;
 };
 
@@ -63,8 +67,12 @@ const rowColumns = {
   fullName: customers.fullName,
   className: customers.className,
   schoolName: schools.name,
+  phone: customers.phone,
+  parentName: customers.parentName,
+  parentPhone: customers.parentPhone,
   createdAt: customers.createdAt,
   reviewer: users.fullName,
+  reviewedAt: customerBanks.reviewedAt,
   check: sql<BankCheck | null>`(select json_build_object('status', lc.status, 'passed', lc.passed, 'total', lc.total) from ${latestCheck(CUSTOMER_BANK_ID)} lc)`,
 };
 
@@ -77,9 +85,16 @@ const base = () =>
     .innerJoin(schools, eq(schools.id, customers.schoolId))
     .leftJoin(users, eq(users.id, customerBanks.reviewedBy));
 
+export async function countCustomerBanks(actor: SessionUser, f: CustomerBankFilters): Promise<number> {
+  const [{ total }] = await db.select({ total: count() }).from(customerBanks).innerJoin(customers, eq(customers.id, customerBanks.customerId)).where(customerBankWhere(actor, f));
+  return total;
+}
+
+export const allCustomerBanks = (actor: SessionUser, f: CustomerBankFilters): Promise<CustomerBankRow[]> => base().where(customerBankWhere(actor, f)).orderBy(...customerBankOrder(f.dir));
+
 export async function listCustomerBanks(actor: SessionUser, f: CustomerBankFilters, page: number): Promise<{ rows: CustomerBankRow[]; total: number; page: number }> {
   const where = customerBankWhere(actor, f);
-  const [{ total }] = await db.select({ total: count() }).from(customerBanks).innerJoin(customers, eq(customers.id, customerBanks.customerId)).where(where);
+  const total = await countCustomerBanks(actor, f);
   const safePage = Math.min(Math.max(1, Math.trunc(page) || 1), Math.max(1, Math.ceil(total / PAGE_SIZE)));
   const rows = await base()
     .where(where)

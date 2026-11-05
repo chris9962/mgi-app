@@ -10,6 +10,7 @@ import { PATCH as settingsRoute } from "../../src/app/api/admin/settings/route";
 import { GET as vouchersRoute } from "../../src/app/api/admin/vouchers/route";
 import { GET as customersRoute } from "../../src/app/api/admin/customers/route";
 import { GET as customerExportRoute } from "../../src/app/api/admin/customers/export/route";
+import { GET as customerBankExportRoute } from "../../src/app/api/admin/customer-banks/export/route";
 import { GET as photoRoute } from "../../src/app/api/admin/photos/[id]/route";
 import { POST as reviewRoute } from "../../src/app/api/admin/customer-banks/[id]/review/route";
 import { XLSX_TYPE } from "../../src/lib/excel";
@@ -51,6 +52,7 @@ describe("route quản lý theo quyền", () => {
     expect((await customerExportRoute(req("/api/admin/customers/export", "staff"))).status).toBe(403);
     expect((await customersRoute(req("/api/admin/customers", "lonely"))).status).toBe(403);
     expect((await customerExportRoute(req("/api/admin/customers/export", "lonely"))).status).toBe(403);
+    expect((await customerBankExportRoute(req("/api/admin/customer-banks/export", "staff"))).status).toBe(403);
   });
 
   test("chưa đăng nhập 401, Origin của trang khác 403", async () => {
@@ -75,6 +77,8 @@ describe("route quản lý theo quyền", () => {
   test("người có quyền Xuất Excel tải được file", async () => {
     const res = await customerExportRoute(req("/api/admin/customers/export?q=routeds", "exporter"));
     expect([res.status, res.headers.get("content-type")]).toEqual([200, XLSX_TYPE]);
+    const banks = await customerBankExportRoute(req("/api/admin/customer-banks/export?q=routeds", "exporter"));
+    expect([banks.status, banks.headers.get("content-type")]).toEqual([200, XLSX_TYPE]);
     expect(res.headers.get("content-disposition")).toMatch(/attachment; filename="ho-so-hoc-sinh-/);
   });
 });
