@@ -74,8 +74,24 @@ function run(args: string[], stdio: { in?: number; out?: number } = {}) {
   return r;
 }
 
-// pg_dump hỏng giữa chừng vẫn có thể cho mã 0: đọc lại mục lục để chắc file đọc được và có mục dữ liệu của bảng users.
-// Mục lục không cho biết bảng có bao nhiêu dòng: DB đủ bảng mà rỗng vẫn qua bước này, shrinkError bắt ca đó.
+// Bảng phải có trong mục lục của một bản sao lưu mgi-bank. Máy chủ chạy chung với mgst-app: bản dump của hệ đó cũng có bảng users.
+const REQUIRED_DATA = ["public users", "public proof_photos", "public host_metrics", "drizzle __drizzle_migrations"];
+
+// Đọc mục lục để chắc file đọc được và là bản sao lưu của mgi-bank. Mục lục không cho biết bảng có bao nhiêu dòng:
+// DB đủ bảng mà rỗng vẫn qua bước này, shrinkError bắt ca đó.
+export function validateDump(container: string, file: string): void {
+  const fd = openSync(file, "r");
+  try {
+    const list = run(["exec", "-i", container, "pg_restore", "--list"], { in: fd });
+    if (list.status !== 0) throw new Error(`File ${file} không đọc được bằng pg_restore: ${list.stderr.trim()}`);
+    const missing = REQUIRED_DATA.filter((t) => !list.stdout.includes(` TABLE DATA ${t} `));
+    if (missing.length) throw new Error(`File ${file} không phải bản sao lưu của mgi-bank: thiếu dữ liệu bảng ${missing.join(", ")}.`);
+  } finally {
+    closeSync(fd);
+  }
+}
+
+// pg_dump hỏng giữa chừng vẫn có thể cho mã 0: kiểm lại file vừa ghi bằng validateDump.
 export function dumpDatabase(container: string, target: DbTarget, file: string): void {
   const fd = openSync(file, "w");
   let r;
@@ -88,13 +104,7 @@ export function dumpDatabase(container: string, target: DbTarget, file: string):
     rmSync(file, { force: true });
     throw new Error(`pg_dump trả mã ${r.status}: ${r.stderr.trim()}`);
   }
-  const listFd = openSync(file, "r");
-  try {
-    const list = run(["exec", "-i", container, "pg_restore", "--list"], { in: listFd });
-    if (list.status !== 0 || !/TABLE DATA public users /.test(list.stdout)) throw new Error("File dump không đọc được hoặc thiếu dữ liệu bảng users.");
-  } finally {
-    closeSync(listFd);
-  }
+  validateDump(container, file);
 }
 
 function psql(container: string, user: string, database: string, sql: string) {
@@ -122,13 +132,13 @@ export function recreateDatabase(container: string, target: DbTarget): void {
   psql(container, target.user, "postgres", `create database ${target.database}`);
 }
 
-// pg_restore trả mã khác 0 cả khi chỉ cảnh báo quyền sở hữu: trả lỗi để người gọi in ra, số dòng mỗi bảng mới là câu trả lời.
-export function restoreDump(container: string, user: string, file: string, database: string): string {
+// Một transaction, dừng ở lỗi đầu tiên: file cắt cụt hay đĩa đầy giữa chừng thì database quay về rỗng, không nằm lại nửa chừng mà báo xong.
+export function restoreDump(container: string, user: string, file: string, database: string): void {
   if (!NAME.test(database)) throw new Error(`Tên database lạ: ${database}`);
   const fd = openSync(file, "r");
   try {
-    const r = run(["exec", "-i", container, "pg_restore", "-U", user, "-d", database, "--no-owner"], { in: fd });
-    return r.status === 0 ? "" : r.stderr.trim();
+    const r = run(["exec", "-i", container, "pg_restore", "-U", user, "-d", database, "--no-owner", "--exit-on-error", "--single-transaction"], { in: fd });
+    if (r.status !== 0) throw new Error(`pg_restore lỗi: ${r.stderr.trim()}`);
   } finally {
     closeSync(fd);
   }

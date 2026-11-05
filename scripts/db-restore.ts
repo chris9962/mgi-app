@@ -2,12 +2,13 @@ import { spawnSync } from "node:child_process";
 import { existsSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { appContainersFor, backupS3, createDatabase, dbTarget, downloadBackup, dropDatabase, listBackups, recreateDatabase, restoreDump, tableCounts } from "./lib/backup";
+import { appContainersFor, backupS3, createDatabase, dbTarget, downloadBackup, dropDatabase, listBackups, recreateDatabase, restoreDump, tableCounts, validateDump } from "./lib/backup";
 
 // Khôi phục DB từ bản sao lưu, chép cách gọi của mgst-app:
 //   bun run db:restore                         liệt kê bản đang có, không khôi phục
 //   bun run db:restore -- <khoá|file> --thu    khôi phục vào database <tên>_thu, so số dòng với database thật
-//   bun run db:restore -- <khoá|file> --that   khôi phục đè database thật; phải dừng app và worker trước
+//   bun run db:restore -- <khoá|file> --that=<tên database>   khôi phục đè database thật; gõ lại đúng tên database trong DATABASE_URL,
+//                                                           phải dừng app, worker, ops-watch, timer dọn ảnh trước
 // Mặc định là --thu: dump hỏng mà khôi phục đè thì mất cả hai thứ cùng lúc.
 function fail(message: string): never {
   console.error(`[restore] ${message}`);
@@ -20,7 +21,8 @@ async function main() {
   const s3 = backupS3();
   const args = process.argv.slice(2);
   const source = args.find((a) => !a.startsWith("--"));
-  const real = args.includes("--that");
+  const thatFlag = args.find((a) => a === "--that" || a.startsWith("--that="));
+  const real = thatFlag !== undefined;
   const container = process.env.BACKUP_DB_CONTAINER || "mgi-bank-db";
   const target = dbTarget(process.env.DATABASE_URL ?? "");
 
@@ -33,6 +35,10 @@ async function main() {
   }
 
   if (real) {
+    // Gõ lại tên: DATABASE_URL của shell thắng .env.local, người chạy phải thấy và xác nhận đúng database sắp bị xoá.
+    const typed = thatFlag.slice("--that=".length);
+    if (thatFlag === "--that") fail(`Gõ lại tên database sắp bị xoá để xác nhận: --that=${target.database}`);
+    if (typed !== target.database) fail(`Tên gõ lại "${typed}" không khớp database trong DATABASE_URL (${target.database}). Không xoá gì.`);
     const busy = appContainersFor(container).filter(running);
     if (busy.length) fail(`Dừng ${busy.join(", ")} trước khi khôi phục đè: chúng đang ghi vào database sắp bị thay.`);
   }
@@ -45,6 +51,9 @@ async function main() {
     console.log(`[restore] tải xong ${Math.round((await downloadBackup(s3, source, file)) / 1024)} KB`);
   }
 
+  // Kiểm file trước khi đụng database: bản dump của mgst-app hay file cắt cụt thì dừng khi chưa xoá gì.
+  validateDump(container, file);
+
   const into = real ? target.database : `${target.database}_thu`;
   if (real) {
     console.log(`[restore] XOÁ rồi tạo lại database ${into}, khôi phục từ bản dump sau 10 giây. Bấm Ctrl+C để thôi.`);
@@ -54,8 +63,15 @@ async function main() {
     dropDatabase(container, target.user, into);
     createDatabase(container, target.user, into);
   }
-  const warning = restoreDump(container, target.user, file, into);
-  if (warning) console.warn(`[restore] pg_restore báo:\n${warning}\nĐọc kỹ rồi xem số dòng bên dưới.`);
+  try {
+    restoreDump(container, target.user, file, into);
+  } catch (e) {
+    fail(
+      `KHÔNG ĐẠT. ${e instanceof Error ? e.message : String(e)}\n` +
+        `Database ${into} lúc này RỖNG: pg_restore chạy trong một transaction nên lỗi thì lùi hết. ` +
+        (real ? "Không bật app và worker trên database này. Chạy lại lệnh với bản sao lưu khác: bun run db:restore liệt kê các bản." : "Bản thử hỏng, database thật không đổi."),
+    );
+  }
   if (!source.startsWith("/")) rmSync(file, { force: true });
 
   const restored = tableCounts(container, target.user, into);

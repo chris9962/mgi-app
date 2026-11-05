@@ -319,8 +319,11 @@ journalctl -p err -t mgi-bank --since today --no-pager
 
 Khôi phục dùng `scripts/db-restore.ts`. Mặc định khôi phục thử vào database riêng: dump hỏng mà khôi phục đè thì mất cả hai thứ cùng lúc.
 
+Cảnh báo: `DATABASE_URL` của shell thắng `.env.local`, và script khôi phục vào database ghi trong biến đó. Người vận hành chạy `unset DATABASE_URL` trước mọi lệnh `db:restore`.
+
 ```bash
 cd /opt/mgi-bank
+unset DATABASE_URL
 bun run db:restore                              # liệt kê 30 bản mới nhất
 bun run db:restore -- <khoá> --thu              # khôi phục vào mgibank_thu, in số dòng hai database cạnh nhau
 docker exec mgi-bank-db psql -U mgibank -d postgres -c "drop database mgibank_thu"
@@ -328,36 +331,60 @@ docker exec mgi-bank-db psql -U mgibank -d postgres -c "drop database mgibank_th
 
 Diễn tập khôi phục mỗi quý: chạy lệnh `--thu` với bản mới nhất, so số dòng từng bảng với database thật, rồi xoá `mgibank_thu`. Số dòng lệch nhiều hơn lượng nhập liệu từ giờ sao lưu tới lúc so là bản sao lưu có vấn đề.
 
-Khôi phục đè database thật. Cảnh báo: mọi dữ liệu nhập sau giờ của bản dump sẽ mất. Script từ chối chạy khi app hoặc worker còn chạy, chờ 10 giây, rồi xoá hẳn database ghi trong `DATABASE_URL` và tạo lại trước khi khôi phục. Xoá hẳn chứ không dùng `pg_restore --clean`, vì `--clean` chỉ xoá object có trong bản dump: bảng do migration sau giờ dump tạo ra nằm lại, lượt migrate kế tiếp báo `already exists`.
+Khôi phục đè database thật. Cảnh báo trước khi chạy:
+
+- Mọi dữ liệu nhập sau giờ của bản dump sẽ mất.
+- Máy chủ chạy chung mgst-app: thư mục `/root/` có cả bản dump `mgst-truoc-deploy-*.dump` của hệ đó. Gõ đúng tên file, đừng tin phím Tab.
+- App, hai worker, ops-watch và timer dọn ảnh phải dừng trước. Ops-watch ghi `host_metrics`, job dọn ảnh đọc `proof_photos`: chạy trên database đang khôi phục thì ghi lẫn hoặc xoá nhầm.
+
+Script kiểm theo thứ tự, sai một điều thì dừng trước khi xoá gì:
+
+1. Tên gõ lại ở `--that=<tên>` phải đúng tên database trong `DATABASE_URL`.
+2. App và worker không còn chạy.
+3. File đọc được bằng `pg_restore --list` và có dữ liệu các bảng `users`, `proof_photos`, `host_metrics`, `drizzle.__drizzle_migrations` của mgi-bank. Bản dump của mgst-app bị từ chối.
+
+Qua đủ ba điều thì script chờ 10 giây, xoá hẳn database và tạo lại, rồi khôi phục trong một transaction, dừng ở lỗi đầu tiên. Xoá hẳn chứ không dùng `pg_restore --clean`, vì `--clean` chỉ xoá object có trong bản dump: bảng do migration sau giờ dump tạo ra nằm lại, lượt migrate kế tiếp báo `already exists`. Khôi phục lỗi giữa chừng (file cắt cụt, đĩa đầy) thì transaction lùi hết: script in `KHÔNG ĐẠT`, báo database đang rỗng, thoát mã 1. Khi đó người vận hành không bật app, mà chạy lại lệnh với bản sao lưu khác.
 
 ```bash
 cd /opt/mgi-bank
+unset DATABASE_URL
 ./deploy/maintenance-on.sh
 docker stop mgi-bank-app mgi-bank-sms mgi-bank-photo
-bun run db:restore -- <khoá hoặc đường dẫn file .dump> --that
+systemctl stop mgi-bank-ops-watch.service mgi-bank-s3-orphans.timer
+bun run db:restore -- <khoá hoặc đường dẫn file .dump> --that=mgibank
+systemctl start mgi-bank-ops-watch.service mgi-bank-s3-orphans.timer
 docker start mgi-bank-app mgi-bank-sms mgi-bank-photo
 ./deploy/maintenance-off.sh
 ```
 
+Bản dump vừa khôi phục cũ hơn và nhỏ hơn nửa bản mới nhất trên S3 thì lượt sao lưu kế tiếp dừng với báo động "nhỏ hơn nửa bản trước" (mục 8 đầu). Sau khi kiểm database đúng, người vận hành chạy tay một lần `BACKUP_ALLOW_SHRINK=1 bun run db:backup`.
+
 ## 9. Lùi lại
 
-`deploy/deploy.sh` giữ đúng một container cũ tên `mgi-bank-app-cu-<ngày giờ>` và bản dump trước deploy ở `/root/`. Lùi tay:
+`deploy/deploy.sh` giữ đúng một container cũ tên `mgi-bank-app-cu-<ngày giờ>` và bản dump trước deploy ở `/root/mgi-bank-truoc-deploy-<ngày giờ>.dump`.
+
+Cảnh báo trước khi lùi: khôi phục database làm mất dữ liệu nhập trong lúc bản mới chạy. Lùi code mà không lùi database thì bản cũ đọc schema mới: thêm cột thường vẫn chạy, xoá cột thì hỏng. Người vận hành cân nhắc trước khi chạy phần có `--that`, và đọc cảnh báo của khôi phục đè ở mục 8 (gõ đúng file `mgi-bank-truoc-deploy-*`, không phải `mgst-truoc-deploy-*`).
+
+Lùi tay:
 
 ```bash
 cd /opt/mgi-bank
+unset DATABASE_URL
 ./deploy/maintenance-on.sh
 docker stop mgi-bank-app && docker rm mgi-bank-app
 docker rename "$(docker ps -a --format '{{.Names}}' --filter 'name=^mgi-bank-app-cu-')" mgi-bank-app
-# Chỉ khi lượt deploy có migration mới: dừng worker rồi khôi phục bản dump trước deploy.
+# Chỉ khi lượt deploy có migration mới: dừng worker, ops-watch, timer dọn ảnh rồi khôi phục bản dump trước deploy.
 docker stop mgi-bank-sms mgi-bank-photo
-bun run db:restore -- /root/mgi-bank-truoc-deploy-<ngày giờ>.dump --that
+systemctl stop mgi-bank-ops-watch.service mgi-bank-s3-orphans.timer
+bun run db:restore -- /root/mgi-bank-truoc-deploy-<ngày giờ>.dump --that=mgibank
+systemctl start mgi-bank-ops-watch.service mgi-bank-s3-orphans.timer
 docker start mgi-bank-sms mgi-bank-photo
 # Hết phần chỉ khi có migration.
 docker start mgi-bank-app
 ./deploy/maintenance-off.sh
 ```
 
-Lùi code mà không lùi database thì bản cũ đọc schema mới. Thêm cột thường vẫn chạy, xoá cột thì hỏng. Khôi phục database làm mất dữ liệu nhập trong lúc bản mới chạy, nên người vận hành cân nhắc trước khi chạy dòng `--that`.
+Lệnh `db:restore` báo `KHÔNG ĐẠT` thì dừng ở đó: database đang rỗng, không chạy các dòng `start` phía sau.
 
 ## 10. Trang 18 và ops-watch
 
