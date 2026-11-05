@@ -39,4 +39,28 @@ describe("sao lưu và khôi phục", () => {
     expect(() => createDatabase(CONTAINER, source.user, "x; drop database mgibank")).toThrow();
     expect(() => dropDatabase(CONTAINER, source.user, "mgibank")).toThrow("zz_test_");
   });
+
+  test("khôi phục đè (--that) bỏ mọi object tạo sau bản dump: bảng, kiểu của migration mới không còn, bảng migration về đúng bản dump", () => {
+    const target = `zz_test_restore_that_${Date.now()}`;
+    const sql = (q: string) => Bun.spawnSync(["docker", "exec", CONTAINER, "psql", "-U", source.user, "-d", target, "-v", "ON_ERROR_STOP=1", "-At", "-c", q]);
+    createDatabase(CONTAINER, source.user, target);
+    try {
+      const base = join(dir, "base.dump");
+      dumpDatabase(CONTAINER, source, base);
+      restoreDump(CONTAINER, source.user, base, target);
+      const backup = join(dir, "that.dump");
+      dumpDatabase(CONTAINER, { user: source.user, database: target }, backup);
+      const migrations = sql("select count(*) from drizzle.__drizzle_migrations").stdout.toString().trim();
+      expect(sql("create type zz_after_type as enum ('a'); create table zz_after_dump (id int); insert into drizzle.__drizzle_migrations (hash, created_at) values ('zz', 0)").exitCode).toBe(0);
+
+      const url = new URL(process.env.DATABASE_URL!);
+      url.pathname = `/${target}`;
+      const r = Bun.spawnSync(["bun", "scripts/db-restore.ts", backup, "--that"], { env: { ...process.env, DATABASE_URL: url.toString(), BACKUP_S3_BUCKET: "zz-test-khong-dung", BACKUP_DB_CONTAINER: CONTAINER } });
+      expect(r.exitCode, r.stderr.toString()).toBe(0);
+      expect(sql("select to_regclass('public.zz_after_dump') is null, to_regtype('zz_after_type') is null").stdout.toString().trim()).toBe("t|t");
+      expect(sql("select count(*) from drizzle.__drizzle_migrations").stdout.toString().trim()).toBe(migrations);
+    } finally {
+      dropDatabase(CONTAINER, source.user, target);
+    }
+  }, 90_000);
 });

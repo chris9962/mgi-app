@@ -2,7 +2,7 @@ import { spawnSync } from "node:child_process";
 import { existsSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { appContainersFor, backupS3, createDatabase, dbTarget, downloadBackup, dropDatabase, listBackups, restoreDump, tableCounts } from "./lib/backup";
+import { appContainersFor, backupS3, createDatabase, dbTarget, downloadBackup, dropDatabase, listBackups, recreateDatabase, restoreDump, tableCounts } from "./lib/backup";
 
 // Khôi phục DB từ bản sao lưu, chép cách gọi của mgst-app:
 //   bun run db:restore                         liệt kê bản đang có, không khôi phục
@@ -47,13 +47,14 @@ async function main() {
 
   const into = real ? target.database : `${target.database}_thu`;
   if (real) {
-    console.log(`[restore] khôi phục ĐÈ database ${into} sau 10 giây. Bấm Ctrl+C để thôi.`);
+    console.log(`[restore] XOÁ rồi tạo lại database ${into}, khôi phục từ bản dump sau 10 giây. Bấm Ctrl+C để thôi.`);
     await new Promise((r) => setTimeout(r, 10_000));
+    recreateDatabase(container, target);
   } else {
     dropDatabase(container, target.user, into);
     createDatabase(container, target.user, into);
   }
-  const warning = restoreDump(container, target.user, file, into, { clean: real });
+  const warning = restoreDump(container, target.user, file, into);
   if (warning) console.warn(`[restore] pg_restore báo:\n${warning}\nĐọc kỹ rồi xem số dòng bên dưới.`);
   if (!source.startsWith("/")) rmSync(file, { force: true });
 

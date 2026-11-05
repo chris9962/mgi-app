@@ -113,12 +113,20 @@ export function dropDatabase(container: string, user: string, name: string): voi
   psql(container, user, "postgres", `drop database if exists ${name}`);
 }
 
+// Khôi phục đè chỉ nhận database ghi trong DATABASE_URL. Xoá hẳn rồi tạo lại: pg_restore --clean chỉ xoá object có trong bản dump,
+// bảng và kiểu do migration sau giờ dump tạo ra nằm lại, lượt migrate kế tiếp báo "already exists".
+export function recreateDatabase(container: string, target: DbTarget): void {
+  if (!NAME.test(target.database)) throw new Error(`Tên database lạ: ${target.database}`);
+  psql(container, target.user, "postgres", `drop database if exists ${target.database} with (force)`);
+  psql(container, target.user, "postgres", `create database ${target.database}`);
+}
+
 // pg_restore trả mã khác 0 cả khi chỉ cảnh báo quyền sở hữu: trả lỗi để người gọi in ra, số dòng mỗi bảng mới là câu trả lời.
-export function restoreDump(container: string, user: string, file: string, database: string, opts: { clean?: boolean } = {}): string {
+export function restoreDump(container: string, user: string, file: string, database: string): string {
   if (!NAME.test(database)) throw new Error(`Tên database lạ: ${database}`);
   const fd = openSync(file, "r");
   try {
-    const r = run(["exec", "-i", container, "pg_restore", "-U", user, "-d", database, "--no-owner", ...(opts.clean ? ["--clean", "--if-exists"] : [])], { in: fd });
+    const r = run(["exec", "-i", container, "pg_restore", "-U", user, "-d", database, "--no-owner"], { in: fd });
     return r.status === 0 ? "" : r.stderr.trim();
   } finally {
     closeSync(fd);

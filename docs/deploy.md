@@ -317,7 +317,7 @@ docker exec mgi-bank-db psql -U mgibank -d postgres -c "drop database mgibank_th
 
 Diễn tập khôi phục mỗi quý: chạy lệnh `--thu` với bản mới nhất, so số dòng từng bảng với database thật, rồi xoá `mgibank_thu`. Số dòng lệch nhiều hơn lượng nhập liệu từ giờ sao lưu tới lúc so là bản sao lưu có vấn đề.
 
-Khôi phục đè database thật. Cảnh báo: mọi dữ liệu nhập sau giờ của bản dump sẽ mất. Script từ chối chạy khi app hoặc worker còn chạy, và chờ 10 giây trước khi ghi đè:
+Khôi phục đè database thật. Cảnh báo: mọi dữ liệu nhập sau giờ của bản dump sẽ mất. Script từ chối chạy khi app hoặc worker còn chạy, chờ 10 giây, rồi xoá hẳn database ghi trong `DATABASE_URL` và tạo lại trước khi khôi phục. Xoá hẳn chứ không dùng `pg_restore --clean`, vì `--clean` chỉ xoá object có trong bản dump: bảng do migration sau giờ dump tạo ra nằm lại, lượt migrate kế tiếp báo `already exists`.
 
 ```bash
 cd /opt/mgi-bank
