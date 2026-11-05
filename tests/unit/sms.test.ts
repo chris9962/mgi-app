@@ -31,3 +31,13 @@ describe("Cài đặt mẫu SMS", () => {
     expect((await parse("{ho_ten} da mo")).success).toBe(false);
   });
 });
+
+describe("giá trị điền vào SMS", () => {
+  test("mọi giá trị là ASCII in được: bỏ dấu, gạch ngang và ngoặc kép kiểu chữ đổi sang ký tự thường, ký tự khác bỏ đi", async () => {
+    const { asciiSms, smsValues } = await import("../../src/lib/sms");
+    expect(asciiSms("THPT Nguyễn Du – “Chuyên” ‘A’… Ðạt 🎓")).toBe(`THPT Nguyen Du - "Chuyen" 'A'... Dat`);
+    const v = smsValues({ fullName: "Trần Minh Ánh", className: "11Á3", schoolName: "THPT Lê Quý Đôn — cơ sở 2", bankName: "Ngân hàng Á Châu", code: "THPTLQD-TMA-11A3-K7Q2" });
+    expect(v).toEqual({ HO_TEN: "TRAN MINH ANH", LOP: "11A3", TRUONG: "THPT Le Quy Don - co so 2", NGAN_HANG: "Ngan hang A Chau", MA_VOUCHER: "THPTLQD-TMA-11A3-K7Q2" });
+    expect(Object.values(v).every((x) => /^[\x20-\x7E]*$/.test(x))).toBe(true);
+  });
+});

@@ -7,8 +7,7 @@ import { getSettings } from "./settings";
 import { deleteImage, putImage } from "./storage";
 import { voucherCode, voucherSecret } from "./voucher";
 import { reviewsBank } from "@/lib/permissions";
-import { renderSms, SMS_KIND_VOUCHER } from "@/lib/sms";
-import { nameForExcel, removeDiacritics } from "@/lib/text";
+import { renderSms, SMS_KIND_VOUCHER, smsValues } from "@/lib/sms";
 import type { CustomerBankStatus } from "@/lib/studentState";
 import type { SessionUser } from "@/lib/types";
 
@@ -73,13 +72,7 @@ export async function reviewCustomerBank(actor: SessionUser, input: ReviewInput,
       code = voucherCode({ customerId: c.id, provinceCode: c.provinceCode, wardCode: c.wardCode, parentName: c.parentName, schoolName: c.schoolName, fullName: c.fullName, className: c.className }, secret!);
       await tx.update(customers).set({ firstPassedAt: now }).where(eq(customers.id, c.id));
       await tx.insert(vouchers).values({ code, customerId: c.id, issuedAt: now });
-      const body = renderSms(settings.smsTemplate, {
-        HO_TEN: nameForExcel(c.fullName),
-        LOP: c.className,
-        TRUONG: removeDiacritics(c.schoolName),
-        NGAN_HANG: removeDiacritics(row.bankName),
-        MA_VOUCHER: code,
-      });
+      const body = renderSms(settings.smsTemplate, smsValues({ fullName: c.fullName, className: c.className, schoolName: c.schoolName, bankName: row.bankName, code }));
       const [sms] = await tx.insert(smsMessages).values({ customerId: c.id, kind: SMS_KIND_VOUCHER, toPhone: c.parentPhone, body }).returning({ id: smsMessages.id });
       // Worker SMS nghe kênh này; Postgres chỉ phát sau commit.
       await tx.execute(sql`select pg_notify('sms_messages', ${sms.id})`);

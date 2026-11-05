@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { removeDiacritics } from "./text";
 
 // Loại tin duy nhất hiện có; DB chỉ nhận giá trị này (check sms_messages_kind).
 export const SMS_KIND_VOUCHER = "voucher";
@@ -12,6 +13,26 @@ export const DEFAULT_PVI_APP_URL = "https://www.pvi.com.vn";
 export const SMS_SAMPLE: Record<SmsField, string> = { HO_TEN: "TRAN MINH ANH", LOP: "11A3", TRUONG: "THPT Nguyen Du", NGAN_HANG: "VPBank", MA_VOUCHER: "THPTND-TMA-11A3-K7Q2" };
 
 export const renderSms = (template: string, values: Record<SmsField, string>) => template.replace(/\{([A-Z_]+)\}/g, (all, key: string) => values[key as SmsField] ?? all);
+
+// Một ký tự ngoài ASCII làm nhà mạng gửi tin dạng UCS-2, 70 ký tự một tin: bỏ dấu, đổi gạch ngang và ngoặc kiểu chữ, bỏ ký tự còn lại.
+export const asciiSms = (s: string): string =>
+  removeDiacritics(s)
+    .replace(/[\u2010-\u2015\u2212]/g, "-")
+    .replace(/[\u2018\u2019\u201a\u201b\u2032]/g, "'")
+    .replace(/[\u201c-\u201f\u2033]/g, '"')
+    .replace(/\u2026/g, "...")
+    .replace(/\s/g, " ")
+    .replace(/[^\x20-\x7E]/g, "")
+    .replace(/ {2,}/g, " ")
+    .trim();
+
+export const smsValues = (v: { fullName: string; className: string; schoolName: string; bankName: string; code: string }): Record<SmsField, string> => ({
+  HO_TEN: asciiSms(v.fullName).toUpperCase(),
+  LOP: asciiSms(v.className),
+  TRUONG: asciiSms(v.schoolName),
+  NGAN_HANG: asciiSms(v.bankName),
+  MA_VOUCHER: asciiSms(v.code),
+});
 
 // Tin không dấu dài tối đa 160 ký tự; tin dài hơn tách thành nhiều phần, mỗi phần 153 ký tự.
 export const smsParts = (text: string) => (text.length <= 160 ? 1 : Math.ceil(text.length / 153));
