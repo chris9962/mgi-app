@@ -6,7 +6,7 @@ import { photoChecks } from "../../src/server/db/schema";
 import { createSchool, setSchoolActive } from "../../src/server/schools";
 import { SESSION_COOKIE, createSession } from "../../src/server/auth/session";
 import { GET as schoolOptionsRoute } from "../../src/app/api/admin/customer-banks/schools/route";
-import { listCustomerBanks, PAGE_SIZE, scopedBanks } from "../../src/server/customerBankList";
+import { listCustomerBanks, PAGE_SIZE, readCustomerBankFilters, scopedBanks } from "../../src/server/customerBankList";
 import { parseCustomerBankFilters, type CustomerBankFilters } from "../../src/lib/customerBankFilters";
 import { SchoolForm } from "../../src/lib/schoolForm";
 import type { SessionUser } from "../../src/lib/types";
@@ -157,5 +157,19 @@ describe("ô tìm trường của bộ lọc", () => {
     expect(res.status).toBe(200);
     expect(((await res.json()) as { id: string }[]).map((o) => o.id)).toEqual([otherSchool]);
     expect((await get(staffNone, "thpt nh")).status).toBe(403);
+  });
+});
+
+describe("bộ lọc đọc từ URL theo phạm vi người xem", () => {
+  test("ngân hàng ngoài phạm vi và trường không có bị bỏ, bộ lọc trên trang khớp bộ lọc đang áp", async () => {
+    const missing = "99999999-9999-4999-8999-999999999999";
+    const { filters, banks, schools } = await readCustomerBankFilters(staffA, { q: "nhds", bank: `${p.bank.B},${p.bank.A}`, school: `${missing},${otherSchool}` });
+    expect([filters.bank, filters.school]).toEqual([[p.bank.A], [otherSchool]]);
+    expect(banks.map((b) => b.id)).toEqual([p.bank.A]);
+    expect(schools.map((s) => s.id)).toEqual([otherSchool]);
+    const outside = await readCustomerBankFilters(staffA, { q: "nhds", bank: p.bank.B });
+    expect(outside.filters.bank).toEqual([]);
+    expect((await listCustomerBanks(staffA, outside.filters, 1)).total).toBe(4);
+    expect((await readCustomerBankFilters(p.manager, { bank: `${p.bank.B},${missing}` })).filters.bank).toEqual([p.bank.B]);
   });
 });

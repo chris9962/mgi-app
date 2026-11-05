@@ -2,8 +2,10 @@ import { and, asc, count, desc, eq, gte, inArray, lt, sql, type SQL } from "driz
 import { db } from "./db/client";
 import { banks, customerBanks, customers, schools, users } from "./db/schema";
 import { customerSearch, latestCheck, scopedBankIds } from "./customerList";
+import { schoolLabels } from "./schools";
 import { dayRange } from "@/lib/urlParams";
-import type { CustomerBankFilters } from "@/lib/customerBankFilters";
+import { parseCustomerBankFilters, type CustomerBankFilters } from "@/lib/customerBankFilters";
+import type { Params } from "@/lib/urlParams";
 import type { CustomerBankStatus } from "@/lib/studentState";
 import type { SessionUser } from "@/lib/types";
 
@@ -113,4 +115,16 @@ export async function scopedBanks(actor: SessionUser): Promise<{ id: string; nam
     .from(banks)
     .where(scope ? inArray(banks.id, scope) : undefined)
     .orderBy(sql`${banks.active} desc`, asc(banks.sortOrder), asc(banks.name));
+}
+
+// Id ngân hàng ngoài phạm vi hoặc trường không còn thì bỏ ngay lúc đọc URL: chip, số trên nút Bộ lọc và bảng cùng đọc một bộ lọc, không kẹt ở bảng rỗng không có chip để bỏ.
+export async function readCustomerBankFilters(actor: SessionUser, sp: Params) {
+  const parsed = parseCustomerBankFilters(sp);
+  const [banks, schools] = await Promise.all([scopedBanks(actor), schoolLabels(parsed.school)]);
+  const filters: CustomerBankFilters = {
+    ...parsed,
+    bank: parsed.bank.filter((id) => banks.some((b) => b.id === id)),
+    school: parsed.school.filter((id) => schools.some((s) => s.id === id)),
+  };
+  return { filters, banks, schools };
 }

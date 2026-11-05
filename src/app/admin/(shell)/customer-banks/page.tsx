@@ -9,12 +9,11 @@ import { Pager } from "@/components/ui/Pager";
 import { SearchBox } from "@/components/ui/SearchBox";
 import { StatusTag, type Tone } from "@/components/ui/StatusTag";
 import { UrlFilters, type FilterDef } from "@/components/ui/UrlFilters";
-import { CHECK_LABEL, CUSTOMER_BANK_STATUSES, CUSTOMER_BANK_STATUS_LABEL, customerBankFilterQuery, parseCustomerBankFilters, type CustomerBankFilters } from "@/lib/customerBankFilters";
+import { CHECK_LABEL, CUSTOMER_BANK_STATUSES, CUSTOMER_BANK_STATUS_LABEL, customerBankFilterQuery, type CustomerBankFilters } from "@/lib/customerBankFilters";
 import { formatDate, formatShortDateTime } from "@/lib/dates";
 import { can } from "@/lib/permissions";
 import { requirePage } from "@/server/auth/current";
-import { listCustomerBanks, PAGE_SIZE, scopedBanks, type BankCheck } from "@/server/customerBankList";
-import { schoolLabels } from "@/server/schools";
+import { listCustomerBanks, PAGE_SIZE, readCustomerBankFilters, type BankCheck } from "@/server/customerBankList";
 
 export const metadata = { title: "Ngân hàng" };
 
@@ -52,8 +51,8 @@ function chipsOf(f: CustomerBankFilters, bankNames: Map<string, string>, schools
 export default async function CustomerBanksPage({ searchParams }: { searchParams: Promise<Record<string, string | string[] | undefined>> }) {
   const user = await requirePage("customers");
   const sp = await searchParams;
-  const f = parseCustomerBankFilters(sp);
-  const [{ rows, total, page }, banks, schools] = await Promise.all([listCustomerBanks(user, f, Number(sp.page) || 1), scopedBanks(user), schoolLabels(f.school)]);
+  const { filters: f, banks, schools } = await readCustomerBankFilters(user, sp);
+  const { rows, total, page } = await listCustomerBanks(user, f, Number(sp.page) || 1);
   const params = Object.fromEntries(new URLSearchParams(customerBankFilterQuery({ ...f, q: "" })));
   const filtering = Boolean(f.q) || Object.keys(params).some((k) => k !== "dir");
   const defs: FilterDef[] = [
