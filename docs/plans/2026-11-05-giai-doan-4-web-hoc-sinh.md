@@ -72,20 +72,20 @@ Agent làm xong 6 task ngày 2026-11-05, commit 156b08e tới commit ghi mục n
 
 - Thao tác của học sinh không ghi `audit_log`. Dấu vết nằm ở `created_ip`, `submitted_at`, `last_seen_at`.
 - Web học sinh dùng tên thương hiệu Minh Group Intelligent thay chữ Minh Group ST trong ảnh thiết kế.
-- Trường đã đóng chỉ chặn khai B1. Hồ sơ đã có ở trường đó vẫn đi tiếp B2 tới B4.
+- Trường đã đóng chỉ chặn khai B1. Hồ sơ đã có ở trường đó vẫn đi tiếp B2 tới B4. (Đổi ở lần sửa theo review 1.)
 - Link của trường đã đóng vẫn tính là id hợp lệ khi quyết định đổi trường.
 - H1 giữ hai câu của thiết kế, không ép thành một câu hỏi.
 - Danh sách tick "đã có" ở B1 là các ngân hàng mở ở trường.
 - Ô SĐT học sinh ghi nhãn "SĐT" như màn H2. Máy chủ bỏ dấu cách, dấu chấm trong SĐT.
 - Ngân hàng đã có không tồn tại thì từ chối. Ngân hàng đã đóng vẫn nhận.
-- Hồ sơ `new` hết ngân hàng thì sang `no_bank` cả lúc mở web lẫn lúc bấm Tiếp tục. Học sinh khai lúc mã hết lượt cuối tháng sẽ dừng hẳn.
+- Hồ sơ `new` hết ngân hàng thì sang `no_bank` cả lúc mở web lẫn lúc bấm Tiếp tục. Học sinh khai lúc mã hết lượt cuối tháng sẽ dừng hẳn. (Đổi ở lần sửa theo review 1.)
 - Các mã cùng priority thì chọn mã tạo trước.
 - Bỏ câu "MB không hiện vì đã có tài khoản." ở H3 vì là câu giải thích.
 - Không làm route nhận khoá ảnh của học sinh. `GET /api/customers/me` trả sẵn presigned GET hạn 1 giờ cho đúng ảnh mẫu, ảnh QR của mã đã cấp, ảnh của chính học sinh. Web tải lại hồ sơ mỗi lần học sinh quay lại tab.
 - S3Client đặt `requestChecksumCalculation: "WHEN_REQUIRED"` để presigned PUT không mang checksum của body rỗng.
 - Test DB của ảnh dùng kho ảnh giả trong bộ nhớ. Test S3 kiểm presigned PUT và HeadObject thật.
 - Ảnh trình duyệt không mở được (HEIC trên Android) thì gửi file gốc, tối đa 10 MB.
-- Báo lại cùng một khoá ảnh cho cùng khung thì trả ok, không ghi thêm dòng.
+- Báo lại cùng một khoá ảnh cho cùng khung thì trả ok, không ghi thêm dòng. (Bỏ ở lần sửa theo review 1: khoá tải lên bị xoá sau khi ghi.)
 - Gửi kiểm tra gọi `pg_notify` trên kênh `photo_checks`.
 - Giờ gửi SMS hiện đủ ngày và giờ.
 - QR app PVI và QR Zalo bọc trong link mở bằng một chạm.
@@ -105,3 +105,31 @@ Agent làm xong 6 task ngày 2026-11-05, commit 156b08e tới commit ghi mục n
 | Quét QR bằng camera ở H0, màn H1, màn trường đã đóng chưa có e2e; hàm quyết định đổi trường có test unit | Khi viết e2e quay video |
 | Nén ảnh trên trình duyệt chỉ có test unit cho vòng lặp; e2e tải một ảnh JPG nhỏ | Khi viết e2e quay video |
 | Dev server chạy lâu có lúc ngừng nạp lại file server sau khi sửa; tắt và chạy lại `bun dev` trước khi chạy e2e | Ghi nhớ |
+| Số ngân hàng còn lượt đổi từ 1 lên 2 giữa lúc xem và lúc bấm Tiếp tục thì máy chủ đòi chọn đúng 2, web báo lỗi thay vì tải lại danh sách | Khi sửa B2 |
+| Nút Sao chép báo "Đã sao chép" cả khi trình duyệt không cho ghi clipboard | Khi sửa B3, B4 |
+| Bấm Enter hai lần ở B1 có thể gửi hai request, tạo hai hồ sơ | Khi sửa B1 |
+| Thứ bậc tiêu đề ở B3 nhảy từ h1 sang h3 ("Ảnh cần nộp") | Khi sửa B3 |
+| Mỗi lần quay lại tab, web tải lại cả hồ sơ và ký lại mọi link ảnh | Khi tối ưu web học sinh |
+| `scripts/s3-cors.ts` ghi đè toàn bộ CORS của bucket | Giai đoạn 7 |
+| `created_ip` lấy phần tử đầu của `X-Forwarded-For`; Nginx phải ghi đè header này, không thì học sinh giả được IP | Giai đoạn 7 |
+| Object thư mục `uploads/` của link PUT không được báo ghi thì nằm lại; nên đặt lifecycle xoá `uploads/` sau 1 ngày | Giai đoạn 7 |
+
+### Sửa theo review lần 1
+
+Agent sửa ngày 2026-11-05, commit aed278f tới commit ghi mục này. Mỗi mục có test viết trước, thấy fail đúng lý do rồi mới sửa.
+
+- C1: link PUT ký cả `Content-Type` và `Content-Length` (`signableHeaders`), hạn 120 giây, trỏ vào thư mục mới `uploads/`. Điện thoại khai dung lượng (1 byte tới 10 MB) và loại ảnh (jpeg, png, webp, heic). Khi ghi ảnh, máy chủ chép object sang khoá `proofs/` do máy chủ chọn rồi xoá khoá tải lên: học sinh không có link PUT nào trỏ vào ảnh đã ghi. Link xem ảnh trả `Content-Type` theo đuôi khoá. Test S3: sai loại ảnh trả 403, body lớn hơn dung lượng đã ký bị từ chối, PUT vào khoá đã ghi (đổi đường dẫn hoặc bỏ chữ ký) trả 403, file HTML mang đuôi `.webp` đọc ra `image/webp`.
+- I1: hai request ghi cùng một khoá ảnh chạy song song không còn xoá mất object của dòng đang dùng. Test DB chạy song song: còn đúng một dòng, object của dòng đó còn trên S3.
+- I2: hồ sơ chỉ sang `no_bank` khi ngân hàng học sinh tick "đã có" phủ hết các ngân hàng đang mở có mã đang dùng gắn cho trường, bỏ qua lượt. Ngân hàng chưa có chỉ đang hết lượt thì hồ sơ giữ `new`, web hiện màn "Ngân hàng đã hết lượt trong tháng này" kèm QR Zalo. Test DB cho hai ca.
+- T1: trường đã đóng chặn giữ chỗ mới. Học sinh `new` hoặc `no_bank` ở trường đó thấy màn Trường đã đóng. Học sinh đã giữ chỗ vẫn nộp ảnh và gửi kiểm tra; màn kết quả giữ nguyên. Thêm: Quay lại bị chặn và nút Quay lại ẩn khi trường đóng.
+- I3: test DB học sinh A không xin link, không ghi ảnh vào dòng ngân hàng của học sinh B; test route gọi thẳng handler: thiếu hoặc sai Bearer trả 401, Origin của trang khác trả 403; test giữ chỗ song song ở 3 trường dùng chung mã của 2 ngân hàng không vượt quota, không deadlock. Hành vi đã đúng nên test pass ngay; agent kiểm đột biến (bỏ điều kiện `customer_id`, bỏ kiểm Origin, bỏ `for update`) thấy 5 test fail rồi trả code về.
+- Nút Gửi kiểm tra khoá khi còn khung đang tải hoặc chụp lại ảnh. Khung ảnh gặp lỗi bất ngờ thì báo "Không tải được ảnh lên. Thử lại." và cho tải lại, không đứng ở "Đang tải ảnh". Test e2e chặn PUT lên S3 để giữ trạng thái đang tải, và trả dữ liệu lạ ở route xin link.
+- Mọi câu báo lỗi của form học sinh là tiếng Việt. Họ tên, tên phụ huynh, lớp có ký tự điều khiển (NUL) trả 400 thay vì 500. Test unit 18 ca.
+
+Ruling đổi ở lần sửa này:
+
+- `no_bank` theo luật "đã có phủ hết ngân hàng của chương trình ở trường" do chủ dự án chốt. Trường chưa có ngân hàng nào trong chương trình thì hồ sơ giữ `new` (tập rỗng không tính là phủ hết).
+- Trường đã đóng chặn giữ chỗ mới và chặn Quay lại; học sinh đã giữ chỗ vẫn đi tiếp.
+- Báo lại khoá tải lên đã ghi thì trả 400 thay vì ok, vì khoá tải lên bị xoá sau khi ghi.
+
+Test sau lần sửa: `bun run test` 95 pass, `bun test:db` 101 pass, `bun test:s3` 6 pass, `bun run e2e` 12 pass, `bunx tsc --noEmit` sạch, `bun run lint` 0 lỗi (2 cảnh báo `<img>` cũ).
