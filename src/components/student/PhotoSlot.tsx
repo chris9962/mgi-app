@@ -24,7 +24,19 @@ async function upload(customerBankId: string, slotId: string, file: File): Promi
   return saved.ok ? null : saved.message;
 }
 
-export function PhotoSlot({ index, customerBankId, slot, onSaved }: { index: number; customerBankId: string; slot: StudentPhotoSlot; onSaved: () => Promise<void> }) {
+export function PhotoSlot({
+  index,
+  customerBankId,
+  slot,
+  onSaved,
+  onBusy,
+}: {
+  index: number;
+  customerBankId: string;
+  slot: StudentPhotoSlot;
+  onSaved: () => Promise<void>;
+  onBusy: (slotId: string, busy: boolean) => void;
+}) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
   const [viewSample, setViewSample] = useState(false);
@@ -34,10 +46,19 @@ export function PhotoSlot({ index, customerBankId, slot, onSaved }: { index: num
     event.target.value = "";
     if (!file) return;
     setBusy(true);
+    onBusy(slot.id, true);
     setError("");
-    const message = await upload(customerBankId, slot.id, file);
-    if (!message) await onSaved();
-    setBusy(false);
+    let message: string | null = null;
+    // Lỗi bất ngờ (trình duyệt, máy chủ trả dữ liệu lạ) không được để khung đứng mãi ở "Đang tải ảnh".
+    try {
+      message = await upload(customerBankId, slot.id, file);
+      if (!message) await onSaved();
+    } catch {
+      message = "Không tải được ảnh lên. Thử lại.";
+    } finally {
+      setBusy(false);
+      onBusy(slot.id, false);
+    }
     setError(message ?? "");
   }
 

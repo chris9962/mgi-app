@@ -53,7 +53,7 @@ function CodeBox({ bank }: { bank: StudentBank }) {
   );
 }
 
-function BankPanel({ bank, onSaved }: { bank: StudentBank; onSaved: () => Promise<void> }) {
+function BankPanel({ bank, onSaved, onBusy }: { bank: StudentBank; onSaved: () => Promise<void>; onBusy: (slotId: string, busy: boolean) => void }) {
   const done = bank.slots.filter((s) => s.photo).length;
   return (
     <div className="flex flex-col gap-4">
@@ -72,7 +72,7 @@ function BankPanel({ bank, onSaved }: { bank: StudentBank; onSaved: () => Promis
           </h3>
           <ul className="flex flex-col gap-4">
             {bank.slots.map((slot, i) => (
-              <PhotoSlot key={slot.id} index={i + 1} customerBankId={bank.id} slot={slot} onSaved={onSaved} />
+              <PhotoSlot key={slot.id} index={i + 1} customerBankId={bank.id} slot={slot} onSaved={onSaved} onBusy={onBusy} />
             ))}
           </ul>
         </section>
@@ -87,10 +87,13 @@ export function OpenAccount({ state, onChange }: { state: StudentState; onChange
   const [confirmBack, setConfirmBack] = useState(false);
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
+  const [busySlots, setBusySlots] = useState<string[]>([]);
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
   const current = banks.find((b) => b.id === active) ?? banks[0];
   const hasPhoto = banks.some((b) => b.slots.some((s) => s.photo));
-  const ready = banks.length > 0 && banks.every(complete);
+  // Đang tải hoặc chụp lại ảnh thì chưa gửi: gửi lúc đó là gửi ảnh cũ, ảnh mới bị bỏ.
+  const ready = banks.length > 0 && banks.every(complete) && busySlots.length === 0;
+  const markBusy = (slotId: string, busy: boolean) => setBusySlots((list) => (busy ? [...list, slotId] : list.filter((id) => id !== slotId)));
 
   async function submit() {
     setSending(true);
@@ -149,7 +152,7 @@ export function OpenAccount({ state, onChange }: { state: StudentState; onChange
       </div>
       {banks.map((b) => (
         <div key={b.id} role="tabpanel" id={`panel-${b.id}`} aria-labelledby={`tab-${b.id}`} hidden={b.id !== current.id}>
-          <BankPanel bank={b} onSaved={onChange} />
+          <BankPanel bank={b} onSaved={onChange} onBusy={markBusy} />
         </div>
       ))}
       {error && (

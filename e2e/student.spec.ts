@@ -67,3 +67,48 @@ test("Học sinh quét link trường, khai thông tin, chọn 2 ngân hàng, n�
   await expect(page.getByText("Chờ kiểm tra")).toHaveCount(2);
   await expect(page.getByRole("button", { name: "Gửi kiểm tra" })).toHaveCount(0);
 });
+
+test("đang tải ảnh thì không gửi kiểm tra được; tải ảnh lỗi thì khung báo lỗi và thử lại được", async ({ page }) => {
+  await page.goto(`/t/${E2E_STUDENT_SCHOOL_ID}`);
+  await page.getByLabel("Họ và tên", { exact: true }).fill("Lê Hoàng Nam");
+  await page.getByLabel("Lớp").fill("10b1");
+  await page.getByLabel("SĐT", { exact: true }).fill("0912000111");
+  await page.getByLabel("Họ và tên phụ huynh").fill("Lê Văn Tư");
+  await page.getByLabel("SĐT phụ huynh").fill("0987000111");
+  await page.getByRole("button", { name: "Tiếp tục" }).click();
+  await page.getByRole("button", { name: /ZZE2E HS MB/ }).click();
+  await page.getByRole("button", { name: /ZZE2E HS TPBank/ }).click();
+  await page.getByRole("button", { name: "Tiếp tục" }).click();
+
+  const panel = page.getByRole("tabpanel");
+  const send = page.getByRole("button", { name: "Gửi kiểm tra" });
+  for (const tab of ["ZZE2E HS MB", "ZZE2E HS TPBank"]) {
+    await page.getByRole("tab", { name: new RegExp(tab) }).click();
+    await panel.getByLabel("Ảnh màn hình chính: chụp hoặc chọn ảnh").setInputFiles(PHOTO);
+    await expect(panel.getByLabel("Ảnh màn hình chính: chụp lại")).toBeAttached({ timeout: 30_000 });
+  }
+  await expect(send).toBeEnabled();
+
+  let release = () => {};
+  const gate = new Promise<void>((resolve) => (release = resolve));
+  await page.route(/\/uploads\//, async (route) => {
+    await gate;
+    await route.continue();
+  });
+  await panel.getByLabel("Ảnh màn hình chính: chụp lại").setInputFiles(PHOTO);
+  await expect(panel.getByText("Đang tải ảnh")).toBeVisible();
+  await expect(send).toBeDisabled();
+  release();
+  await expect(panel.getByText("Đang tải ảnh")).toHaveCount(0, { timeout: 30_000 });
+  await expect(send).toBeEnabled();
+  await page.unroute(/\/uploads\//);
+
+  await page.route("**/api/customers/me/photos/upload-url", (route) => route.fulfill({ status: 200, contentType: "text/plain", body: "oops" }));
+  await panel.getByLabel("Ảnh màn hình chính: chụp lại").setInputFiles(PHOTO);
+  await expect(panel.getByRole("alert")).toContainText("Không tải được ảnh");
+  await expect(panel.getByText("Đang tải ảnh")).toHaveCount(0);
+  await page.unroute("**/api/customers/me/photos/upload-url");
+  await panel.getByLabel("Ảnh màn hình chính: chụp lại").setInputFiles(PHOTO);
+  await expect(panel.getByRole("alert")).toHaveCount(0, { timeout: 30_000 });
+  await expect(send).toBeEnabled();
+});
