@@ -55,8 +55,8 @@ export function customerWhere(actor: SessionUser, f: CustomerFilters): SQL | und
   return and(
     ids ? sql`exists (select 1 from ${customerBanks} cb where cb.customer_id = ${CUSTOMER_ID} and ${inBanks(ids)})` : undefined,
     f.status ? eq(customers.status, f.status) : undefined,
-    start ? gte(customers.submittedAt, start) : undefined,
-    end ? lt(customers.submittedAt, end) : undefined,
+    start ? gte(customers.createdAt, start) : undefined,
+    end ? lt(customers.createdAt, end) : undefined,
     f.passed ? sql`(select count(*) from ${customerBanks} cb where cb.customer_id = ${CUSTOMER_ID} and cb.status = 'passed') = ${Number(f.passed)}` : undefined,
     f.check
       ? sql`exists (select 1 from ${customerBanks} cb cross join lateral ${latestCheck(sql`cb.id`)} pc

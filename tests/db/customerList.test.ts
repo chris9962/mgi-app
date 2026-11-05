@@ -68,8 +68,14 @@ describe("lọc", () => {
     expect((await names(p.manager, { q: "locds", status: "pending_review" })).sort()).toEqual(["Locds Trần Minh Anh", "Locds Lê Hoàng Nam", "Locds Nguyễn Gia Bảo"].sort());
   });
 
-  test("theo ngày gửi tính giờ Việt Nam", async () => {
-    // Bảo gửi lúc 00:30 ngày 04/11 giờ Việt Nam, tức 17:30 ngày 03/11 giờ UTC.
+  test("theo ngày tạo hồ sơ, không theo ngày gửi", async () => {
+    await insertCustomer(p, { fullName: "Taods Hồ Văn Sớm", status: "pending_review", createdAt: new Date("2026-11-01T02:00:00Z"), submittedAt: new Date("2026-11-04T02:00:00Z"), banks: [{ key: "A", status: "pending" }] });
+    expect(await names(p.manager, { q: "taods", from: "2026-11-01", to: "2026-11-01" })).toEqual(["Taods Hồ Văn Sớm"]);
+    expect(await names(p.manager, { q: "taods", from: "2026-11-04", to: "2026-11-04" })).toEqual([]);
+  });
+
+  test("theo ngày tạo tính giờ Việt Nam", async () => {
+    // Bảo tạo hồ sơ lúc 00:30 ngày 04/11 giờ Việt Nam, tức 17:30 ngày 03/11 giờ UTC.
     expect(await names(p.manager, { q: "locds", from: "2026-11-04", to: "2026-11-04" })).toEqual(["Locds Nguyễn Gia Bảo"]);
     expect((await names(p.manager, { q: "locds", to: "2026-11-03" })).sort()).toEqual(["Locds Trần Minh Anh", "Locds Lê Hoàng Nam", "Locds Võ Thị Kim Ngân"].sort());
   });

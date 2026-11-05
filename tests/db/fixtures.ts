@@ -44,7 +44,7 @@ type BankSpec = { key: string; status: "selected" | "pending" | "passed" | "fail
 // Dựng thẳng dòng DB cho test danh sách: đi qua luồng học sinh thì mỗi hồ sơ mất vài chục câu lệnh.
 export async function insertCustomer(
   p: Program,
-  values: { fullName: string; className?: string; phone?: string; parentPhone?: string; status: (typeof customers.$inferSelect)["status"]; submittedAt?: Date | null; banks?: BankSpec[] },
+  values: { fullName: string; className?: string; phone?: string; parentPhone?: string; status: (typeof customers.$inferSelect)["status"]; submittedAt?: Date | null; createdAt?: Date; banks?: BankSpec[] },
 ): Promise<{ id: string; rows: Record<string, string> }> {
   const [row] = await db
     .insert(customers)
@@ -59,6 +59,7 @@ export async function insertCustomer(
       status: values.status,
       tokenHash: hashToken(randomUUID()),
       submittedAt: values.submittedAt ?? null,
+      createdAt: values.createdAt ?? values.submittedAt ?? undefined,
     })
     .returning({ id: customers.id });
   const rows: Record<string, string> = {};

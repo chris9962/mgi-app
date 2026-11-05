@@ -19,7 +19,7 @@ export const metadata = { title: "Hồ sơ học sinh" };
 
 const DEFS: FilterDef[] = [
   { kind: "choice", id: "status", label: "Trạng thái", key: "status", options: [{ value: "", label: "Mọi trạng thái" }, ...CUSTOMER_STATUSES.map((s) => ({ value: s, label: CUSTOMER_STATUS_LABEL[s] }))] },
-  { kind: "dates", id: "sent", label: "Ngày gửi", fromKey: "from", toKey: "to" },
+  { kind: "dates", id: "created", label: "Ngày", fromKey: "from", toKey: "to" },
   { kind: "choice", id: "passed", label: "Số ngân hàng đạt", key: "passed", options: [{ value: "", label: "Mọi hồ sơ" }, ...Object.entries(PASSED_LABEL).map(([value, label]) => ({ value, label }))] },
   { kind: "choice", id: "check", label: "Xác thực ảnh", key: "check", options: [{ value: "", label: "Mọi kết quả" }, ...Object.entries(CHECK_LABEL).map(([value, label]) => ({ value, label }))] },
 ];
@@ -27,10 +27,10 @@ const DEFS: FilterDef[] = [
 function chipsOf(f: CustomerFilters) {
   const without = (...keys: (keyof CustomerFilters)[]) => `/customers?${customerFilterQuery({ ...f, ...Object.fromEntries(keys.map((k) => [k, ""])) })}`;
   const day = (v: string) => formatDate(`${v}T00:00:00+07:00`);
-  const sent = f.from && f.to ? `Gửi: ${day(f.from)} – ${day(f.to)}` : f.from ? `Gửi từ ${day(f.from)}` : f.to ? `Gửi đến ${day(f.to)}` : "";
+  const created = f.from && f.to ? `Ngày: ${day(f.from)} – ${day(f.to)}` : f.from ? `Từ ngày ${day(f.from)}` : f.to ? `Đến ngày ${day(f.to)}` : "";
   return [
     ...(f.status ? [{ label: `Trạng thái: ${CUSTOMER_STATUS_LABEL[f.status]}`, href: without("status") }] : []),
-    ...(sent ? [{ label: sent, href: without("from", "to") }] : []),
+    ...(created ? [{ label: created, href: without("from", "to") }] : []),
     ...(f.passed ? [{ label: PASSED_LABEL[f.passed], href: without("passed") }] : []),
     ...(f.check ? [{ label: `Xác thực ảnh: ${CHECK_LABEL[f.check]}`, href: without("check") }] : []),
   ];
@@ -75,7 +75,7 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
             <table className="w-full text-left text-sm">
               <thead className="text-xs font-semibold tracking-wide text-text-2 uppercase">
                 <tr className="border-b border-line">
-                  {["Tạo lúc", "Họ tên", "Lớp", "Trường", "SĐT phụ huynh", "Ngân hàng 1", "Ngân hàng 2", "Người kiểm"].map((h) => (
+                  {["Ngày", "Họ tên", "Lớp", "Trường", "SĐT phụ huynh", "Ngân hàng 1", "Ngân hàng 2", "Người kiểm"].map((h) => (
                     <th key={h} scope="col" className="px-4 py-3 font-semibold whitespace-nowrap">
                       {h}
                     </th>
