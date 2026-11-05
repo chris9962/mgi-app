@@ -3,6 +3,7 @@ import { db } from "./db/client";
 import { customers, schools, vouchers } from "./db/schema";
 import { writeAudit } from "./audit";
 import { banksOf, customerOrder, customerWhere } from "./customerList";
+import { joinCustomerRows } from "./exportRows";
 import { allSchools } from "./schools";
 import { voucherBase, voucherWhere } from "./vouchers";
 import { buildExcel, EXCEL_GROUP_COLORS, type ExcelColumn } from "@/lib/excel";
@@ -48,7 +49,7 @@ async function customerRows(actor: SessionUser, f: CustomerFilters) {
     .orderBy(...customerOrder);
   const ids = rows.map((r) => r.id);
   const [bankRows, codes] = await Promise.all([banksOf(actor, ids), ids.length ? db.select({ customerId: vouchers.customerId, code: vouchers.code, issuedAt: vouchers.issuedAt }).from(vouchers).where(inArray(vouchers.customerId, ids)) : []]);
-  return rows.map((r) => ({ ...r, banks: bankRows.filter((b) => b.customerId === r.id), voucher: codes.find((v) => v.customerId === r.id) ?? null }));
+  return joinCustomerRows(rows, bankRows, codes);
 }
 
 const bankColumns = (slot: 1 | 2): ExcelColumn<CustomerExportRow>[] => {
