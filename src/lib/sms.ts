@@ -21,12 +21,22 @@ const url = z
   .trim()
   .refine((v) => v === "" || /^https?:\/\/\S+$/i.test(v), "Link phải bắt đầu bằng http:// hoặc https://");
 
+// Biến gõ sai như {HOTEN} không được thay, phụ huynh nhận nguyên chữ {HOTEN}: chặn từ lúc lưu mẫu.
+const unknownField = (template: string): string | null => {
+  const rest = template.replace(/\{([A-Z_]+)\}/g, (all, key: string) => ((SMS_FIELDS as readonly string[]).includes(key) ? "" : all));
+  return /[{}]/.test(rest) ? (/\{[^{}]*\}/.exec(rest)?.[0] ?? "{") : null;
+};
+
 export const SettingsForm = z.object({
   smsTemplate: z
     .string()
     .trim()
     .min(1, "Nhập mẫu SMS")
-    .regex(/^[\x20-\x7E]+$/, "Mẫu SMS viết không dấu"),
+    .regex(/^[\x20-\x7E]+$/, "Mẫu SMS viết không dấu")
+    .superRefine((v, ctx) => {
+      const bad = unknownField(v);
+      if (bad) ctx.addIssue({ code: "custom", message: bad.length > 1 ? `Mẫu SMS có biến không có thật: ${bad}` : "Mẫu SMS có dấu ngoặc { } lẻ" });
+    }),
   zaloUrl: url,
   pviAppUrl: url,
 });

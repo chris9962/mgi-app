@@ -14,3 +14,20 @@ describe("mẫu SMS", () => {
     expect(smsParts("a".repeat(307))).toBe(3);
   });
 });
+
+describe("Cài đặt mẫu SMS", () => {
+  const parse = async (smsTemplate: string) => (await import("../../src/lib/sms")).SettingsForm.safeParse({ smsTemplate, zaloUrl: "", pviAppUrl: "" });
+
+  test("nhận đủ 5 biến có thật", async () => {
+    expect((await parse("{HO_TEN} {LOP} {TRUONG} {NGAN_HANG} {MA_VOUCHER}")).success).toBe(true);
+  });
+
+  test("từ chối biến lạ và dấu ngoặc lẻ, báo tên biến lạ", async () => {
+    const r = await parse("{HOTEN} da mo tai khoan");
+    expect(r.success).toBe(false);
+    expect(r.error?.issues[0].message).toContain("{HOTEN}");
+    expect((await parse("{HO_TEN da mo")).success).toBe(false);
+    expect((await parse("HO_TEN} da mo")).success).toBe(false);
+    expect((await parse("{ho_ten} da mo")).success).toBe(false);
+  });
+});
