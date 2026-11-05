@@ -2,38 +2,70 @@ import { z } from "zod";
 import { MAX_IMAGE_BYTES } from "./imageKey";
 
 const PHONE = "SĐT phải có 10 số, bắt đầu bằng 0.";
+// Học sinh thấy câu lỗi của máy chủ: mọi câu phải là tiếng Việt, không để câu mặc định tiếng Anh của zod lọt ra.
+const BAD = "Dữ liệu không hợp lệ.";
+// NUL làm Postgres báo lỗi 500; ký tự điều khiển khác không có chỗ trong họ tên hay lớp.
+const CONTROL = /[\u0000-\u001f\u007f]/;
+
+const uuid = () => z.uuid({ error: BAD });
 
 // Học sinh hay gõ SĐT có dấu cách hoặc dấu chấm như cách đọc số.
 const phone = z
-  .string()
+  .string({ error: PHONE })
   .transform((v) => v.replace(/[\s.]/g, ""))
   .pipe(z.string().regex(/^0[0-9]{9}$/, PHONE));
 
 const name = (message: string) =>
   z
-    .string()
+    .string({ error: message })
     .transform((v) => v.trim().replace(/\s+/g, " "))
-    .pipe(z.string().min(1, message).max(100, "Tối đa 100 ký tự"));
+    .pipe(
+      z
+        .string()
+        .min(1, message)
+        .max(100, "Tối đa 100 ký tự")
+        .refine((v) => !CONTROL.test(v), "Có ký tự không hợp lệ"),
+    );
 
 export const CustomerForm = z
-  .object({
-    schoolId: z.uuid(),
-    fullName: name("Nhập họ và tên"),
-    className: z
-      .string()
-      .transform((v) => v.replace(/\s+/g, "").toUpperCase())
-      .pipe(z.string().min(1, "Nhập lớp").max(20, "Tối đa 20 ký tự")),
-    phone,
-    parentName: name("Nhập họ và tên phụ huynh"),
-    parentPhone: phone,
-    existingBankIds: z.array(z.uuid()).max(50),
-  })
+  .object(
+    {
+      schoolId: uuid(),
+      fullName: name("Nhập họ và tên"),
+      className: z
+        .string({ error: "Nhập lớp" })
+        .transform((v) => v.replace(/\s+/g, "").toUpperCase())
+        .pipe(
+          z
+            .string()
+            .min(1, "Nhập lớp")
+            .max(20, "Tối đa 20 ký tự")
+            .refine((v) => !CONTROL.test(v), "Có ký tự không hợp lệ"),
+        ),
+      phone,
+      parentName: name("Nhập họ và tên phụ huynh"),
+      parentPhone: phone,
+      existingBankIds: z.array(uuid(), { error: BAD }).max(50, BAD),
+    },
+    { error: BAD },
+  )
   .refine((v) => v.phone !== v.parentPhone, { path: ["parentPhone"], message: "SĐT phụ huynh phải khác SĐT học sinh." });
 
 export type CustomerFormInput = z.input<typeof CustomerForm>;
 export type CustomerFormValues = z.output<typeof CustomerForm>;
 
-export const BankChoiceForm = z.object({ bankIds: z.array(z.uuid()).min(1, "Chọn ngân hàng").max(2, "Chọn tối đa 2 ngân hàng") });
+export const BankChoiceForm = z.object(
+  { bankIds: z.array(uuid(), { error: "Chọn ngân hàng" }).min(1, "Chọn ngân hàng").max(2, "Chọn tối đa 2 ngân hàng") },
+  { error: BAD },
+);
 
-export const PhotoUploadForm = z.object({ customerBankId: z.uuid(), slotId: z.uuid(), contentType: z.string().max(100), size: z.number().int().min(1).max(MAX_IMAGE_BYTES, "Ảnh lớn hơn 10 MB.") });
-export const PhotoRecordForm = z.object({ customerBankId: z.uuid(), slotId: z.uuid(), key: z.string().max(200) });
+export const PhotoUploadForm = z.object(
+  {
+    customerBankId: uuid(),
+    slotId: uuid(),
+    contentType: z.string({ error: BAD }).max(100, BAD),
+    size: z.number({ error: BAD }).int(BAD).min(1, BAD).max(MAX_IMAGE_BYTES, "Ảnh lớn hơn 10 MB."),
+  },
+  { error: BAD },
+);
+export const PhotoRecordForm = z.object({ customerBankId: uuid(), slotId: uuid(), key: z.string({ error: BAD }).max(200, BAD) }, { error: BAD });
