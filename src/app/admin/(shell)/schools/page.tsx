@@ -8,6 +8,7 @@ import { StatusTag } from "@/components/ui/StatusTag";
 import { AddSchoolButton, SchoolActions } from "@/components/schools/SchoolActions";
 import { requirePage } from "@/server/auth/current";
 import { listProvinces, listSchools, PAGE_SIZE } from "@/server/schools";
+import { studentLink } from "@/lib/links";
 import { can } from "@/lib/permissions";
 
 export const metadata = { title: "Trường" };
@@ -61,6 +62,7 @@ export default async function SchoolsPage({ searchParams }: { searchParams: Prom
                     <td className="px-4 py-3">{s.active ? <StatusTag tone="ok">Đang mở</StatusTag> : <StatusTag tone="neutral">Đã đóng</StatusTag>}</td>
                     <td className="px-4 py-3">
                       <SchoolActions
+                        link={studentLink(s.id)}
                         active={s.active}
                         provinces={provinces}
                         school={{ id: s.id, name: s.name, provinceCode: s.provinceCode, wardCode: s.wardCode, contactName: s.contactName, contactPhone: s.contactPhone }}

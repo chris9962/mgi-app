@@ -1,6 +1,6 @@
 "use client";
 
-import { Pencil, Plus, QrCode } from "lucide-react";
+import { Check, Link2, Pencil, Plus, QrCode, X } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
@@ -24,11 +24,37 @@ export function AddSchoolButton({ provinces }: { provinces: Provinces }) {
   );
 }
 
-export function SchoolActions({ school, active, provinces }: { school: Required<SchoolDefaults>; active: boolean; provinces: Provinces }) {
+function CopyLinkButton({ link, name }: { link: string; name: string }) {
+  const [copy, setCopy] = useState<"idle" | "done" | "failed">("idle");
+  // Trang chạy http thì trình duyệt không có navigator.clipboard: phải báo không chép được.
+  const copyLink = async () => {
+    try {
+      await navigator.clipboard.writeText(link);
+      setCopy("done");
+    } catch {
+      setCopy("failed");
+    }
+    setTimeout(() => setCopy("idle"), 2000);
+  };
+  const Icon = copy === "done" ? Check : copy === "failed" ? X : Link2;
+  return (
+    <>
+      <button type="button" className={iconButton} aria-label={`Chép link của ${name}`} title={copy === "done" ? "Đã chép" : copy === "failed" ? "Không chép được" : "Chép link"} onClick={copyLink}>
+        <Icon size={16} aria-hidden />
+      </button>
+      <span role="status" className="sr-only">
+        {copy === "done" ? "Đã chép link" : copy === "failed" ? "Không chép được" : ""}
+      </span>
+    </>
+  );
+}
+
+export function SchoolActions({ school, link, active, provinces }: { school: Required<SchoolDefaults>; link: string; active: boolean; provinces: Provinces }) {
   const router = useRouter();
   const [dialog, setDialog] = useState<"edit" | "toggle" | null>(null);
   return (
     <span className="flex items-center gap-1.5">
+      <CopyLinkButton link={link} name={school.name} />
       <a href={`/api/admin/schools/${school.id}/qr`} className={iconButton} aria-label={`Tải ảnh QR của ${school.name}`} title="Tải ảnh QR">
         <QrCode size={16} aria-hidden />
       </a>

@@ -27,6 +27,11 @@ test("Quản trị tạo trường, ngân hàng có 2 khung ảnh, mã gắn cho
   await school.getByRole("button", { name: "Tạo trường" }).click();
   await expect(page.getByRole("cell", { name: "ZZE2E THPT Nguyễn Du", exact: true })).toBeVisible();
 
+  await page.context().grantPermissions(["clipboard-read", "clipboard-write"], { origin: "http://admin.localhost:3100" });
+  await page.getByRole("button", { name: "Chép link của ZZE2E THPT Nguyễn Du" }).click();
+  await expect(page.getByRole("status").filter({ hasText: "Đã chép link" })).toHaveCount(1);
+  expect(await page.evaluate(() => navigator.clipboard.readText())).toMatch(/^http:\/\/bank\.localhost:3100\/t\/[0-9a-f-]{36}$/);
+
   await page.goto("/banks");
   await page.waitForLoadState("networkidle");
   await page.getByRole("button", { name: "Thêm ngân hàng" }).click();
