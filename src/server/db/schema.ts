@@ -359,12 +359,17 @@ export const photoChecks = pgTable(
     error: text("error").notNull().default(""),
     createdAt: createdAt(),
     checkedAt: at("checked_at"),
+    // Lúc worker nhận lượt; worker khác bỏ qua lượt đang được giữ, worker chết giữa chừng thì quá hạn giữ là lấy lại được.
+    claimedAt: at("claimed_at"),
   },
   (t) => [
     index("photo_checks_queue")
       .on(t.createdAt)
       .where(sql`${t.status} = 'pending'`),
     index("photo_checks_latest").on(t.customerBankId, t.createdAt.desc()),
+    uniqueIndex("photo_checks_one_pending")
+      .on(t.customerBankId)
+      .where(sql`${t.status} = 'pending'`),
   ],
 );
 

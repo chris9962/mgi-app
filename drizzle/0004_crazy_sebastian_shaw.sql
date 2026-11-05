@@ -1,0 +1,2 @@
+ALTER TABLE "photo_checks" ADD COLUMN "claimed_at" timestamp with time zone;--> statement-breakpoint
+CREATE UNIQUE INDEX "photo_checks_one_pending" ON "photo_checks" USING btree ("customer_bank_id") WHERE "photo_checks"."status" = 'pending';
