@@ -10,10 +10,4 @@ export const ofSchools = (customerBankId: AnyColumn, schoolIds?: string[]): SQL 
       ? inArray(customerBankId, db.select({ id: customerBanks.id }).from(customerBanks).innerJoin(customers, eq(customers.id, customerBanks.customerId)).where(inArray(customers.schoolId, schoolIds)))
       : sql`false`;
 
-// Cờ --truong=<id>[,<id>] của hai worker.
-export const schoolsFlag = (argv: string[]): string[] | undefined =>
-  argv
-    .find((a) => a.startsWith("--truong="))
-    ?.slice("--truong=".length)
-    .split(",")
-    .filter(Boolean);
+export { schoolsFlag } from "./workerFlags";
