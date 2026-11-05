@@ -8,8 +8,6 @@ import { MAX_IMAGE_BYTES } from "@/lib/imageKey";
 import { studentApi } from "@/lib/studentApi";
 import type { StudentPhotoSlot } from "@/lib/studentState";
 
-const kb = (bytes: number) => `${Math.max(1, Math.round(bytes / 1024))} KB`;
-
 async function upload(customerBankId: string, slotId: string, file: File): Promise<string | null> {
   const compressed = await compressImage(file);
   if (!compressed && !contentTypeOf(file)) return "Không mở được ảnh này. Chọn ảnh khác.";
@@ -91,7 +89,7 @@ export function PhotoSlot({
               <img src={slot.photo.url} alt="" className="absolute inset-0 size-full object-cover" />
               <span className="absolute inset-x-0 bottom-0 flex flex-col bg-card/90 py-1 text-xs font-semibold text-text">
                 <span className="text-ok-ink">
-                  <span aria-hidden>✓ </span>Đã nộp {kb(slot.photo.sizeBytes)}
+                  <span aria-hidden>✓ </span>Đã gửi
                 </span>
                 <span>Chụp lại</span>
               </span>
