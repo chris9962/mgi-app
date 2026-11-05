@@ -1,19 +1,21 @@
 import { School } from "lucide-react";
 import { TopBar } from "@/components/shell/TopBar";
 import { Card } from "@/components/ui/Card";
+import { ExportButton } from "@/components/ui/ExportButton";
 import { Pager } from "@/components/ui/Pager";
 import { SearchBox } from "@/components/ui/SearchBox";
 import { StatusTag } from "@/components/ui/StatusTag";
 import { AddSchoolButton, SchoolActions } from "@/components/schools/SchoolActions";
 import { requirePage } from "@/server/auth/current";
 import { listProvinces, listSchools, PAGE_SIZE } from "@/server/schools";
+import { can } from "@/lib/permissions";
 
 export const metadata = { title: "Trường" };
 
 const shortProvince = (name: string) => name.replace(/^(Tỉnh|Thành phố)\s+/, "");
 
 export default async function SchoolsPage({ searchParams }: { searchParams: Promise<{ q?: string; page?: string }> }) {
-  await requirePage("schools");
+  const user = await requirePage("schools");
   const { q = "", page = "1" } = await searchParams;
   const [{ rows, total, page: current }, provinces] = await Promise.all([listSchools({ q, page: Number(page) || 1 }), listProvinces()]);
   const href = (p: number) => `/schools?${new URLSearchParams({ ...(q ? { q } : {}), page: String(p) })}`;
@@ -25,6 +27,7 @@ export default async function SchoolsPage({ searchParams }: { searchParams: Prom
         actions={
           <>
             <SearchBox action="/schools" placeholder="Tên trường, xã…" defaultValue={q} />
+            {can(user, "export_excel") && <ExportButton href={`/api/admin/schools/export?${new URLSearchParams(q ? { q } : {})}`} />}
             <AddSchoolButton provinces={provinces} />
           </>
         }

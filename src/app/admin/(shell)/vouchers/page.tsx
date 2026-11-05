@@ -2,12 +2,13 @@ import { TicketCheck } from "lucide-react";
 import Link from "next/link";
 import { TopBar } from "@/components/shell/TopBar";
 import { Card } from "@/components/ui/Card";
+import { ExportButton } from "@/components/ui/ExportButton";
 import { FilterChips } from "@/components/ui/FilterChips";
 import { Pager } from "@/components/ui/Pager";
 import { SearchBox } from "@/components/ui/SearchBox";
 import { UrlFilters } from "@/components/ui/UrlFilters";
 import { formatDate, formatDateTime } from "@/lib/dates";
-import { customerScope } from "@/lib/permissions";
+import { can, customerScope } from "@/lib/permissions";
 import { parseVoucherFilters, voucherFilterQuery } from "@/lib/voucherFilters";
 import { requirePage } from "@/server/auth/current";
 import { listVouchers, PAGE_SIZE } from "@/server/vouchers";
@@ -33,6 +34,7 @@ export default async function VouchersPage({ searchParams }: { searchParams: Pro
           <>
             <SearchBox action="/vouchers" placeholder="Mã voucher, họ tên…" defaultValue={f.q} hidden={dates} />
             <UrlFilters path="/vouchers" params={{ ...dates, ...(f.q ? { q: f.q } : {}) }} defs={[{ kind: "dates", id: "issued", label: "Ngày cấp", fromKey: "from", toKey: "to" }]} />
+            {can(user, "export_excel") && <ExportButton href={`/api/admin/vouchers/export?${voucherFilterQuery(f)}`} />}
           </>
         }
       />

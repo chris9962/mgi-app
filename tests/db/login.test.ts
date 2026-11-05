@@ -57,6 +57,18 @@ describe("đăng nhập", () => {
   });
 });
 
+describe("đăng nhập cùng lúc", () => {
+  test("10 request sai mật khẩu cùng lúc: đúng 4 lần báo sai, còn lại báo khoá, mật khẩu đúng sau đó vẫn bị khoá", async () => {
+    const id = await makeUser("burst");
+    const results = await Promise.all(Array.from({ length: 10 }, () => attemptLogin(TEST_PREFIX + "burst", "sai")));
+    expect(results.filter((r) => r.code === "bad_credentials").length).toBe(4);
+    expect(results.filter((r) => r.code === "locked").length).toBe(6);
+    const [row] = await db.select({ lockedUntil: users.lockedUntil }).from(users).where(eq(users.id, id));
+    expect(row.lockedUntil!.getTime()).toBeGreaterThan(Date.now());
+    expect((await attemptLogin(TEST_PREFIX + "burst", PASSWORD)).code).toBe("locked");
+  });
+});
+
 describe("phiên", () => {
   test("phiên dài 1 năm và đọc lại được người dùng", async () => {
     const id = await makeUser("session");

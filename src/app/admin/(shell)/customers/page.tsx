@@ -3,12 +3,14 @@ import Link from "next/link";
 import { bankTag } from "@/components/customers/customerView";
 import { TopBar } from "@/components/shell/TopBar";
 import { Card } from "@/components/ui/Card";
+import { ExportButton } from "@/components/ui/ExportButton";
 import { FilterChips } from "@/components/ui/FilterChips";
 import { Pager } from "@/components/ui/Pager";
 import { SearchBox } from "@/components/ui/SearchBox";
 import { UrlFilters, type FilterDef } from "@/components/ui/UrlFilters";
 import { CHECK_LABEL, CUSTOMER_STATUSES, CUSTOMER_STATUS_LABEL, PASSED_LABEL, customerFilterQuery, parseCustomerFilters, type CustomerFilters } from "@/lib/customerFilters";
 import { formatDate, formatShortDateTime } from "@/lib/dates";
+import { can } from "@/lib/permissions";
 import { formatPhone } from "@/lib/text";
 import { requirePage } from "@/server/auth/current";
 import { listCustomers, PAGE_SIZE, type ListBank } from "@/server/customerList";
@@ -62,6 +64,7 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
           <>
             <SearchBox action="/customers" placeholder="Họ tên, SĐT phụ huynh…" defaultValue={q} hidden={params} />
             <UrlFilters path="/customers" params={{ ...params, ...(q ? { q } : {}) }} defs={DEFS} />
+            {can(user, "export_excel") && <ExportButton href={`/api/admin/customers/export?${customerFilterQuery(f)}`} />}
           </>
         }
       />

@@ -44,18 +44,30 @@ const columns = {
 
 const base = () => db.select(columns).from(schools).innerJoin(wards, eq(wards.code, schools.wardCode)).innerJoin(provinces, eq(provinces.code, wards.provinceCode));
 
-export async function listSchools({ q, page }: { q: string; page: number }): Promise<{ rows: SchoolRow[]; total: number; page: number }> {
+const schoolWhere = (q: string) => {
   const term = q.trim();
-  const where = term ? or(matchesPlain(schools.name, term), matchesPlain(wards.name, term)) : undefined;
+  return term ? or(matchesPlain(schools.name, term), matchesPlain(wards.name, term)) : undefined;
+};
+const schoolOrder = [sql`${schools.active} desc`, asc(schools.name), asc(schools.id)];
+
+export async function listSchools({ q, page }: { q: string; page: number }): Promise<{ rows: SchoolRow[]; total: number; page: number }> {
+  const where = schoolWhere(q);
   const [{ total }] = await db.select({ total: count() }).from(schools).innerJoin(wards, eq(wards.code, schools.wardCode)).where(where);
   const safePage = Math.min(Math.max(1, Math.trunc(page) || 1), Math.max(1, Math.ceil(total / PAGE_SIZE)));
   const rows = await base()
     .where(where)
-    .orderBy(sql`${schools.active} desc`, asc(schools.name), asc(schools.id))
+    .orderBy(...schoolOrder)
     .limit(PAGE_SIZE)
     .offset((safePage - 1) * PAGE_SIZE);
   return { rows, total, page: safePage };
 }
+
+// Xuất Excel lấy trọn danh sách theo ô tìm đang xem, không lấy trang đang hiện.
+export const allSchools = (q: string, limit: number): Promise<SchoolRow[]> =>
+  base()
+    .where(schoolWhere(q))
+    .orderBy(...schoolOrder)
+    .limit(limit);
 
 export async function getSchool(id: string): Promise<SchoolRow | null> {
   const [row] = await base().where(eq(schools.id, id));
