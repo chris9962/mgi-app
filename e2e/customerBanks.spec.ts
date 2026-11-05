@@ -99,3 +99,16 @@ test("Bộ lọc: Esc trong ô tìm trường chỉ đóng gợi ý, Esc lần n
   await expect(admin.getByRole("button", { name: "Xong" })).toHaveCount(0);
   await expect(button).toBeFocused();
 });
+
+test("Bộ lọc: chọn 2 ngân hàng thì nút Bộ lọc đếm 1 mục đang bật, mục Ngân hàng ghi 2", async ({ browser }) => {
+  const admin = await loginAs(browser, "zz_e2e_admin");
+  await admin.goto("/customer-banks");
+  await admin.getByRole("button", { name: "Bộ lọc" }).click();
+  const sections = admin.getByRole("navigation", { name: "Mục lọc" });
+  await sections.getByRole("button", { name: "Ngân hàng" }).click();
+  await admin.getByRole("checkbox", { name: "ZZE2E HS VPBank" }).check();
+  await admin.getByRole("checkbox", { name: "ZZE2E HS TPBank" }).check();
+  await expect(admin).toHaveURL(/bank=[^&]+%2C/);
+  await expect(sections.getByRole("button", { name: "Ngân hàng" })).toHaveText("Ngân hàng2");
+  await expect(admin.getByRole("button", { name: /^Bộ lọc/ })).toHaveText("Bộ lọc1 đang bật");
+});

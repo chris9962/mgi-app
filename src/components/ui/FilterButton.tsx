@@ -14,7 +14,8 @@ export function FilterButton({ sections, onClear }: { sections: FilterSection[];
   const trigger = useRef<HTMLButtonElement>(null);
   const panel = useRef<HTMLDivElement>(null);
   const paneId = useId();
-  const active = sections.reduce((n, s) => n + s.count, 0);
+  // Nút đếm số mục đang lọc như mgst-app; số giá trị chọn trong một mục hiện ở mục đó.
+  const active = sections.filter((s) => s.count > 0).length;
   const selected = sections.find((s) => s.id === picked) ?? sections[0];
 
   // Nghe Esc và bấm ra ngoài trên document khi bảng mở; bỏ nghe khi bảng đóng.
