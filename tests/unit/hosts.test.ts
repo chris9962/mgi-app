@@ -35,3 +35,16 @@ describe("routeFor", () => {
     expect(routeFor(null, "/users", hosts)).toEqual({ kind: "notFound" });
   });
 });
+
+describe("matcher của proxy", () => {
+  test("file tĩnh trong public đi thẳng, không qua proxy", async () => {
+    const { config } = await import("../../src/proxy");
+    const re = new RegExp(`^${config.matcher[0].replace("/((?!", "/(?!").replace(").*)", ").*")}$`);
+    expect(re.test("/zxing_reader.wasm")).toBe(false);
+    expect(re.test("/brand/logo.png")).toBe(false);
+    expect(re.test("/_next/static/chunk.js")).toBe(false);
+    expect(re.test("/users")).toBe(true);
+    expect(re.test("/api/admin/images")).toBe(true);
+    expect(re.test("/admin/users")).toBe(true);
+  });
+});

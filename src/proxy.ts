@@ -10,6 +10,7 @@ export function proxy(request: NextRequest) {
   return NextResponse.rewrite(url);
 }
 
+// File tĩnh trong public (ảnh, font, wasm của bộ đọc QR) đi thẳng; rewrite sang /admin thì trình duyệt nhận 404.
 export const config = {
-  matcher: ["/((?!_next/|favicon.ico|brand/|fonts/).*)"],
+  matcher: ["/((?!_next/|.*\\.(?:png|jpe?g|webp|svg|ico|woff2?|wasm|txt|webmanifest)$).*)"],
 };

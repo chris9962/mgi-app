@@ -18,7 +18,10 @@ export async function cleanTestUsers() {
       .where(or(like(s.referralCodes.displayName, `${TEST_NAME}%`), banks.length ? inArray(s.referralCodes.bankId, banks) : undefined))
   ).map((r) => r.id);
   const schools = (await db.select({ id: s.schools.id }).from(s.schools).where(like(s.schools.name, `${TEST_NAME}%`))).map((r) => r.id);
+  const testCustomers = schools.length ? (await db.select({ id: s.customers.id }).from(s.customers).where(inArray(s.customers.schoolId, schools))).map((r) => r.id) : [];
+  if (testCustomers.length) await db.delete(s.customerBanks).where(inArray(s.customerBanks.customerId, testCustomers));
   if (codes.length) {
+    await db.delete(s.customerBanks).where(inArray(s.customerBanks.referralCodeId, codes));
     await db.delete(s.referralCodeSchools).where(inArray(s.referralCodeSchools.referralCodeId, codes));
     await db.delete(s.referralCodeMonths).where(inArray(s.referralCodeMonths.referralCodeId, codes));
     await db.delete(s.referralCodes).where(inArray(s.referralCodes.id, codes));
