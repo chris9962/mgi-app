@@ -43,7 +43,9 @@ export function Steps({ current }: { current: 1 | 2 | 3 }) {
   );
 }
 
-export function EndBlock({ title, hint, mark }: { title: string; hint?: string; mark?: boolean }) {
+// Màn chỉ có khối này (H0, lỗi tải) thì tiêu đề là h1; màn có AppHead thì là h2.
+export function EndBlock({ title, hint, mark, main }: { title: string; hint?: string; mark?: boolean; main?: boolean }) {
+  const Heading = main ? "h1" : "h2";
   return (
     <div className="flex flex-1 flex-col items-center justify-center gap-2 py-10 text-center">
       {mark && (
@@ -51,7 +53,7 @@ export function EndBlock({ title, hint, mark }: { title: string; hint?: string; 
           !
         </span>
       )}
-      <h2 className="text-lg font-semibold">{title}</h2>
+      <Heading className="text-lg font-semibold">{title}</Heading>
       {hint && <p className="text-sm text-text-2">{hint}</p>}
     </div>
   );

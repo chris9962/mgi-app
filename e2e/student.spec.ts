@@ -7,7 +7,7 @@ const PHOTO = "public/brand/photo.jpg";
 
 test("Học sinh quét link trường, khai thông tin, chọn 2 ngân hàng, nộp ảnh mọi khung, gửi kiểm tra", async ({ page }) => {
   await page.goto("/");
-  await expect(page.getByRole("heading", { name: "Chưa có trường" })).toBeVisible();
+  await expect(page.getByRole("heading", { level: 1, name: "Chưa có trường" })).toBeVisible();
 
   await page.goto(`/t/${E2E_STUDENT_SCHOOL_ID}`);
   await expect(page.getByText(E2E_STUDENT_SCHOOL)).toBeVisible();

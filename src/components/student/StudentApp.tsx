@@ -103,7 +103,7 @@ export function StudentApp({ linkId }: { linkId?: string }) {
     case "error":
       return (
         <>
-          <EndBlock title="Không tải được" hint={screen.message} />
+          <EndBlock main title="Không tải được" hint={screen.message} />
           <Bottom>
             <Button large block onClick={() => go()}>
               Thử lại
@@ -114,7 +114,7 @@ export function StudentApp({ linkId }: { linkId?: string }) {
     case "noSchool":
       return (
         <>
-          <EndBlock title="Chưa có trường" hint="Quét mã QR dán ở trường." />
+          <EndBlock main title="Chưa có trường" hint="Quét mã QR dán ở trường." />
           <Bottom>
             <Button large block onClick={() => setScanning(true)}>
               Quét mã QR
@@ -133,12 +133,7 @@ export function StudentApp({ linkId }: { linkId?: string }) {
         </>
       );
     case "closed":
-      return (
-        <>
-          <AppHead school={screen.school.name} title="Trường đã đóng" />
-          <EndBlock title="Trường đã đóng" />
-        </>
-      );
+      return <AppHead school={screen.school.name} title="Trường đã đóng" />;
     case "ask":
       return <SwitchSchool current={screen.current} next={screen.next} onSwitch={() => go()} onKeep={() => go()} />;
     case "form":
