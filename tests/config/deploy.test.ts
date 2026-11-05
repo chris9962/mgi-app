@@ -68,6 +68,15 @@ describe("script deploy", () => {
     expect(text.slice(sharpCheck, text.indexOf("\n", sharpCheck))).toContain(".webp(");
   });
 
+  test("bước đọc bảng users (đăng nhập sai) chỉ chạy sau migrate: migration thêm cột users không làm bước thử image trả 500", () => {
+    const text = read("deploy/deploy.sh");
+    const migrate = text.indexOf("bun run db:migrate");
+    const logins = [...text.matchAll(/\$\(ma_login /g)].map((m) => m.index!);
+    expect(logins.length).toBeGreaterThan(0);
+    for (const at of logins) expect(at).toBeGreaterThan(migrate);
+    expect(text.slice(text.indexOf("== 7/7"))).toMatch(/MA_DB" = "401"/);
+  });
+
   test("worker kiểm ảnh: thử OCR trả ready trước khi thay, trần RAM đủ cho HEIC 48 MP, chờ dừng lâu hơn hạn đọc một ảnh", () => {
     const text = read("deploy/worker-photo.sh");
     expect(text).toContain("--target photo-check");

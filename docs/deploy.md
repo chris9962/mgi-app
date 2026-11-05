@@ -252,9 +252,11 @@ cd /opt/mgi-bank && git pull && ./deploy/deploy.sh
 | 1 | lấy code, kiểm `.env.local`, cài gói, dựng image `mgi-bank-app:new`, thử image ở cổng 3201, sao lưu DB vào `/root/mgi-bank-truoc-deploy-<ngày giờ>.dump` | không |
 | 2 | bật bảo trì, migrate, đổi container, kiểm, gắn tag `:latest`, tắt bảo trì | vài chục giây |
 
-Bước thử image chạy `sharp` đổi một ảnh nhỏ sang WebP trong image mới trước. Image thiếu thư viện native của `sharp` thì script dừng ở đây, chưa đụng container đang chạy. Sau đó bước thử đòi bốn điều: `/login` trả 200 với Host quản lý, API quản lý chưa đăng nhập trả 401, web học sinh trả 200 với Host học sinh, đăng nhập sai trả 401. Điều cuối chứng minh app nối được DB. Log container thử không được có `ECONNREFUSED`, `ERR_DLOPEN`, `Failed query`.
+Bước thử image chạy `sharp` đổi một ảnh nhỏ sang WebP trong image mới trước. Image thiếu thư viện native của `sharp` thì script dừng ở đây, chưa đụng container đang chạy. Sau đó bước thử đòi ba điều: `/login` trả 200 với Host quản lý, API quản lý chưa đăng nhập trả 401, web học sinh trả 200 với Host học sinh. Ba đường này không đọc DB. Log container thử không được có `ECONNREFUSED`, `ERR_DLOPEN`, `Failed query`.
 
-Bước kiểm sau khi đổi container không đạt thì script tự lùi về container cũ rồi mới tắt bảo trì, thoát mã 1. Lượt deploy đầu tiên không có container cũ để lùi.
+Bước thử image không gọi đường đọc DB, vì lúc đó DB chưa migrate. Code mới đọc cột mà migration mới thêm thì trả 500, và deploy sẽ dừng ở bước này mãi.
+
+Bước kiểm sau khi migrate và đổi container đòi thêm điều thứ tư: đăng nhập sai trả 401. Điều này chứng minh code mới đọc được DB đã migrate. Không đạt thì script tự lùi về container cũ rồi mới tắt bảo trì, thoát mã 1. Lượt deploy đầu tiên không có container cũ để lùi.
 
 `deploy/worker-photo.sh` dựng image tầng `photo-check`, thử tiến trình OCR trả `{"ready": true}`, rồi thay container `mgi-bank-photo`. Container có trần `PHOTO_CHECK_MEMORY` (mặc định `4g`) và `PHOTO_CHECK_CPUS` (mặc định `2`), chờ dừng 150 giây để làm nốt ảnh đang đọc. Lần dựng đầu tải khoảng 1,5 GB gói và model. Worker hết RAM giữa chừng thì lượt đang đọc được nhận lại tối đa 3 lần rồi ghi Lỗi kiểm.
 

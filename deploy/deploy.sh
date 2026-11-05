@@ -57,8 +57,7 @@ thu() {
 thu 200 "$(ma_http "$CONG_THU" "$ADMIN_HOST" /login)" "trang đăng nhập"
 thu 401 "$(ma_http "$CONG_THU" "$ADMIN_HOST" /api/admin/schools/options)" "API quản lý chưa đăng nhập"
 thu 200 "$(ma_http "$CONG_THU" "$STUDENT_HOST" /)" "web học sinh"
-# Đăng nhập sai đọc bảng users: 401 nghĩa là app nối được DB, 500 là không.
-thu 401 "$(ma_login "$CONG_THU" "$ADMIN_HOST")" "đăng nhập sai qua DB"
+# Không thử đường đọc DB ở đây: DB chưa migrate, code mới đọc cột chưa có thì trả 500 và deploy không bao giờ qua được bước này.
 LOI="$(docker logs "$TEN-app-thu" 2>&1 | grep -c "$MAU_LOI" || true)"
 docker rm -f "$TEN-app-thu" >/dev/null
 [ "$LOI" = "0" ] || { echo "KHÔNG ĐẠT: log container thử có $LOI dòng lỗi." >&2; exit 1; }
@@ -93,9 +92,11 @@ echo "== 7/7 Kiểm bản mới =="
 MA_LOGIN="$(ma_http "$CONG_APP" "$ADMIN_HOST" /login)"
 MA_API="$(ma_http "$CONG_APP" "$ADMIN_HOST" /api/admin/schools/options)"
 MA_HS="$(ma_http "$CONG_APP" "$STUDENT_HOST" /)"
+# Đăng nhập sai đọc bảng users sau migrate: 401 nghĩa là code mới đọc được DB đã migrate, 500 là không.
+MA_DB="$(ma_login "$CONG_APP" "$ADMIN_HOST")"
 LOI="$(docker logs "$APP" 2>&1 | grep -c "$MAU_LOI" || true)"
-echo "  /login $MA_LOGIN, API $MA_API, web học sinh $MA_HS, lỗi trong log $LOI"
-if [ "$MA_LOGIN" = "200" ] && [ "$MA_API" = "401" ] && [ "$MA_HS" = "200" ] && [ "$LOI" = "0" ]; then
+echo "  /login $MA_LOGIN, API $MA_API, web học sinh $MA_HS, đăng nhập sai qua DB $MA_DB, lỗi trong log $LOI"
+if [ "$MA_LOGIN" = "200" ] && [ "$MA_API" = "401" ] && [ "$MA_HS" = "200" ] && [ "$MA_DB" = "401" ] && [ "$LOI" = "0" ]; then
   docker tag "$IMAGE:new" "$IMAGE:latest"
   ./deploy/maintenance-off.sh
   echo
