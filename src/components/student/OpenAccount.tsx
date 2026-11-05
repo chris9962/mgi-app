@@ -1,0 +1,174 @@
+"use client";
+
+import { clsx } from "clsx";
+import { ExternalLink } from "lucide-react";
+import { useRef, useState, type KeyboardEvent } from "react";
+import { Button } from "@/components/ui/Button";
+import { ConfirmDialog } from "@/components/users/ConfirmDialog";
+import { studentApi } from "@/lib/studentApi";
+import type { StudentBank, StudentState } from "@/lib/studentState";
+import { AppHead, Bottom, Steps } from "./parts";
+import { PhotoSlot } from "./PhotoSlot";
+
+const complete = (b: StudentBank) => b.slots.every((s) => s.photo);
+
+function CodeBox({ bank }: { bank: StudentBank }) {
+  const [copied, setCopied] = useState(false);
+  if (!bank.referralCode && !bank.qrUrl && !bank.openUrl) return null;
+  return (
+    <div className="flex gap-3 rounded-2xl border border-line bg-card p-3">
+      {bank.qrUrl && (
+        // eslint-disable-next-line @next/next/no-img-element
+        <img src={bank.qrUrl} alt={`QR mã giới thiệu ${bank.name}`} width={96} height={96} className="size-24 flex-none rounded-lg border border-line bg-white object-contain" />
+      )}
+      <div className="flex min-w-0 flex-col items-start gap-1.5">
+        {bank.referralCode && (
+          <>
+            <span className="text-[13px] text-text-2">Mã giới thiệu</span>
+            <strong className="break-all font-mono text-lg">{bank.referralCode}</strong>
+            <Button
+              variant="secondary"
+              onClick={async () => {
+                await navigator.clipboard?.writeText(bank.referralCode).catch(() => undefined);
+                setCopied(true);
+              }}
+            >
+              {copied ? "Đã sao chép" : "Sao chép"}
+            </Button>
+          </>
+        )}
+        {bank.openUrl && (
+          <a
+            href={bank.openUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-flex h-9 items-center gap-2 rounded-[10px] border border-line bg-card px-3.5 text-sm font-semibold text-text hover:bg-surface"
+          >
+            <ExternalLink size={14} aria-hidden />
+            Quét QR code
+          </a>
+        )}
+      </div>
+    </div>
+  );
+}
+
+function BankPanel({ bank, onSaved }: { bank: StudentBank; onSaved: () => Promise<void> }) {
+  const done = bank.slots.filter((s) => s.photo).length;
+  return (
+    <div className="flex flex-col gap-4">
+      {bank.steps.length > 0 && (
+        <ol className="flex list-decimal flex-col gap-1.5 pl-5 text-sm">
+          {bank.steps.map((step, i) => (
+            <li key={i}>{step}</li>
+          ))}
+        </ol>
+      )}
+      <CodeBox bank={bank} />
+      {bank.slots.length > 0 && (
+        <section aria-label={`Ảnh cần nộp ${bank.name}`} className="flex flex-col gap-2">
+          <h3 className="text-[13px] text-text-2">
+            Ảnh cần nộp {done}/{bank.slots.length}
+          </h3>
+          <ul className="flex flex-col gap-4">
+            {bank.slots.map((slot, i) => (
+              <PhotoSlot key={slot.id} index={i + 1} customerBankId={bank.id} slot={slot} onSaved={onSaved} />
+            ))}
+          </ul>
+        </section>
+      )}
+    </div>
+  );
+}
+
+export function OpenAccount({ state, onChange }: { state: StudentState; onChange: () => Promise<void> }) {
+  const banks = state.banks;
+  const [active, setActive] = useState(banks[0]?.id ?? "");
+  const [confirmBack, setConfirmBack] = useState(false);
+  const [error, setError] = useState("");
+  const tabs = useRef<(HTMLButtonElement | null)[]>([]);
+  const current = banks.find((b) => b.id === active) ?? banks[0];
+  const hasPhoto = banks.some((b) => b.slots.some((s) => s.photo));
+
+  async function back(): Promise<string | null> {
+    const r = await studentApi("DELETE", "/api/customers/me/banks");
+    if (!r.ok) return r.message;
+    await onChange();
+    return null;
+  }
+
+  // Bàn phím trong tablist: mũi tên trái phải chuyển tab theo mẫu tab của WAI-ARIA.
+  function onTabKey(event: KeyboardEvent, i: number) {
+    const step = event.key === "ArrowRight" ? 1 : event.key === "ArrowLeft" ? -1 : 0;
+    if (!step) return;
+    event.preventDefault();
+    const next = (i + step + banks.length) % banks.length;
+    setActive(banks[next].id);
+    tabs.current[next]?.focus();
+  }
+
+  return (
+    <>
+      <AppHead school={state.school.name} title="Mở tài khoản" />
+      <Steps current={3} />
+      <div role="tablist" aria-label="Ngân hàng đã chọn" className="mb-4 flex gap-2 border-b border-line">
+        {banks.map((b, i) => (
+          <button
+            key={b.id}
+            ref={(el) => {
+              tabs.current[i] = el;
+            }}
+            type="button"
+            role="tab"
+            id={`tab-${b.id}`}
+            aria-controls={`panel-${b.id}`}
+            aria-selected={b.id === current.id}
+            tabIndex={b.id === current.id ? 0 : -1}
+            onClick={() => setActive(b.id)}
+            onKeyDown={(e) => onTabKey(e, i)}
+            className={clsx("-mb-px flex items-center gap-2 border-b-2 px-3 py-2.5 text-[15px] font-semibold", b.id === current.id ? "border-accent text-text" : "border-transparent text-text-2")}
+          >
+            <span aria-hidden className={clsx("grid size-4 place-items-center rounded-full text-[10px] leading-none", complete(b) ? "border border-ok bg-ok-soft text-ok-ink" : "border border-field-border")}>
+              {complete(b) ? "✓" : ""}
+            </span>
+            {b.name}
+            <span className="sr-only">{complete(b) ? ", đủ ảnh" : ", chưa đủ ảnh"}</span>
+          </button>
+        ))}
+      </div>
+      {banks.map((b) => (
+        <div key={b.id} role="tabpanel" id={`panel-${b.id}`} aria-labelledby={`tab-${b.id}`} hidden={b.id !== current.id}>
+          <BankPanel bank={b} onSaved={onChange} />
+        </div>
+      ))}
+      {error && (
+        <p role="alert" className="mt-3 text-sm text-danger">
+          {error}
+        </p>
+      )}
+      <Bottom>
+        <Button
+          variant="secondary"
+          large
+          block
+          onClick={async () => {
+            if (hasPhoto) return setConfirmBack(true);
+            const message = await back();
+            if (message) setError(message);
+          }}
+        >
+          Quay lại chọn ngân hàng
+        </Button>
+      </Bottom>
+      <ConfirmDialog
+        open={confirmBack}
+        title="Quay lại chọn ngân hàng"
+        text="Xoá ảnh đã nộp và quay lại chọn ngân hàng?"
+        confirmLabel="Quay lại"
+        danger
+        onConfirm={back}
+        onClose={() => setConfirmBack(false)}
+      />
+    </>
+  );
+}

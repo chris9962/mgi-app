@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useEffectEvent, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { clearProfile, decideLink, isSchoolId, readDevice, saveSchool } from "@/lib/studentDevice";
 import { studentApi } from "@/lib/studentApi";
@@ -8,6 +8,7 @@ import type { StudentSchool, StudentState } from "@/lib/studentState";
 import { AppHead, Bottom, EndBlock, Steps } from "./parts";
 import { ChooseBanks, NoBank } from "./ChooseBanks";
 import { InfoForm } from "./InfoForm";
+import { OpenAccount } from "./OpenAccount";
 import { QrScanner } from "./QrScanner";
 
 type Screen =
@@ -80,6 +81,17 @@ export function StudentApp({ linkId }: { linkId?: string }) {
     setScreen(next.kind === "profile" ? { ...next, notice } : next);
   };
 
+  // Học sinh qua app ngân hàng rồi quay lại web: tải lại hồ sơ để có link ảnh mới và trạng thái mới.
+  const refresh = useEffectEvent(() => {
+    if (document.visibilityState === "visible") go();
+  });
+  const onProfile = screen.kind === "profile";
+  useEffect(() => {
+    if (!onProfile) return;
+    document.addEventListener("visibilitychange", refresh);
+    return () => document.removeEventListener("visibilitychange", refresh);
+  }, [onProfile]);
+
   switch (screen.kind) {
     case "loading":
       return (
@@ -141,12 +153,14 @@ export function StudentApp({ linkId }: { linkId?: string }) {
   }
 }
 
-function Profile({ state, notice, onChange }: { state: StudentState; notice?: string; onChange: (notice?: string) => void }) {
+function Profile({ state, notice, onChange }: { state: StudentState; notice?: string; onChange: (notice?: string) => Promise<void> }) {
   switch (state.customer.status) {
     case "new":
       return <ChooseBanks key={state.eligibleBanks.map((b) => b.id).join()} state={state} notice={notice} onDone={onChange} />;
     case "no_bank":
       return <NoBank state={state} />;
+    case "banks_selected":
+      return <OpenAccount state={state} onChange={() => onChange()} />;
     default:
       return <AppHead school={state.school.name} title={`${state.customer.fullName} - ${state.customer.className}`} />;
   }

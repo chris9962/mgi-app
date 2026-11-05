@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 import { allowedExt, FOLDERS, isImageKey, MAX_IMAGE_BYTES, type Folder } from "@/lib/imageKey";
@@ -18,8 +18,15 @@ function readConfig(): Config {
   return { endpoint, region, bucket, accessKeyId, secretAccessKey };
 }
 
+// WHEN_REQUIRED: SDK mặc định ký thêm checksum của body rỗng vào presigned PUT, trình duyệt gửi ảnh thật thì S3 từ chối.
 const client = (c: Config) =>
-  new S3Client({ region: c.region, endpoint: c.endpoint, forcePathStyle: true, credentials: { accessKeyId: c.accessKeyId, secretAccessKey: c.secretAccessKey } });
+  new S3Client({
+    region: c.region,
+    endpoint: c.endpoint,
+    forcePathStyle: true,
+    requestChecksumCalculation: "WHEN_REQUIRED",
+    credentials: { accessKeyId: c.accessKeyId, secretAccessKey: c.secretAccessKey },
+  });
 
 // Nhận diện ảnh bằng chữ ký đầu file như mgst-app, không tin Content-Type trình duyệt khai.
 const SIGNATURES: { ext: string; mime: string; test: (b: Uint8Array) => boolean }[] = [
@@ -60,6 +67,23 @@ export async function putImage(bytes: Uint8Array, folder: Folder): Promise<{ ok:
 export async function presignGet(key: string, seconds = 600): Promise<string> {
   const c = readConfig();
   return getSignedUrl(client(c), new GetObjectCommand({ Bucket: c.bucket, Key: key }), { expiresIn: seconds });
+}
+
+export async function presignPut(key: string, contentType: string, seconds = 600): Promise<string> {
+  if (!isValidKey(key)) throw new Error("Khoá ảnh không hợp lệ.");
+  const c = readConfig();
+  return getSignedUrl(client(c), new PutObjectCommand({ Bucket: c.bucket, Key: key, ContentType: contentType }), { expiresIn: seconds });
+}
+
+export async function headSize(key: string): Promise<number | null> {
+  const c = readConfig();
+  try {
+    const r = await client(c).send(new HeadObjectCommand({ Bucket: c.bucket, Key: key }));
+    return r.ContentLength ?? 0;
+  } catch (e) {
+    if ((e as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode === 404) return null;
+    throw e;
+  }
 }
 
 export async function deleteImage(key: string): Promise<void> {

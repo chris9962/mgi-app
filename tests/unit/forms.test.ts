@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { CodeForm } from "../../src/lib/codeForm";
 import { GuideForm } from "../../src/lib/bankForm";
-import { allowedExt, isImageKey } from "../../src/lib/imageKey";
+import { ADMIN_FOLDERS, allowedExt, extForMime, isImageKey } from "../../src/lib/imageKey";
 
 const UUID = "3f2b9c1e-8a4d-4f6b-9c2e-1a2b3c4d5e6f";
 const BANK = "6c7d8e9f-1a2b-4c3d-8e4f-5a6b7c8d9e0f";
@@ -33,5 +33,23 @@ describe("đuôi ảnh theo thư mục", () => {
     expect(allowedExt("qr", "heic")).toBe(false);
     expect(allowedExt("samples", "jpg")).toBe(true);
     expect(allowedExt("qr", "png")).toBe(true);
+  });
+});
+
+describe("ảnh học sinh", () => {
+  test("thư mục proofs nhận cả HEIC của iPhone", () => {
+    expect(isImageKey(`proofs/2026-11-05/${UUID}.heic`, "proofs")).toBe(true);
+    expect(allowedExt("proofs", "heic")).toBe(true);
+    expect(allowedExt("proofs", "webp")).toBe(true);
+    expect(allowedExt("proofs", "gif")).toBe(false);
+  });
+  test("đuôi theo loại ảnh trình duyệt khai, loại lạ thì null", () => {
+    expect(extForMime("image/webp")).toBe("webp");
+    expect(extForMime("image/jpeg")).toBe("jpg");
+    expect(extForMime("image/heif")).toBe("heic");
+    expect(extForMime("text/html")).toBeNull();
+  });
+  test("trang quản lý không tải ảnh vào thư mục proofs", () => {
+    expect(ADMIN_FOLDERS).not.toContain("proofs");
   });
 });

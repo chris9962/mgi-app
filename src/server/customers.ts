@@ -1,15 +1,16 @@
 import { randomBytes } from "node:crypto";
 import { isIP } from "node:net";
-import { and, asc, count, eq, inArray } from "drizzle-orm";
+import { and, asc, count, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "./db/client";
-import { banks, customerBanks, customerExistingBanks, customers, referralCodeMonths, referralCodeSchools, referralCodes, schools } from "./db/schema";
+import { bankPhotoSlots, banks, customerBanks, customerExistingBanks, customers, proofPhotos, referralCodeMonths, referralCodeSchools, referralCodes, schools } from "./db/schema";
+import { s3PhotoStore, type PhotoStore } from "./customerPhotos";
 import { hashToken } from "./auth/session";
 import { publicSchool } from "./schools";
 import { getSettings } from "./settings";
 import { currentYearMonth, isYearMonth } from "@/lib/month";
 import { plain } from "@/lib/text";
 import type { CustomerFormValues } from "@/lib/customerForm";
-import type { StudentState } from "@/lib/studentState";
+import type { StudentBank, StudentState } from "@/lib/studentState";
 
 export type Customer = typeof customers.$inferSelect;
 
@@ -153,7 +154,64 @@ export async function reserveBanks(customer: Customer, bankIds: string[], month 
   });
 }
 
-export async function studentState(customer: Customer, month = currentYearMonth()): Promise<StudentState> {
+async function chosenBanks(customer: Customer, store: PhotoStore): Promise<StudentBank[]> {
+  const rows = await db
+    .select({
+      id: customerBanks.id,
+      bankId: customerBanks.bankId,
+      name: banks.name,
+      slot: customerBanks.slot,
+      status: customerBanks.status,
+      referralCode: customerBanks.referralCode,
+      guide: banks.guide,
+      qrKey: referralCodes.qrKey,
+      openUrl: referralCodes.openUrl,
+    })
+    .from(customerBanks)
+    .innerJoin(banks, eq(banks.id, customerBanks.bankId))
+    .innerJoin(referralCodes, eq(referralCodes.id, customerBanks.referralCodeId))
+    .where(eq(customerBanks.customerId, customer.id))
+    .orderBy(asc(customerBanks.slot));
+  // Hướng dẫn, mã và khung ảnh chỉ cần ở B3; gửi kiểm tra xong web chỉ hiện trạng thái.
+  const guide = customer.status === "banks_selected" && rows.length > 0;
+  const [slots, photos] = guide
+    ? await Promise.all([
+        db
+          .select()
+          .from(bankPhotoSlots)
+          .where(and(inArray(bankPhotoSlots.bankId, rows.map((r) => r.bankId)), isNull(bankPhotoSlots.removedAt)))
+          .orderBy(asc(bankPhotoSlots.sortOrder), asc(bankPhotoSlots.name)),
+        db
+          .select()
+          .from(proofPhotos)
+          .where(and(inArray(proofPhotos.customerBankId, rows.map((r) => r.id)), isNull(proofPhotos.replacedAt))),
+      ])
+    : [[], []];
+  const sign = (key: string | null) => (key ? store.signGet(key) : Promise.resolve(null));
+  return Promise.all(
+    rows.map(async (r) => ({
+      id: r.id,
+      bankId: r.bankId,
+      name: r.name,
+      slot: r.slot,
+      status: r.status,
+      referralCode: guide ? r.referralCode : "",
+      qrUrl: guide ? await sign(r.qrKey) : null,
+      openUrl: guide ? r.openUrl : null,
+      steps: guide && Array.isArray(r.guide) ? (r.guide as string[]) : [],
+      slots: await Promise.all(
+        slots
+          .filter((s) => s.bankId === r.bankId)
+          .map(async (s) => {
+            const photo = photos.find((p) => p.customerBankId === r.id && p.slotId === s.id);
+            return { id: s.id, name: s.name, sampleUrl: await sign(s.sampleKey), photo: photo ? { url: await store.signGet(photo.s3Key), sizeBytes: photo.sizeBytes ?? 0 } : null };
+          }),
+      ),
+    })),
+  );
+}
+
+export async function studentState(customer: Customer, month = currentYearMonth(), store: PhotoStore = s3PhotoStore): Promise<StudentState> {
   const [school] = await db.select({ id: schools.id, name: schools.name }).from(schools).where(eq(schools.id, customer.schoolId));
   const [existing, settings] = await Promise.all([existingBankIds(db, customer.id), getSettings()]);
   const existingBanks = existing.size ? (await db.select({ name: banks.name }).from(banks).where(inArray(banks.id, [...existing])).orderBy(asc(banks.sortOrder), asc(banks.name))).map((b) => b.name) : [];
@@ -172,6 +230,7 @@ export async function studentState(customer: Customer, month = currentYearMonth(
     school,
     eligibleBanks,
     existingBanks,
+    banks: await chosenBanks({ ...customer, status }, store),
     zaloUrl: settings.zaloUrl,
     pviAppUrl: settings.pviAppUrl,
   };

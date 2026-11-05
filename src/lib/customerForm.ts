@@ -33,3 +33,6 @@ export type CustomerFormInput = z.input<typeof CustomerForm>;
 export type CustomerFormValues = z.output<typeof CustomerForm>;
 
 export const BankChoiceForm = z.object({ bankIds: z.array(z.uuid()).min(1, "Chọn ngân hàng").max(2, "Chọn tối đa 2 ngân hàng") });
+
+export const PhotoUploadForm = z.object({ customerBankId: z.uuid(), slotId: z.uuid(), contentType: z.string().max(100) });
+export const PhotoRecordForm = z.object({ customerBankId: z.uuid(), slotId: z.uuid(), key: z.string().max(200) });
