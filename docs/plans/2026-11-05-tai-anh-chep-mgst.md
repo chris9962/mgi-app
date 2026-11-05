@@ -88,10 +88,34 @@ Agent làm xong 4 task ngày 2026-11-05, commit a04b2ae tới commit ghi mục n
 
 | Việc | Lý do, khi nào |
 |---|---|
-| App đổi HEIC bằng `heic-convert` trong JavaScript, không giới hạn số điểm ảnh; HEIC 48 MP tốn khoảng 1,2 GB RAM. Container app production không đặt trần RAM; bản test đặt trần 1 GB nên có thể chết với ảnh đó | Khi đo RAM app thật hoặc khi gặp ca HEIC lớn |
+| App đổi HEIC bằng `heic-convert` trong JavaScript, không giới hạn số điểm ảnh; HEIC 48 MP tốn khoảng 1,2 GB RAM. Container app production không đặt trần RAM; bản test đặt trần 1 GB nên có thể chết với ảnh đó | Xong ở lượt sửa theo review lần 1: trần HEIC 50 MP, đổi HEIC từng ảnh một; giai đoạn 7 đặt `APP_MEMORY` 3g cho production, 2g cho bản test |
 | Chủ dự án xác nhận luật trường đã đóng: học sinh đã giữ chỗ vẫn nộp ảnh (ruling ở trên) | Khi chủ dự án đọc kế hoạch này |
 | 3 hồ sơ thử tay của chủ dự án mất dòng ngân hàng và ảnh vì lỗi `e2e-clean` trước khi sửa; agent không khôi phục được | Chủ dự án tạo lại nếu cần |
 | `deploy.sh` không thử ghi S3: bỏ `requestChecksumCalculation` mới kiểm trên bucket dev | Lần deploy đầu: gửi một ảnh thật ở web học sinh rồi xem Trang 4 |
 | Bước thử sharp mới chạy trên image dựng ở máy Mac arm64 | Lần deploy đầu trên máy chủ x86_64 |
 | Ảnh HEIC máy chủ không đổi được thì giữ bản gốc; worker kiểm ảnh đổi lại bằng chính `heic-convert` nên nhiều khả năng cũng lỗi và ghi Lỗi kiểm | Khi gặp ca thật |
 | `writeImage` ở `storage.ts` chỉ còn test dùng | Khi sửa file này |
+| `replacePhoto` ở `src/server/review.ts` để lại object vừa ghi khi transaction ném lỗi; job dọn ảnh mồ côi xoá sau 24 giờ | Khi sửa ảnh thay thế (review lần 1, để lại) |
+| Worker kiểm ảnh đổi HEIC gốc mà không kiểm trần điểm ảnh: HEIC vượt trần 50 MP mà app giữ bản gốc vẫn được worker giải mã khi kiểm ảnh. Container kiểm ảnh trần 4 GB và đổi từng ảnh một | Khi gặp ca thật, hoặc dùng chung `heicPixels` ở `photoBytes` |
+| Ca HEIC của test OCR thật (`tests/s3/photoCheckOcr.test.ts`) còn dựng ảnh bằng `sips`, máy không có `sips` thì bỏ qua: ảnh cần chữ đọc được nên không dùng ảnh dựng sẵn 320x240 | Khi chạy test OCR trên Linux |
+
+### Sửa theo review lần 1
+
+Review mới trên af17493 không có lỗi Critical, có 1 lỗi Important. Người điều phối nâng 3 lỗi Minor và thêm 1 lỗi nhỏ. Mỗi mục một commit, từ 65172df tới commit ghi mục này. `test:db` và `test:s3` chạy trên database tạm `zz_test_upload`, vì agent khác dùng chung container Postgres.
+
+- Important, trần điểm ảnh (65172df, a4f08ee). Route nộp ảnh mở cho học sinh không đăng nhập. Bản cũ giải mã ảnh HEIC 10240x10240 nền phẳng 48 KB mất 3,5 giây và 1,27 GB RAM, và giải mã PNG vài trăm byte khai 110 MP. Nay sharp đặt `limitInputPixels` 100 triệu. HEIC đọc kích thước ở hộp `ispe` trước khi gọi `heic-convert`, trần 50 MP. App đổi HEIC từng ảnh một, lượt lỗi không chặn hàng. Vượt trần thì giữ bản gốc như ảnh đổi lỗi. Test: PNG khai 110 MP và HEIC 8000x8000 trả null dưới 1 giây; HEIC 320x240 vẫn đổi; ba lượt đổi HEIC cùng lúc chạy lần lượt (bộ giải mã giả ghi giờ bắt đầu, giờ xong). RED: bản cũ đổi được cả hai ảnh quá lớn; khi chưa có hàng đợi, ba lượt bắt đầu cùng lúc.
+- Promoted, lỗi ghi S3 (82828c3). `putImage` bắt lỗi `PutObject`, ghi log và trả "Không tải được ảnh lên kho lưu trữ. Thử lại sau ít phút." như `putToS3` của mgst-app. Test dựng máy S3 giả trả 500. RED: lỗi `InternalError` ném ra ngoài.
+- Promoted, test HEIC phụ thuộc `sips` (b9f8d62). Ba test HEIC ở `tests/s3/storage.test.ts`, `tests/s3/adminUpload.test.ts` đọc `tests/fixtures/heic-320x240.heic` (2,7 KB). RED: giả lập máy không có `sips`, cả ba chạy 0 lần kiểm. GREEN: vẫn giả lập đó, cả ba kiểm đủ.
+- Promoted, test `e2e-clean` (0b051d7, bb1b715). Test dừng ngay khi DB có trường, ngân hàng, mã hay tài khoản e2e, trước khi gọi `cleanE2e`. Hồ sơ thật dựng và xoá trong cùng test bằng try/finally. Kiểm trên database tạm: có dữ liệu e2e và đưa lại lỗi thì test cũ đạt và xoá dữ liệu e2e; test mới dừng ở bước kiểm đầu, dữ liệu e2e còn nguyên. Không có dữ liệu e2e và đưa lại lỗi thì test mới fail, hồ sơ vẫn được dọn.
+- Minor, tên test (8bad12f). Test HEIC của OCR thật nay ghi "ảnh HEIC máy chủ không đổi được sang WebP". Test cấu hình chặn chữ "worker nén" trong code và test. RED: test chỉ ra đúng `tests/s3/photoCheckOcr.test.ts`.
+- Để lại: `replacePhoto` để lại object khi transaction ném lỗi (bảng Việc để lại).
+
+Ruling của lượt này:
+
+- Trần điểm ảnh khác mgst-app có chủ đích: `/api/uploads` của mgst-app chỉ cho nhân viên đã đăng nhập, còn route nộp ảnh của mgi-bank mở cho mọi học sinh có link trường.
+- Trần HEIC 50 MP, thấp hơn trần 100 MP của định dạng khác: một ảnh HEIC 48 MP tốn khoảng 1,22 GB khi đổi (đo ở giai đoạn 7), còn container app trần 3 GB. Điện thoại chụp tới 48 MP nên ảnh thật vẫn đổi được.
+- Đổi HEIC từng ảnh một trong app, cùng lý do 1,22 GB cho mỗi ảnh 48 MP. Nginx cho 300 lượt gửi ảnh vào ngay, nên hai ảnh HEIC lớn đổi cùng lúc đủ làm app hết RAM. Ảnh khác HEIC vẫn đổi song song bằng sharp. Chi phí: học sinh gửi HEIC lúc đông phải chờ lượt.
+- HEIC không có hộp `ispe` thì không giải mã, giữ bản gốc: chuẩn HEIF bắt buộc hộp này, ảnh thiếu nó là ảnh lạ.
+- Ảnh dựng sẵn 10240x10240 (commit trong 65172df) thay bằng 8000x8000 (33 KB, 64 MP) ở a4f08ee, để một ảnh vượt trần HEIC mà vẫn dưới trần sharp.
+
+Test sau lượt sửa: `bun run test` 220 pass, `bun test:db` 219 pass, `bun test:s3` 29 pass, `bun run e2e` 19 pass (chạy 23:13 tới 23:15, trước a4f08ee; e2e không gửi ảnh HEIC), `bunx tsc --noEmit` sạch, `bun run lint` 0 lỗi (2 cảnh báo `<img>` cũ).
