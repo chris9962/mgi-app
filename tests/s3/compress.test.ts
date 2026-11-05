@@ -10,7 +10,7 @@ import { toHeic } from "../support/heic";
 import { insertCustomer, setupProgram, type Program } from "../db/fixtures";
 import { db } from "../../src/server/db/client";
 import { proofPhotos } from "../../src/server/db/schema";
-import { compressOne, compressQueue, MAX_BYTES, s3CompressStore, type CompressStore } from "../../src/server/compress";
+import { compressOne, compressQueue, MAX_BYTES, runAgainNow, s3CompressStore, type CompressStore } from "../../src/server/compress";
 import { deleteImage, newKey, readImage, writeImage } from "../../src/server/storage";
 
 // Chạy trên bucket dev mgi-bank-dev và DB local; mọi object test tạo ra đều xoá ở afterAll.
@@ -151,6 +151,31 @@ describe("worker nén ảnh", () => {
     expect([row.s3Key, row.compressedAt, row.compressAttempts]).toEqual([key, null, 3]);
     expect(await compressQueue()).not.toContain(id);
   }, 30_000);
+
+  test("lỗi thì chờ rồi mới thử lại, lần sau chờ lâu hơn: 5 phút sau lần 1, 10 phút sau lần 2", async () => {
+    const id = await photoRow(newKey("proofs", "jpg"), 500_000);
+    const triedAgo = (minutes: number) => db.update(proofPhotos).set({ compressTriedAt: sql`now() - make_interval(mins => ${minutes})` }).where(eq(proofPhotos.id, id));
+    expect(await compressOne(id)).toBe("failed");
+    expect(await compressQueue()).not.toContain(id);
+    expect(await compressOne(id)).toBe("skipped");
+    await triedAgo(4);
+    expect(await compressQueue()).not.toContain(id);
+    await triedAgo(6);
+    expect(await compressQueue()).toContain(id);
+    expect(await compressOne(id)).toBe("failed");
+    await triedAgo(6);
+    expect(await compressQueue()).not.toContain(id);
+    expect(await compressOne(id)).toBe("skipped");
+    await triedAgo(11);
+    expect(await compressOne(id)).toBe("failed");
+    expect((await rowOf(id)).compressAttempts).toBe(3);
+  }, 30_000);
+
+  test("vòng có ảnh lỗi thì không chạy vòng kế ngay dù đủ 20 ảnh", () => {
+    expect(runAgainNow({ compressed: 20, kept: 0, failed: 0, skipped: 0 })).toBe(true);
+    expect(runAgainNow({ compressed: 19, kept: 0, failed: 1, skipped: 0 })).toBe(false);
+    expect(runAgainNow({ compressed: 5, kept: 0, failed: 0, skipped: 0 })).toBe(false);
+  });
 
   test("hai worker cùng lấy một ảnh: chỉ một bên nén", async () => {
     const png = await screenshot(2000, 2600, "png");

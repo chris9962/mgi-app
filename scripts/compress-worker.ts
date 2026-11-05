@@ -1,5 +1,5 @@
 import { pool } from "../src/server/db/client";
-import { BATCH, runCompressQueue } from "../src/server/compress";
+import { runAgainNow, runCompressQueue } from "../src/server/compress";
 
 // Worker nén ảnh: quét mỗi 30 giây. Ảnh gốc xem được ngay nên không cần nghe LISTEN như worker kiểm ảnh.
 // Cờ --mot-vong: chạy một vòng rồi thoát, dùng cho test và e2e.
@@ -11,7 +11,7 @@ async function round(): Promise<boolean> {
   try {
     const t = await runCompressQueue(undefined, () => stopping);
     if (t.compressed || t.kept || t.failed) console.log(`[compress-worker] nén ${t.compressed}, giữ ${t.kept}, lỗi ${t.failed}`);
-    return t.compressed + t.kept + t.failed + t.skipped >= BATCH;
+    return runAgainNow(t);
   } catch (e) {
     console.error("[compress-worker] vòng nén lỗi:", e);
     return false;

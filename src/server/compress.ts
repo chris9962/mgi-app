@@ -33,8 +33,8 @@ export async function toWebp(bytes: Uint8Array): Promise<Uint8Array> {
   return new Uint8Array(out);
 }
 
-// Lần thử ghi lúc nhận ảnh; hết 5 phút mà chưa xong thì coi như worker đó đã chết, worker khác lấy lại.
-const retryDue = or(isNull(proofPhotos.compressTriedAt), lt(proofPhotos.compressTriedAt, sql`now() - interval '5 minutes'`));
+// Thử lại sau 5 phút nhân số lần đã thử: lỗi S3 thoáng qua không đốt hết 3 lần, và lần đang chạy dở của worker đã chết được lấy lại.
+const retryDue = or(isNull(proofPhotos.compressTriedAt), lt(proofPhotos.compressTriedAt, sql`now() - interval '5 minutes' * ${proofPhotos.compressAttempts}`));
 
 // Ảnh nén lỗi 3 lần vẫn nằm trong chỉ mục compressed_at is null, nên phải lọc số lần thử ở đây.
 export async function compressQueue(limit = BATCH): Promise<string[]> {
@@ -113,6 +113,9 @@ export async function compressOne(id: string, store: CompressStore = s3CompressS
   if (key !== row.key) await store.remove(row.key).catch((e) => console.error("[compress] không xoá được ảnh gốc trên S3:", row.key, e));
   return "compressed";
 }
+
+// Lô đầy thì quét tiếp ngay; lô có ảnh lỗi thì chờ vòng sau, S3 đứt một lúc không đốt hết 3 lần thử trong vài giây.
+export const runAgainNow = (t: Record<CompressOutcome, number>): boolean => t.failed === 0 && t.compressed + t.kept + t.skipped >= BATCH;
 
 // Một vòng của worker; stopped() đúng thì dừng sau ảnh đang nén, không bỏ dở dòng nào.
 export async function runCompressQueue(store: CompressStore = s3CompressStore, stopped: () => boolean = () => false): Promise<Record<CompressOutcome, number>> {
