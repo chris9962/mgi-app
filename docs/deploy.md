@@ -14,7 +14,7 @@ Người vận hành đọc hết mục 0 trước khi gõ lệnh đầu tiên.
 - Cổng của container chỉ mở ở `127.0.0.1`. Mở ra mọi giao diện thì Docker tự thêm luật iptables, đi vòng qua tường lửa.
 - Không đổi `VOUCHER_SECRET` sau khi cấp voucher đầu tiên. Đổi khoá thì mã voucher cũ không kiểm lại được.
 - Không chạy `bun run build` trên máy chủ. `Dockerfile` tự dựng bên trong image.
-- `DATABASE_URL` đặt trong shell thắng `.env.local`. Trước khi migrate, người vận hành chạy `unset DATABASE_URL` rồi đọc dòng `Database:` mà `db:migrate` in ra.
+- `DATABASE_URL` đặt trong shell thắng `.env.local`. Các script trong `deploy/` tự đặt lại biến này theo `.env.local` của chính thư mục đó. Khi gõ tay `bun run db:migrate` hay `db:seed`, người vận hành chạy `unset DATABASE_URL` trước rồi đọc dòng `Database:` mà `db:migrate` in ra.
 
 ## 1. Thành phần trên máy chủ
 

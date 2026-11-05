@@ -22,16 +22,18 @@ doc_env() {
   echo "${dong:-$2}"
 }
 
-# .env.local trỏ DB vào 127.0.0.1 của máy chủ cho lệnh chạy trên máy chủ (migrate, ops-watch, sao lưu).
+# .env.local trỏ DB vào 127.0.0.1 của máy chủ cho lệnh chạy trên máy chủ (migrate, seed, ops-watch, sao lưu).
+DB_URL_MAY_CHU="$(doc_env DATABASE_URL '')"
+case "$DB_URL_MAY_CHU" in
+  *@127.0.0.1:${CONG_DB}/* | *@localhost:${CONG_DB}/*) ;;
+  *) echo "DỪNG: DATABASE_URL trong .env.local phải trỏ 127.0.0.1:${CONG_DB}." >&2; exit 1 ;;
+esac
+# Bun lấy DATABASE_URL của shell trước .env.local: shell của root còn giữ URL production thì bản test migrate nhầm DB production.
+export DATABASE_URL="$DB_URL_MAY_CHU"
+
 # Trong container, 127.0.0.1 là chính container: app và worker gọi DB bằng tên container trong mạng riêng.
 db_url_container() {
-  local url
-  url="$(doc_env DATABASE_URL '')"
-  case "$url" in
-    *@127.0.0.1:${CONG_DB}/* | *@localhost:${CONG_DB}/*) ;;
-    *) echo "DỪNG: DATABASE_URL trong .env.local phải trỏ 127.0.0.1:${CONG_DB}." >&2; exit 1 ;;
-  esac
-  echo "$url" | sed -E "s#@(127\.0\.0\.1|localhost):${CONG_DB}/#@${DB}:5432/#"
+  echo "$DB_URL_MAY_CHU" | sed -E "s#@(127\.0\.0\.1|localhost):${CONG_DB}/#@${DB}:5432/#"
 }
 
 # Cờ docker run chung của app và worker: mạng riêng, giới hạn log (json-file mặc định không xoay vòng), env từ file.
