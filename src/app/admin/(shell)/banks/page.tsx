@@ -8,7 +8,7 @@ import { can, canManageAnyBank } from "@/lib/permissions";
 import { requirePageWhere } from "@/server/auth/current";
 import { listBanks } from "@/server/banks";
 
-export const metadata = { title: "Ngân hàng" };
+export const metadata = { title: "Ngân hàng & mã giới thiệu" };
 
 export default async function BanksPage() {
   const user = await requirePageWhere(canManageAnyBank);

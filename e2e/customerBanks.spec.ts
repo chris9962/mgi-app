@@ -40,9 +40,13 @@ test("Trang Ngân hàng: học sinh chọn 2 ngân hàng ra 2 dòng, lọc theo 
   await studentWithTwoBanks(browser);
 
   const admin = await loginAs(browser, "zz_e2e_admin");
-  await admin.getByRole("navigation", { name: "Điều hướng chính" }).getByRole("link", { name: "Ngân hàng", exact: true }).first().click();
+  const work = admin.getByRole("navigation", { name: "Điều hướng chính" }).getByRole("listitem").filter({ has: admin.getByRole("button", { name: "Nghiệp vụ" }) });
+  await work.getByRole("link", { name: "Ngân hàng", exact: true }).click();
   await expect(admin).toHaveURL(/\/customer-banks$/);
   await expect(admin.getByRole("heading", { level: 1, name: "Ngân hàng" })).toBeVisible();
+  await expect(admin).toHaveTitle(/^Ngân hàng - /);
+  await admin.goto("/banks");
+  await expect(admin).toHaveTitle(/^Ngân hàng & mã giới thiệu - /);
 
   await admin.goto(`/customer-banks?${QUERY}`);
   await expect(rowsOf(admin)).toHaveCount(2);
