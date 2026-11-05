@@ -21,7 +21,8 @@ export function FilterButton({ sections, onClear }: { sections: FilterSection[];
   useEffect(() => {
     if (!open) return;
     const onKey = (e: KeyboardEvent) => {
-      if (e.key !== "Escape") return;
+      // Ô bên trong đã dùng Esc (ô tìm đóng gợi ý) thì gọi preventDefault: bảng giữ nguyên.
+      if (e.key !== "Escape" || e.defaultPrevented) return;
       setOpen(false);
       trigger.current?.focus();
     };

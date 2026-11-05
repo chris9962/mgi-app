@@ -82,3 +82,20 @@ test("Trang Ngân hàng: học sinh chọn 2 ngân hàng ra 2 dòng, lọc theo 
   await reviewer.getByRole("button", { name: "Bộ lọc" }).click();
   await expect(reviewer.getByRole("navigation", { name: "Mục lọc" }).getByRole("button", { name: "Ngân hàng" })).toHaveCount(0);
 });
+
+test("Bộ lọc: Esc trong ô tìm trường chỉ đóng gợi ý, Esc lần nữa đóng bảng và trả focus về nút Bộ lọc", async ({ browser }) => {
+  const admin = await loginAs(browser, "zz_e2e_admin");
+  await admin.goto("/customer-banks");
+  const button = admin.getByRole("button", { name: "Bộ lọc" });
+  await button.click();
+  await admin.getByRole("navigation", { name: "Mục lọc" }).getByRole("button", { name: "Trường" }).click();
+  const search = admin.getByRole("combobox", { name: "Trường" });
+  await search.fill("zze2e");
+  await expect(admin.getByRole("listbox")).toBeVisible();
+  await search.press("Escape");
+  await expect(admin.getByRole("listbox")).toHaveCount(0);
+  await expect(admin.getByRole("button", { name: "Xong" })).toBeVisible();
+  await search.press("Escape");
+  await expect(admin.getByRole("button", { name: "Xong" })).toHaveCount(0);
+  await expect(button).toBeFocused();
+});
