@@ -29,7 +29,55 @@
 
 ## Task
 
-- [ ] **Task 1: Khung trang, sidebar trượt, thanh đáy.** Test unit cho hàm chọn mục thanh đáy theo quyền. E2E khổ 390x844: thanh đáy hiện, "Thêm" mở sidebar, chọn một mục thì sidebar đóng và chuyển trang, Esc đóng sidebar và trả focus; khổ 1366x768 không có thanh đáy.
-- [ ] **Task 2: Thanh tiêu đề, bảng, bộ lọc, hộp thoại.** E2E khổ 390x844 cho từng trang quản lý mà tài khoản e2e mở được: `document.documentElement.scrollWidth` bằng `clientWidth`. Kiểm bằng mắt từng trang ở 390 px (chụp màn hình, không commit ảnh).
+- [x] **Task 1: Khung trang, sidebar trượt, thanh đáy.** Test unit cho hàm chọn mục thanh đáy theo quyền. E2E khổ 390x844: thanh đáy hiện, "Thêm" mở sidebar, chọn một mục thì sidebar đóng và chuyển trang, Esc đóng sidebar và trả focus; khổ 1366x768 không có thanh đáy.
+- [x] **Task 2: Thanh tiêu đề, bảng, bộ lọc, hộp thoại.** E2E khổ 390x844 cho từng trang quản lý mà tài khoản e2e mở được: `document.documentElement.scrollWidth` bằng `clientWidth`. Kiểm bằng mắt từng trang ở 390 px (chụp màn hình, không commit ảnh).
 
 Cuối kế hoạch chạy đủ: `bun run test`, `bun test:db`, `bun test:s3`, `bun run e2e`, `bunx tsc --noEmit`, `bun run lint`.
+
+## Kết quả
+
+Làm ngày 2026-11-05 trên nhánh `dev`. Commit của kế hoạch này: `5fe363b`, `42e50da`, `04a946f`, `4d6776c` và commit ghi kết quả này. Các commit xen giữa thuộc kế hoạch tải ảnh của agent khác.
+
+### Đã đổi
+
+- `src/components/shell/AppShell.tsx` (mới): khung trang giữ trạng thái ngăn trượt, dựng Sidebar, nội dung và thanh đáy. Dưới 900 px khung dùng `100svh`, nội dung chừa 52 px cộng vùng an toàn cho thanh đáy, lề nội dung 16 px.
+- `src/components/shell/Sidebar.tsx`: dưới 900 px sidebar là ngăn trượt từ mép trái, rộng `min(280px, 85vw)`, cao `100svh`, có lớp phủ và nút "Đóng menu điều hướng". Bấm lớp phủ, bấm Esc hoặc chọn mục thì ngăn đóng và trả focus về nút Thêm. Ngăn mở thì khoá cuộn trang phía sau.
+- `src/components/shell/BottomNav.tsx` (mới): thanh đáy cố định, chừa `safe-area-inset-bottom`, ép lớp GPU cho WebKit. Mục đang mở có `aria-current="page"`, chữ màu nhấn và vạch trên đầu.
+- `src/components/shell/bottomNavItems.ts` (mới): chọn tối đa 3 mục Hồ sơ học sinh, Ngân hàng, Mã voucher từ kết quả `menuFor`, không có luật quyền riêng.
+- `src/app/globals.css`: variant `mobile` (tới 900 px) và `narrow` (tới 600 px) chép `_breakpoints.scss`; utility `table-scroll` chép `.table-scroll` của mgst-app.
+- 9 trang danh sách dùng `table-scroll` cho bảng; câu báo bảng rỗng canh trái dưới 900 px. Trang Vận hành dùng lưới một cột co được.
+- `TopBar`: dưới 900 px lề 16 px, tiêu đề dài cắt bằng dấu ba chấm; dưới 600 px nhóm công cụ xuống hàng riêng. `SearchBox` và ô tìm của trang Tài khoản rộng hết hàng dưới 600 px.
+- `FilterButton`: dưới 600 px bảng lọc rộng hết màn hình trừ hai mép 16 px, một cột, các mục lọc thành hàng cuộn ngang ở trên.
+- Trên 900 px giao diện giữ nguyên. Hộp thoại không đổi vì đã có `max-w-[calc(100vw-32px)]`.
+
+### Test
+
+- Unit `tests/unit/bottomNavItems.test.ts`: thứ tự cố định, chỉ trang có quyền, không quyền thì rỗng.
+- E2E `e2e/mobile.spec.ts`, 8 test: thanh đáy và nút Thêm, chọn mục thì ngăn đóng và chuyển trang, Esc và lớp phủ đóng ngăn, không quyền chỉ còn Thêm, không trang nào cuộn ngang ở 390 px (13 trang gồm hai trang chi tiết), ô tìm và bảng Bộ lọc nằm trọn màn hình, lề 16 px và câu báo bảng rỗng, hộp thoại nằm trọn bề ngang, khổ 1366x768 không có thanh đáy.
+- Trước khi sửa, trang Trường rộng 605 px và trang Vận hành rộng 511 px ở màn 390 px.
+- Chạy đủ: `bun run test` 224/224, `bun test:db` 220/220 và `bun test:s3` 29/29 trên DB tạm `zz_test_mobile` (đã xoá), `bun run e2e` 28/28, `bunx tsc --noEmit` sạch, `bun run lint` sạch (2 cảnh báo `<img>` có sẵn).
+- Kiểm bằng mắt ở 390 px: 13 trang, bảng Bộ lọc, 4 hộp thoại thêm mới, hộp ghi chú ở trang chi tiết, ngăn trượt ở giao diện sáng và tối. Kiểm 1366 px: Hồ sơ học sinh, Mã giới thiệu, Tài khoản, bảng Bộ lọc không đổi.
+
+### Ruling
+
+- Helper đặt tên `bottomNavItems.ts`, không `bottomNav.ts`. macOS không phân biệt hoa thường, `./BottomNav` sẽ trỏ nhầm file.
+- Ngưỡng khai bằng `@custom-variant` dạng `max-width` như mgst-app. `max-[900px]:` của Tailwind là "nhỏ hơn 900" nên lệch 1 px.
+- Ngăn đóng thì `visibility: hidden` sau khi trượt xong. mgst-app để link ngoài màn hình vẫn nhận phím Tab.
+- Mở ngăn thì focus nút "Đóng menu điều hướng", phần tử đầu của ngăn.
+- Nút Thêm có `aria-expanded` và `aria-controls`, mgst-app không có.
+- E2E điện thoại ẩn huy hiệu của dev server bằng init script. Huy hiệu nằm góc phải dưới, đè nút Thêm; bản chạy thật không có.
+- Bảng dùng utility `table-scroll` (`position: relative`, `overflow-y: hidden`). Phần tử absolute trong bảng neo vào tài liệu và kéo trang rộng ra.
+- Lề nội dung 16 px đặt một chỗ ở AppShell bằng `mobile:[&>main]:p-4`, không sửa `p-6` của từng trang.
+- Dưới 600 px ô tìm rộng hết hàng, nút giữ bề ngang. "Phần cuối rộng hết thanh" của mgst-app là ô kỳ của thanh chào; ở mgi-bank ô tìm là ô nhập tương ứng.
+- Thanh tiêu đề không dính đầu trang như mgst-app. Kế hoạch không yêu cầu, và ở điện thoại thanh cao khoảng 145 px.
+- Dưới 600 px bảng Bộ lọc neo vào thanh tiêu đề. mgst-app nhờ Radix tự né mép; mgi-bank neo mép phải nút nên bảng trượt khỏi mép trái.
+- Câu báo bảng rỗng canh trái dưới 900 px. Canh giữa trên bảng rộng hơn khung thì chữ bị cắt, rõ nhất ở trang Tin SMS lỗi.
+- Không nâng mọi nút lên 44 px trên màn cảm ứng. Luật 44 px của mgst-app chỉ cho nút sắp xếp cột; control mới đều từ 44 px; nút 36 px cũ đạt WCAG 2.5.8 mức AA.
+- Test thanh đáy không quyền dùng `zz_e2e_lock`. Chạy cả bộ thì `config.spec` giao ngân hàng cho `zz_e2e_staff`.
+
+### Việc để lại
+
+- Ngăn trượt đang mở mà xoay máy tính bảng sang khổ trên 900 px thì trang vẫn khoá cuộn. Người dùng bấm một mục sidebar hoặc Esc thì hết khoá. mgst-app cũng vậy.
+- Menu tài khoản mở trong ngăn trượt: bấm Esc đóng cả menu lẫn ngăn.
+- Trang chi tiết có tên quá dài: tiêu đề xuống hàng riêng thì vạch ngăn sau nút quay lại nằm lẻ ở cuối hàng trên. Dữ liệu hiện có chưa gặp.
+- Ở dev server, huy hiệu của Next đè nút Thêm khi mở bằng điện thoại.
