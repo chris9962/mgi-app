@@ -47,8 +47,6 @@ export async function photoUploadUrl(customer: Customer, input: PhotoTarget & { 
 
 export async function recordPhoto(customer: Customer, input: PhotoTarget & { key: string }, store = s3PhotoStore): Promise<{ ok: true } | Fail> {
   if (!isImageKey(input.key, "proofs")) return fail("Khoá ảnh không hợp lệ.", 400, "key");
-  const [same] = await db.select().from(proofPhotos).where(eq(proofPhotos.s3Key, input.key));
-  if (same) return same.customerBankId === input.customerBankId && same.slotId === input.slotId && !same.replacedAt ? { ok: true } : fail("Ảnh đã ghi.", 409, "key");
   const size = await store.headSize(input.key);
   if (!size) return fail("Chưa tải được ảnh lên. Thử lại.", 400, "key");
   if (size > MAX_IMAGE_BYTES) {
@@ -60,6 +58,9 @@ export async function recordPhoto(customer: Customer, input: PhotoTarget & { key
     const [current] = await tx.select({ status: customers.status }).from(customers).where(eq(customers.id, customer.id)).for("update");
     if (current?.status !== "banks_selected") return LOCKED;
     if (!(await targetFound(tx, customer.id, input))) return fail("Không tìm thấy khung ảnh.", 404);
+    // Xét ảnh đã ghi sau khi khoá: hai request cùng khoá ảnh chạy song song thì request sau thấy dòng của request trước.
+    const [same] = await tx.select().from(proofPhotos).where(eq(proofPhotos.s3Key, input.key));
+    if (same) return same.customerBankId === input.customerBankId && same.slotId === input.slotId && !same.replacedAt ? { ok: true as const, oldKeys: [] } : fail("Ảnh đã ghi.", 409, "key");
     const old = await tx
       .delete(proofPhotos)
       .where(and(eq(proofPhotos.customerBankId, input.customerBankId), eq(proofPhotos.slotId, input.slotId), isNull(proofPhotos.replacedAt)))
@@ -67,8 +68,8 @@ export async function recordPhoto(customer: Customer, input: PhotoTarget & { key
     await tx.insert(proofPhotos).values({ customerBankId: input.customerBankId, slotId: input.slotId, s3Key: input.key, sizeBytes: size });
     return { ok: true as const, oldKeys: old.map((o) => o.key) };
   });
-  // Xoá object sau commit: transaction lỗi thì ảnh cũ vẫn còn nguyên trên S3.
-  await removeQuietly(store, r.ok ? r.oldKeys : [input.key]);
+  // Xoá object sau commit: transaction lỗi thì ảnh cũ vẫn còn nguyên trên S3. Không bao giờ xoá khoá vừa ghi.
+  await removeQuietly(store, r.ok ? r.oldKeys.filter((k) => k !== input.key) : r.status === 409 && r.field === "key" ? [] : [input.key]);
   return r.ok ? { ok: true } : r;
 }
 

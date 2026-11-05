@@ -139,6 +139,20 @@ describe("ghi ảnh", () => {
     expect(fake.removed).toEqual([first.key]);
   });
 
+  test("hai request ghi cùng một ảnh chạy song song: còn đúng một dòng và object của dòng đó còn trên S3", async () => {
+    const c = await student();
+    const fake = fakeStore();
+    const cb = await rowOf(c, "A");
+    const u = await photoUploadUrl(c, { customerBankId: cb.id, slotId: slot.A1, contentType: "image/webp" }, fake.store);
+    if (!u.ok) throw new Error(u.message);
+    fake.objects.set(u.key, 1000);
+    const input = { customerBankId: cb.id, slotId: slot.A1, key: u.key };
+    await Promise.all([recordPhoto(c, input, fake.store), recordPhoto(c, input, fake.store)]);
+    const rows = await db.select().from(proofPhotos).where(and(eq(proofPhotos.customerBankId, cb.id), isNull(proofPhotos.replacedAt)));
+    expect(rows.length).toBe(1);
+    expect(fake.objects.has(rows[0].s3Key)).toBe(true);
+  });
+
   test("báo lại cùng một ảnh thì không ghi thêm dòng", async () => {
     const c = await student();
     const fake = fakeStore();
