@@ -1,4 +1,4 @@
-export const FOLDERS = ["samples", "qr", "proofs"] as const;
+export const FOLDERS = ["samples", "qr", "proofs", "uploads"] as const;
 export type Folder = (typeof FOLDERS)[number];
 
 // Ảnh chứng minh của học sinh chỉ đi qua route của học sinh; trang quản lý chỉ tải ảnh mẫu và ảnh QR.
@@ -17,7 +17,7 @@ export const isAdminImageKey = (key: string): boolean => ADMIN_FOLDERS.some((f) 
 // Ảnh mẫu và ảnh QR hiện cho học sinh trên mọi trình duyệt; Chrome và Android không hiện được HEIC.
 // Ảnh học sinh nhận HEIC khi điện thoại không nén được; worker ở giai đoạn 6 đổi sang WebP.
 export const allowedExt = (folder: Folder, ext: string): boolean =>
-  folder === "proofs" ? ["jpg", "png", "webp", "heic"].includes(ext) : FOLDERS.includes(folder) && ["jpg", "png", "webp"].includes(ext);
+  folder === "proofs" || folder === "uploads" ? ["jpg", "png", "webp", "heic"].includes(ext) : FOLDERS.includes(folder) && ["jpg", "png", "webp"].includes(ext);
 
 const EXT_BY_MIME: Record<string, string> = { "image/jpeg": "jpg", "image/png": "png", "image/webp": "webp", "image/heic": "heic", "image/heif": "heic" };
 export const extForMime = (mime: string): string | null => EXT_BY_MIME[mime.toLowerCase()] ?? null;

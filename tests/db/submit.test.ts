@@ -39,7 +39,7 @@ const rowOf = async (c: Customer, bankKey: string) => (await db.select().from(cu
 
 async function put(c: Customer, bankKey: string, slotKey: string, fake = fakeStore()) {
   const cb = await rowOf(c, bankKey);
-  const u = await photoUploadUrl(c, { customerBankId: cb.id, slotId: slot[slotKey], contentType: "image/webp" }, fake.store);
+  const u = await photoUploadUrl(c, { customerBankId: cb.id, slotId: slot[slotKey], contentType: "image/webp", size: 1000 }, fake.store);
   if (!u.ok) throw new Error(u.message);
   fake.objects.set(u.key, 1000);
   const r = await recordPhoto(c, { customerBankId: cb.id, slotId: slot[slotKey], key: u.key }, fake.store);
@@ -107,8 +107,8 @@ describe("Gửi kiểm tra", () => {
     const [locked] = await db.select().from(customers).where(eq(customers.id, c.id));
     const fake = fakeStore();
     const cb = await rowOf(c, "A");
-    expect(await photoUploadUrl(locked, { customerBankId: cb.id, slotId: slot.A1, contentType: "image/webp" }, fake.store)).toMatchObject({ ok: false, status: 409 });
-    const key = `proofs/2026-11-05/3f2b9c1e-8a4d-4f6b-9c2e-1a2b3c4d5e6f.webp`;
+    expect(await photoUploadUrl(locked, { customerBankId: cb.id, slotId: slot.A1, contentType: "image/webp", size: 1000 }, fake.store)).toMatchObject({ ok: false, status: 409 });
+    const key = `uploads/2026-11-05/3f2b9c1e-8a4d-4f6b-9c2e-1a2b3c4d5e6f.webp`;
     fake.objects.set(key, 1000);
     expect(await recordPhoto(c, { customerBankId: cb.id, slotId: slot.A1, key }, fake.store)).toMatchObject({ ok: false, status: 409 });
     expect(await cancelBanks(locked, fake.store)).toMatchObject({ ok: false, status: 409 });

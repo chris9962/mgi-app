@@ -61,14 +61,23 @@ export async function makeActor(name: string, role: "admin" | "manager" | "staff
 export function fakeStore() {
   const objects = new Map<string, number>();
   const removed: string[] = [];
+  const signed: { key: string; contentType: string; size: number }[] = [];
   const store = {
-    presignPut: async (key: string) => `https://s3.test/${key}?signed`,
+    presignPut: async (key: string, contentType: string, size: number) => {
+      signed.push({ key, contentType, size });
+      return `https://s3.test/${key}?signed`;
+    },
     headSize: async (key: string) => objects.get(key) ?? null,
+    copy: async (from: string, to: string) => {
+      const size = objects.get(from);
+      if (size === undefined) throw new Error("NoSuchKey");
+      objects.set(to, size);
+    },
     remove: async (key: string) => {
       objects.delete(key);
       removed.push(key);
     },
     signGet: async (key: string) => `https://s3.test/${key}?get`,
   };
-  return { objects, removed, store };
+  return { objects, removed, signed, store };
 }
