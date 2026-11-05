@@ -1,9 +1,10 @@
 import { randomBytes } from "node:crypto";
 import { isIP } from "node:net";
-import { and, asc, count, eq, inArray, isNull, max, sql } from "drizzle-orm";
+import { and, asc, count, eq, inArray, isNull, max } from "drizzle-orm";
 import { db } from "./db/client";
-import { bankPhotoSlots, banks, customerBanks, customerExistingBanks, customers, photoChecks, proofPhotos, referralCodeMonths, referralCodeSchools, referralCodes, schools, smsMessages, vouchers } from "./db/schema";
+import { bankPhotoSlots, banks, customerBanks, customerExistingBanks, customers, proofPhotos, referralCodeMonths, referralCodeSchools, referralCodes, schools, smsMessages, vouchers } from "./db/schema";
 import { s3PhotoStore, type PhotoStore } from "./customerPhotos";
+import { queuePhotoChecks } from "./photoChecks";
 import { hashToken } from "./auth/session";
 import { publicSchool } from "./schools";
 import { getSettings } from "./settings";
@@ -198,12 +199,7 @@ export async function submitForReview(customer: Customer): Promise<{ ok: true } 
     await tx.update(customers).set({ status: "pending_review", submittedAt: now }).where(eq(customers.id, customer.id));
     // Ngân hàng không có khung nào bật kiểm thì không xếp lượt kiểm ảnh.
     const checked = rows.filter((r) => slots.some((sl) => sl.bankId === r.bankId && (sl.checkName || sl.checkCode))).map((r) => r.id);
-    if (checked.length) {
-      await tx.delete(photoChecks).where(and(inArray(photoChecks.customerBankId, checked), eq(photoChecks.status, "pending")));
-      await tx.insert(photoChecks).values(checked.map((customerBankId) => ({ customerBankId })));
-      // Postgres chỉ phát thông báo sau commit, worker không đọc trước lúc dòng có thật.
-      for (const id of checked) await tx.execute(sql`select pg_notify('photo_checks', ${id})`);
-    }
+    await queuePhotoChecks(tx, checked);
     return { ok: true as const };
   });
 }

@@ -27,29 +27,33 @@ const name = (message: string) =>
         .refine((v) => !CONTROL.test(v), "Có ký tự không hợp lệ"),
     );
 
+const info = {
+  fullName: name("Nhập họ và tên"),
+  className: z
+    .string({ error: "Nhập lớp" })
+    .transform((v) => v.replace(/\s+/g, "").toUpperCase())
+    .pipe(
+      z
+        .string()
+        .min(1, "Nhập lớp")
+        .max(20, "Tối đa 20 ký tự")
+        .refine((v) => !CONTROL.test(v), "Có ký tự không hợp lệ"),
+    ),
+  phone,
+  parentName: name("Nhập họ và tên phụ huynh"),
+  parentPhone: phone,
+};
+
+const phonesDiffer = (v: { phone: string; parentPhone: string }) => v.phone !== v.parentPhone;
+const PHONES_DIFFER = { path: ["parentPhone"], message: "SĐT phụ huynh phải khác SĐT học sinh." };
+
 export const CustomerForm = z
-  .object(
-    {
-      schoolId: uuid(),
-      fullName: name("Nhập họ và tên"),
-      className: z
-        .string({ error: "Nhập lớp" })
-        .transform((v) => v.replace(/\s+/g, "").toUpperCase())
-        .pipe(
-          z
-            .string()
-            .min(1, "Nhập lớp")
-            .max(20, "Tối đa 20 ký tự")
-            .refine((v) => !CONTROL.test(v), "Có ký tự không hợp lệ"),
-        ),
-      phone,
-      parentName: name("Nhập họ và tên phụ huynh"),
-      parentPhone: phone,
-      existingBankIds: z.array(uuid(), { error: BAD }).max(50, BAD),
-    },
-    { error: BAD },
-  )
-  .refine((v) => v.phone !== v.parentPhone, { path: ["parentPhone"], message: "SĐT phụ huynh phải khác SĐT học sinh." });
+  .object({ schoolId: uuid(), ...info, existingBankIds: z.array(uuid(), { error: BAD }).max(50, BAD) }, { error: BAD })
+  .refine(phonesDiffer, PHONES_DIFFER);
+
+// Người quản ngân hàng sửa thông tin khai ở B1; trường và ngân hàng đã có không đổi được.
+export const CustomerEditForm = z.object(info, { error: BAD }).refine(phonesDiffer, PHONES_DIFFER);
+export type CustomerEditValues = z.output<typeof CustomerEditForm>;
 
 export type CustomerFormInput = z.input<typeof CustomerForm>;
 export type CustomerFormValues = z.output<typeof CustomerForm>;
