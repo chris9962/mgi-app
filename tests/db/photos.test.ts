@@ -1,13 +1,13 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { and, eq, isNull } from "drizzle-orm";
-import { TEST_NAME, cleanTestUsers, makeActor } from "./helpers";
+import { TEST_NAME, cleanTestUsers, fakeStore, makeActor } from "./helpers";
 import { db } from "../../src/server/db/client";
 import { bankPhotoSlots, customerBanks, customers, proofPhotos } from "../../src/server/db/schema";
 import { createBank } from "../../src/server/banks";
 import { createSchool } from "../../src/server/schools";
 import { createCode } from "../../src/server/referralCodes";
 import { createCustomer, reserveBanks, studentState, type Customer } from "../../src/server/customers";
-import { cancelBanks, photoUploadUrl, recordPhoto, type PhotoStore } from "../../src/server/customerPhotos";
+import { cancelBanks, photoUploadUrl, recordPhoto } from "../../src/server/customerPhotos";
 import { BankForm } from "../../src/lib/bankForm";
 import { CodeForm } from "../../src/lib/codeForm";
 import { CustomerForm } from "../../src/lib/customerForm";
@@ -21,22 +21,6 @@ let schoolId: string;
 let phoneSeq = 300;
 const bank: Record<string, string> = {};
 const slot: Record<string, string> = {};
-
-// S3 là hệ ngoài: test DB dùng kho giả trong bộ nhớ, test S3 kiểm presigned PUT thật.
-function fakeStore() {
-  const objects = new Map<string, number>();
-  const removed: string[] = [];
-  const store: PhotoStore = {
-    presignPut: async (key) => `https://s3.test/${key}?signed`,
-    headSize: async (key) => objects.get(key) ?? null,
-    remove: async (key) => {
-      objects.delete(key);
-      removed.push(key);
-    },
-    signGet: async (key) => `https://s3.test/${key}?get`,
-  };
-  return { objects, removed, store };
-}
 
 async function student(): Promise<Customer> {
   phoneSeq += 1;

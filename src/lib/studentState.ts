@@ -22,6 +22,10 @@ export type StudentBank = {
 export type StudentState = {
   customer: { id: string; fullName: string; className: string; status: CustomerStatus };
   school: { id: string; name: string };
+  submittedAt: string | null;
+  reviewedAt: string | null;
+  parentPhone: string;
+  voucher: { code: string; smsSentAt: string | null } | null;
   eligibleBanks: { id: string; name: string }[];
   existingBanks: string[];
   banks: StudentBank[];

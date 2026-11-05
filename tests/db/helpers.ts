@@ -56,3 +56,19 @@ export async function makeActor(name: string, role: "admin" | "manager" | "staff
   if (permissions.length) await db.insert(userPermissions).values(permissions.map((p) => ({ userId: row.id, permission: p as "schools" })));
   return (await loadSessionUser(row.id))!;
 }
+
+// S3 là hệ ngoài: test DB dùng kho ảnh giả trong bộ nhớ, test S3 kiểm presigned PUT thật.
+export function fakeStore() {
+  const objects = new Map<string, number>();
+  const removed: string[] = [];
+  const store = {
+    presignPut: async (key: string) => `https://s3.test/${key}?signed`,
+    headSize: async (key: string) => objects.get(key) ?? null,
+    remove: async (key: string) => {
+      objects.delete(key);
+      removed.push(key);
+    },
+    signGet: async (key: string) => `https://s3.test/${key}?get`,
+  };
+  return { objects, removed, store };
+}

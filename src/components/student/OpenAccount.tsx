@@ -86,9 +86,20 @@ export function OpenAccount({ state, onChange }: { state: StudentState; onChange
   const [active, setActive] = useState(banks[0]?.id ?? "");
   const [confirmBack, setConfirmBack] = useState(false);
   const [error, setError] = useState("");
+  const [sending, setSending] = useState(false);
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
   const current = banks.find((b) => b.id === active) ?? banks[0];
   const hasPhoto = banks.some((b) => b.slots.some((s) => s.photo));
+  const ready = banks.length > 0 && banks.every(complete);
+
+  async function submit() {
+    setSending(true);
+    setError("");
+    const r = await studentApi("POST", "/api/customers/me/submit");
+    if (r.ok) return onChange();
+    setSending(false);
+    setError(r.message);
+  }
 
   async function back(): Promise<string | null> {
     const r = await studentApi("DELETE", "/api/customers/me/banks");
@@ -158,6 +169,9 @@ export function OpenAccount({ state, onChange }: { state: StudentState; onChange
           }}
         >
           Quay lại chọn ngân hàng
+        </Button>
+        <Button large block disabled={!ready || sending} onClick={submit}>
+          Gửi kiểm tra
         </Button>
       </Bottom>
       <ConfirmDialog

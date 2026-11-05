@@ -1,14 +1,14 @@
 import { randomBytes } from "node:crypto";
 import { isIP } from "node:net";
-import { and, asc, count, eq, inArray, isNull } from "drizzle-orm";
+import { and, asc, count, eq, inArray, isNull, max, sql } from "drizzle-orm";
 import { db } from "./db/client";
-import { bankPhotoSlots, banks, customerBanks, customerExistingBanks, customers, proofPhotos, referralCodeMonths, referralCodeSchools, referralCodes, schools } from "./db/schema";
+import { bankPhotoSlots, banks, customerBanks, customerExistingBanks, customers, photoChecks, proofPhotos, referralCodeMonths, referralCodeSchools, referralCodes, schools, smsMessages, vouchers } from "./db/schema";
 import { s3PhotoStore, type PhotoStore } from "./customerPhotos";
 import { hashToken } from "./auth/session";
 import { publicSchool } from "./schools";
 import { getSettings } from "./settings";
 import { currentYearMonth, isYearMonth } from "@/lib/month";
-import { plain } from "@/lib/text";
+import { maskPhone, plain } from "@/lib/text";
 import type { CustomerFormValues } from "@/lib/customerForm";
 import type { StudentBank, StudentState } from "@/lib/studentState";
 
@@ -154,6 +154,44 @@ export async function reserveBanks(customer: Customer, bankIds: string[], month 
   });
 }
 
+export async function submitForReview(customer: Customer): Promise<{ ok: true } | Fail> {
+  return db.transaction(async (tx) => {
+    // Khoá hồ sơ trước khi kiểm ảnh: ảnh ghi cùng lúc phải chờ, không lọt vào hồ sơ đã gửi.
+    const [current] = await tx.select({ status: customers.status }).from(customers).where(eq(customers.id, customer.id)).for("update");
+    if (current?.status !== "banks_selected") return fail("Hồ sơ đã gửi kiểm tra.", 409);
+    const rows = await tx
+      .select({ id: customerBanks.id, bankId: customerBanks.bankId })
+      .from(customerBanks)
+      .where(and(eq(customerBanks.customerId, customer.id), eq(customerBanks.status, "selected")));
+    if (!rows.length) return fail("Chưa chọn ngân hàng.", 409);
+    const [slots, photos] = await Promise.all([
+      tx
+        .select({ id: bankPhotoSlots.id, bankId: bankPhotoSlots.bankId, checkName: bankPhotoSlots.checkName, checkCode: bankPhotoSlots.checkCode })
+        .from(bankPhotoSlots)
+        .where(and(inArray(bankPhotoSlots.bankId, rows.map((r) => r.bankId)), isNull(bankPhotoSlots.removedAt))),
+      tx
+        .select({ customerBankId: proofPhotos.customerBankId, slotId: proofPhotos.slotId })
+        .from(proofPhotos)
+        .where(and(inArray(proofPhotos.customerBankId, rows.map((r) => r.id)), isNull(proofPhotos.replacedAt))),
+    ]);
+    const has = new Set(photos.map((p) => `${p.customerBankId}:${p.slotId}`));
+    const missing = rows.some((r) => slots.some((sl) => sl.bankId === r.bankId && !has.has(`${r.id}:${sl.id}`)));
+    if (missing) return fail("Còn khung chưa có ảnh.", 400);
+    const now = new Date();
+    await tx.update(customerBanks).set({ status: "pending", submittedAt: now }).where(inArray(customerBanks.id, rows.map((r) => r.id)));
+    await tx.update(customers).set({ status: "pending_review", submittedAt: now }).where(eq(customers.id, customer.id));
+    // Ngân hàng không có khung nào bật kiểm thì không xếp lượt kiểm ảnh.
+    const checked = rows.filter((r) => slots.some((sl) => sl.bankId === r.bankId && (sl.checkName || sl.checkCode))).map((r) => r.id);
+    if (checked.length) {
+      await tx.delete(photoChecks).where(and(inArray(photoChecks.customerBankId, checked), eq(photoChecks.status, "pending")));
+      await tx.insert(photoChecks).values(checked.map((customerBankId) => ({ customerBankId })));
+      // Postgres chỉ phát thông báo sau commit, worker không đọc trước lúc dòng có thật.
+      for (const id of checked) await tx.execute(sql`select pg_notify('photo_checks', ${id})`);
+    }
+    return { ok: true as const };
+  });
+}
+
 async function chosenBanks(customer: Customer, store: PhotoStore): Promise<StudentBank[]> {
   const rows = await db
     .select({
@@ -225,9 +263,22 @@ export async function studentState(customer: Customer, month = currentYearMonth(
       status = "no_bank";
     }
   }
+  const done = status === "pending_review" || status === "reviewed";
+  const [voucher] = done
+    ? await db
+        .select({ code: vouchers.code, smsSentAt: smsMessages.sentAt })
+        .from(vouchers)
+        .leftJoin(smsMessages, and(eq(smsMessages.customerId, vouchers.customerId), eq(smsMessages.kind, "voucher")))
+        .where(eq(vouchers.customerId, customer.id))
+    : [];
+  const [reviewed] = status === "reviewed" ? await db.select({ at: max(customerBanks.reviewedAt) }).from(customerBanks).where(eq(customerBanks.customerId, customer.id)) : [];
   return {
     customer: { id: customer.id, fullName: customer.fullName, className: customer.className, status },
     school,
+    submittedAt: customer.submittedAt?.toISOString() ?? null,
+    reviewedAt: reviewed?.at ? new Date(reviewed.at).toISOString() : null,
+    parentPhone: maskPhone(customer.parentPhone),
+    voucher: voucher ? { code: voucher.code, smsSentAt: voucher.smsSentAt?.toISOString() ?? null } : null,
     eligibleBanks,
     existingBanks,
     banks: await chosenBanks({ ...customer, status }, store),

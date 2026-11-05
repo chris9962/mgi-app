@@ -9,6 +9,7 @@ import { AppHead, Bottom, EndBlock, Steps } from "./parts";
 import { ChooseBanks, NoBank } from "./ChooseBanks";
 import { InfoForm } from "./InfoForm";
 import { OpenAccount } from "./OpenAccount";
+import { Result } from "./Result";
 import { QrScanner } from "./QrScanner";
 
 type Screen =
@@ -161,8 +162,9 @@ function Profile({ state, notice, onChange }: { state: StudentState; notice?: st
       return <NoBank state={state} />;
     case "banks_selected":
       return <OpenAccount state={state} onChange={() => onChange()} />;
-    default:
-      return <AppHead school={state.school.name} title={`${state.customer.fullName} - ${state.customer.className}`} />;
+    case "pending_review":
+    case "reviewed":
+      return <Result state={state} />;
   }
 }
 
