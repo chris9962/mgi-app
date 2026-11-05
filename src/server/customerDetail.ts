@@ -138,9 +138,17 @@ export async function getCustomerDetail(actor: SessionUser, id: string): Promise
       .where(and(eq(smsMessages.customerId, id), eq(smsMessages.kind, SMS_KIND_VOUCHER))),
   ]);
 
-  const { nameSearch: _, ...info } = c;
   return {
-    ...info,
+    id: c.id,
+    fullName: c.fullName,
+    className: c.className,
+    phone: c.phone,
+    parentName: c.parentName,
+    parentPhone: c.parentPhone,
+    status: c.status,
+    schoolName: c.schoolName,
+    submittedAt: c.submittedAt,
+    lastSeenAt: c.lastSeenAt,
     existingBanks: existing.map((e) => e.name),
     duplicates,
     voucher: voucher ?? null,
@@ -148,7 +156,7 @@ export async function getCustomerDetail(actor: SessionUser, id: string): Promise
     canEdit: !voucher,
     banks: rows.map((r) => {
       const managed = mineIds.includes(r.id);
-      const current = photos.filter((ph) => ph.customerBankId === r.id).map(({ customerBankId: _, ...ph }) => ph);
+      const current = photos.filter((ph) => ph.customerBankId === r.id).map((ph) => ({ id: ph.id, slotId: ph.slotId, uploadedBy: ph.uploadedBy, createdAt: ph.createdAt }));
       const check = checks.find((ch) => ch.customerBankId === r.id);
       return {
         ...r,
