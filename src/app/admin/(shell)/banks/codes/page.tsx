@@ -1,9 +1,9 @@
 import { Ticket } from "lucide-react";
 import { BankTabs } from "@/components/banks/BankTabs";
 import { AddCodeButton, CodeActions } from "@/components/codes/CodeActions";
+import { CodeFilters } from "@/components/codes/CodeFilters";
 import { TopBar } from "@/components/shell/TopBar";
 import { Card } from "@/components/ui/Card";
-import { inputClass } from "@/components/ui/Field";
 import { MonthPicker } from "@/components/ui/MonthPicker";
 import { Pager } from "@/components/ui/Pager";
 import { StatusTag } from "@/components/ui/StatusTag";
@@ -62,35 +62,7 @@ export default async function CodesPage({ searchParams }: { searchParams: Promis
       <main className="p-6">
         <BankTabs current="codes" />
         <Card title="Kho mã giới thiệu" icon={<Ticket size={17} aria-hidden />} meta={`${total} mã`} pad={false}>
-          <form action="/banks/codes" className="flex flex-wrap items-end gap-3 border-b border-line p-4">
-            <input type="hidden" name="month" value={month} />
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="code-q" className="text-[13px] text-text-2">
-                Tìm mã
-              </label>
-              <input id="code-q" name="q" defaultValue={q} placeholder="Tên hiển thị, mã text…" className={`${inputClass} w-60`} />
-            </div>
-            <div className="flex flex-col gap-1.5">
-              <label htmlFor="code-bank" className="text-[13px] text-text-2">
-                Ngân hàng
-              </label>
-              <select id="code-bank" name="bank" defaultValue={bankId} className={`${inputClass} w-48`}>
-                <option value="">Mọi ngân hàng</option>
-                {banks.map((b) => (
-                  <option key={b.id} value={b.id}>
-                    {b.name}
-                  </option>
-                ))}
-              </select>
-            </div>
-            <label className="inline-flex h-9 items-center gap-2 text-sm">
-              <input type="checkbox" name="hide" value="1" defaultChecked={hideStopped} className="size-[18px] accent-[var(--accent)]" />
-              Ẩn mã đã ngừng
-            </label>
-            <button type="submit" className="h-9 rounded-[10px] border border-line bg-card px-3.5 text-sm font-semibold hover:bg-surface">
-              Lọc
-            </button>
-          </form>
+          <CodeFilters month={month} q={q} bankId={bankId} hideStopped={hideStopped} banks={banks.map((b) => ({ id: b.id, name: b.name }))} />
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
               <thead className="text-xs font-semibold tracking-wide text-text-2 uppercase">
