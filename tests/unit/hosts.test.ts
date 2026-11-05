@@ -37,14 +37,23 @@ describe("routeFor", () => {
 });
 
 describe("matcher của proxy", () => {
-  test("file tĩnh trong public đi thẳng, không qua proxy", async () => {
+  const matcher = async () => {
     const { config } = await import("../../src/proxy");
-    const re = new RegExp(`^${config.matcher[0].replace("/((?!", "/(?!").replace(").*)", ").*")}$`);
-    expect(re.test("/zxing_reader.wasm")).toBe(false);
-    expect(re.test("/brand/logo.png")).toBe(false);
+    return new RegExp(`^${config.matcher[0].replace("/((?!", "/(?!").replace(").*)", ").*")}$`);
+  };
+
+  test("mọi file có thật trong public đi thẳng, không qua proxy", async () => {
+    const { readdirSync, statSync } = await import("node:fs");
+    const { join, relative } = await import("node:path");
+    const root = join(import.meta.dir, "../../public");
+    const walk = (dir: string): string[] => readdirSync(dir).flatMap((f) => (statSync(join(dir, f)).isDirectory() ? walk(join(dir, f)) : [join(dir, f)]));
+    const re = await matcher();
+    for (const f of walk(root)) expect(re.test("/" + relative(root, f))).toBe(false);
     expect(re.test("/_next/static/chunk.js")).toBe(false);
-    expect(re.test("/users")).toBe(true);
-    expect(re.test("/api/admin/images")).toBe(true);
-    expect(re.test("/admin/users")).toBe(true);
+  });
+
+  test("đường dẫn khác đều qua proxy để kiểm tên miền, kể cả có đuôi ảnh", async () => {
+    const re = await matcher();
+    for (const p of ["/users", "/api/admin/images", "/admin/users", "/admin/users/x.png", "/student/t/a.png", "/photo.png", "/t/abc.webp"]) expect(re.test(p)).toBe(true);
   });
 });

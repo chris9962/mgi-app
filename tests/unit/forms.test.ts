@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import { CodeForm } from "../../src/lib/codeForm";
 import { GuideForm } from "../../src/lib/bankForm";
-import { ADMIN_FOLDERS, allowedExt, extForMime, isImageKey } from "../../src/lib/imageKey";
+import { ADMIN_FOLDERS, allowedExt, extForMime, isAdminImageKey, isImageKey } from "../../src/lib/imageKey";
 
 const UUID = "3f2b9c1e-8a4d-4f6b-9c2e-1a2b3c4d5e6f";
 const BANK = "6c7d8e9f-1a2b-4c3d-8e4f-5a6b7c8d9e0f";
@@ -51,5 +51,11 @@ describe("ảnh học sinh", () => {
   });
   test("trang quản lý không tải ảnh vào thư mục proofs", () => {
     expect(ADMIN_FOLDERS).not.toContain("proofs");
+  });
+  test("route đọc ảnh của trang quản lý chỉ đọc ảnh mẫu và ảnh QR, ảnh học sinh chờ kiểm quyền theo ngân hàng", () => {
+    expect(isAdminImageKey(`samples/2026-11-05/${UUID}.jpg`)).toBe(true);
+    expect(isAdminImageKey(`qr/2026-11-05/${UUID}.png`)).toBe(true);
+    expect(isAdminImageKey(`proofs/2026-11-05/${UUID}.webp`)).toBe(false);
+    expect(isAdminImageKey("../x")).toBe(false);
   });
 });

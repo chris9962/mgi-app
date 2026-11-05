@@ -11,6 +11,9 @@ const KEY = new RegExp(`^(${FOLDERS.join("|")})/\\d{4}-\\d{2}-\\d{2}/[0-9a-f]{8}
 
 export const isImageKey = (key: string, folder?: Folder): boolean => KEY.test(key) && (!folder || key.startsWith(`${folder}/`));
 
+// Ảnh học sinh chỉ người quản ngân hàng của dòng đó được xem: route chung của trang quản lý không đọc thư mục proofs.
+export const isAdminImageKey = (key: string): boolean => ADMIN_FOLDERS.some((f) => isImageKey(key, f));
+
 // Ảnh mẫu và ảnh QR hiện cho học sinh trên mọi trình duyệt; Chrome và Android không hiện được HEIC.
 // Ảnh học sinh nhận HEIC khi điện thoại không nén được; worker ở giai đoạn 6 đổi sang WebP.
 export const allowedExt = (folder: Folder, ext: string): boolean =>
