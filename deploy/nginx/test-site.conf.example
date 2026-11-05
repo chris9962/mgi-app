@@ -1,0 +1,17 @@
+# Mẫu file /etc/nginx/sites-available/mgi-bank-test.conf cho bản test (docs/deploy.md mục 12).
+# Đổi hai tên miền nếu chủ dự án chọn tên khác; ADMIN_HOST, STUDENT_HOST trong /opt/mgi-bank-test/.env.local phải khớp.
+server {
+    listen 80;
+    server_name admin-test.minhgroup-i.com.vn;
+    set $mgi_bank_upstream 127.0.0.1:3210;
+    set $mgi_bank_root /opt/mgi-bank-test;
+    include /opt/mgi-bank-test/deploy/nginx/app.conf;
+}
+
+server {
+    listen 80;
+    server_name bank-test.minhgroup-i.com.vn;
+    set $mgi_bank_upstream 127.0.0.1:3210;
+    set $mgi_bank_root /opt/mgi-bank-test;
+    include /opt/mgi-bank-test/deploy/nginx/app.conf;
+}

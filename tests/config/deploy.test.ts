@@ -1,0 +1,101 @@
+import { describe, expect, test } from "bun:test";
+import { existsSync, readdirSync, readFileSync } from "node:fs";
+
+const read = (path: string) => readFileSync(new URL(`../../${path}`, import.meta.url), "utf8");
+const scripts = readdirSync(new URL("../../deploy/", import.meta.url)).filter((f) => f.endsWith(".sh"));
+
+describe("Nginx", () => {
+  test("chuyển đúng Host, ghi đè X-Forwarded-For bằng địa chỉ thật của kết nối, báo https cho app", () => {
+    const proxy = read("deploy/nginx/proxy.conf");
+    expect(proxy).toContain("proxy_set_header Host $host;");
+    expect(proxy).toContain("proxy_set_header X-Forwarded-For $remote_addr;");
+    expect(proxy).not.toContain("$proxy_add_x_forwarded_for");
+    expect(proxy).toContain("proxy_set_header X-Forwarded-Proto $scheme;");
+  });
+
+  test("giới hạn request theo IP ngưỡng cao; đường gửi ảnh có vùng riêng; trả 429", () => {
+    const zones = read("deploy/nginx/limits.conf");
+    const rate = (zone: string) => Number(zones.match(new RegExp(`zone=${zone}:\\S+ rate=(\\d+)r/s`))?.[1]);
+    expect(rate("mgi_bank_ip")).toBeGreaterThanOrEqual(20);
+    expect(rate("mgi_bank_photo")).toBeGreaterThanOrEqual(1);
+    expect(zones).toContain("limit_req_status 429;");
+    const app = read("deploy/nginx/app.conf");
+    expect(app).toMatch(/limit_req zone=mgi_bank_ip burst=(\d{3,}) nodelay;/);
+    expect(app).toMatch(/location \^~ \/api\/customers\/me\/photos[\s\S]*?limit_req zone=mgi_bank_photo/);
+  });
+
+  test("ảnh tải qua app: trần body ít nhất 20 MB ở cả hai tên miền", () => {
+    const size = Number(read("deploy/nginx/app.conf").match(/client_max_body_size (\d+)m;/)?.[1]);
+    expect(size).toBeGreaterThanOrEqual(20);
+    const site = read("deploy/nginx/site.conf.example");
+    for (const host of ["admin.minhgroup-i.com.vn", "bank.minhgroup-i.com.vn"]) expect(site).toContain(`server_name ${host};`);
+    expect(site.match(/include \/opt\/mgi-bank\/deploy\/nginx\/app\.conf;/g)?.length).toBe(2);
+  });
+});
+
+describe("script deploy", () => {
+  test("mỗi script dừng ở lỗi đầu tiên và đúng cú pháp bash", () => {
+    expect(scripts).toEqual(expect.arrayContaining(["deploy.sh", "worker-sms.sh", "worker-photo.sh", "jobs.sh", "db.sh", "test-env.sh", "maintenance-on.sh", "maintenance-off.sh"]));
+    expect(scripts.some((s) => s.includes("compress"))).toBe(false);
+    for (const s of scripts) {
+      expect(read(`deploy/${s}`), s).toContain("set -euo pipefail");
+      expect(Bun.spawnSync(["bash", "-n", `deploy/${s}`]).exitCode, s).toBe(0);
+    }
+  });
+
+  test("không script nào dùng docker compose hay dựng image chạy nền song song", () => {
+    for (const s of scripts) {
+      const text = read(`deploy/${s}`);
+      expect(text, s).not.toMatch(/docker compose|docker-compose/);
+      expect(text, s).not.toMatch(/docker build[^\n]*&\s*$/m);
+    }
+  });
+
+  test("app: dựng --target runner, dừng khi thiếu VOUCHER_SECRET, migrate, cổng chỉ mở 127.0.0.1, giới hạn log", () => {
+    const text = read("deploy/deploy.sh") + read("deploy/lib.sh");
+    expect(text).toContain("--target runner");
+    expect(text).toMatch(/VOUCHER_SECRET/);
+    expect(text).toContain("bun run db:migrate");
+    expect(text).toMatch(/-p "?127\.0\.0\.1:/);
+    expect(text).toContain("--log-opt max-size=10m");
+  });
+
+  test("worker kiểm ảnh: thử OCR trả ready trước khi thay, trần RAM đủ cho HEIC 48 MP, chờ dừng lâu hơn hạn đọc một ảnh", () => {
+    const text = read("deploy/worker-photo.sh");
+    expect(text).toContain("--target photo-check");
+    expect(text).toContain('{"ready": true}');
+    const memory = Number(text.match(/doc_env PHOTO_CHECK_MEMORY (\d+)g/)?.[1]);
+    expect(memory).toBeGreaterThanOrEqual(3);
+    const grace = Number(text.match(/--stop-timeout (\d+)/)?.[1]);
+    expect(grace).toBeGreaterThan(120);
+  });
+
+  test("worker SMS dựng --target sms-worker và không chạy khi chưa nối nhà cung cấp SMS mà không có cờ đồng ý", () => {
+    const text = read("deploy/worker-sms.sh");
+    expect(text).toContain("--target sms-worker");
+    expect(text).toContain("--chap-nhan-chi-ghi-log");
+  });
+});
+
+describe("docs/deploy.md", () => {
+  const doc = read("docs/deploy.md");
+
+  test("có đủ bước chủ dự án phải làm", () => {
+    for (const s of ["DNS", "bucket", ".env.local", "db:migrate", "db:create-admin", "db:seed", "VOUCHER_SECRET", "unaccent", "certbot", "db:restore", "test-env.sh"]) expect(doc, s).toContain(s);
+    for (const s of scripts) expect(doc, s).toContain(`deploy/${s}`);
+  });
+
+  test("ghi ba container app, worker SMS, worker kiểm ảnh; không còn CORS và lifecycle uploads/", () => {
+    for (const c of ["mgi-bank-app", "mgi-bank-sms", "mgi-bank-photo"]) expect(doc).toContain(c);
+    expect(doc).not.toMatch(/CORS|s3-cors|lifecycle|uploads\//);
+  });
+
+  test("văn xuôi không dùng dấu gạch ngang dài và dấu chấm giữa", () => {
+    expect(doc).not.toContain("—");
+    expect(doc).not.toContain("·");
+  });
+
+  test("mọi script và unit được nhắc tới đều có thật", () => {
+    for (const m of doc.matchAll(/(deploy\/[\w./@-]+\.(?:sh|conf|example|service|timer)|scripts\/[\w.-]+\.ts)/g)) expect(existsSync(new URL(`../../${m[1]}`, import.meta.url)), m[1]).toBe(true);
+  });
+});

@@ -1,0 +1,17 @@
+# Mẫu file /etc/nginx/sites-available/mgi-bank.conf cho production. Chép một lần, rồi chạy certbot (docs/deploy.md mục 6).
+# Certbot thêm khối https và khối chuyển 301 vào chính file trên máy chủ, nên file đó không nằm trong repo.
+server {
+    listen 80;
+    server_name admin.minhgroup-i.com.vn;
+    set $mgi_bank_upstream 127.0.0.1:3200;
+    set $mgi_bank_root /opt/mgi-bank;
+    include /opt/mgi-bank/deploy/nginx/app.conf;
+}
+
+server {
+    listen 80;
+    server_name bank.minhgroup-i.com.vn;
+    set $mgi_bank_upstream 127.0.0.1:3200;
+    set $mgi_bank_root /opt/mgi-bank;
+    include /opt/mgi-bank/deploy/nginx/app.conf;
+}
