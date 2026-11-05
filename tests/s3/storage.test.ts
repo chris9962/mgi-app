@@ -49,12 +49,17 @@ describe("putImage đổi WebP lúc nhận", () => {
     expect(r.size).toBe(webp.length);
   });
 
-  test("HEIC ghi thành WebP, cả ảnh học sinh lẫn ảnh mẫu", async () => {
-    const heic = heicFixture("heic-320x240.heic");
-    for (const folder of ["proofs", "samples"] as const) {
-      const r = await stored(heic, folder);
-      expect(r.key).toMatch(new RegExp(`^${folder}/.+\\.webp$`));
-      expect((await sharp(r.body).metadata()).format).toBe("webp");
+  test("HEIC một ô và HEIC lưới như ảnh iPhone ghi thành WebP, cả ảnh học sinh lẫn ảnh mẫu", async () => {
+    for (const [name, size] of [
+      ["heic-320x240.heic", [320, 240]],
+      ["heic-1200x1600-luoi.heic", [1200, 1600]],
+    ] as const) {
+      for (const folder of ["proofs", "samples"] as const) {
+        const r = await stored(heicFixture(name), folder);
+        expect(r.key).toMatch(new RegExp(`^${folder}/.+\\.webp$`));
+        const meta = await sharp(r.body).metadata();
+        expect([meta.format, meta.width, meta.height]).toEqual(["webp", ...size]);
+      }
     }
   }, 60_000);
 

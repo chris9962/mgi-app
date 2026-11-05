@@ -29,6 +29,11 @@ describe("đổi WebP lúc nhận", () => {
     expect([meta.format, meta.width, meta.height]).toEqual(["webp", 320, 240]);
   });
 
+  test("HEIC lưới như ảnh iPhone (ô 512x512 ghép thành 1200x1600) thành WebP 1200x1600", async () => {
+    const meta = await sharp((await toWebpOnServer(heicFixture("heic-1200x1600-luoi.heic"), "heic"))!).metadata();
+    expect([meta.format, meta.width, meta.height]).toEqual(["webp", 1200, 1600]);
+  });
+
   test("file hỏng mang chữ ký ảnh thì không đổi được, nơi gọi giữ bản gốc", async () => {
     expect(await toWebpOnServer(broken(PNG_HEAD), "png")).toBeNull();
     expect(await toWebpOnServer(broken(JPEG_HEAD), "jpg")).toBeNull();
