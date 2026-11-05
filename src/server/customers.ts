@@ -1,11 +1,12 @@
 import { randomBytes } from "node:crypto";
 import { isIP } from "node:net";
-import { and, count, eq, inArray } from "drizzle-orm";
+import { and, asc, count, eq, inArray } from "drizzle-orm";
 import { db } from "./db/client";
 import { banks, customerBanks, customerExistingBanks, customers, referralCodeMonths, referralCodeSchools, referralCodes, schools } from "./db/schema";
 import { hashToken } from "./auth/session";
 import { publicSchool } from "./schools";
-import { currentYearMonth } from "@/lib/month";
+import { getSettings } from "./settings";
+import { currentYearMonth, isYearMonth } from "@/lib/month";
 import { plain } from "@/lib/text";
 import type { CustomerFormValues } from "@/lib/customerForm";
 import type { StudentState } from "@/lib/studentState";
@@ -116,10 +117,62 @@ export async function createCustomer(values: CustomerFormValues, ip: string | nu
   return { ok: true, id, token };
 }
 
-export async function studentState(customer: Customer): Promise<StudentState> {
+async function existingBankIds(ex: Executor, customerId: string): Promise<Set<string>> {
+  const rows = await ex.select({ id: customerExistingBanks.bankId }).from(customerExistingBanks).where(eq(customerExistingBanks.customerId, customerId));
+  return new Set(rows.map((r) => r.id));
+}
+
+// Mã có priority cao nhất còn lượt; cùng priority thì mã tạo trước.
+const pickCode = (candidates: Candidate[], bankId: string) =>
+  candidates
+    .filter((c) => c.bankId === bankId && c.used < c.quota)
+    .sort((a, b) => b.priority - a.priority || a.createdAt.getTime() - b.createdAt.getTime() || a.id.localeCompare(b.id))[0];
+
+export async function reserveBanks(customer: Customer, bankIds: string[], month = currentYearMonth()): Promise<{ ok: true } | Fail> {
+  if (!isYearMonth(month)) throw new Error(`Tháng giữ chỗ sai dạng: ${month}`);
+  return db.transaction(async (tx) => {
+    const [current] = await tx.select({ status: customers.status, schoolId: customers.schoolId }).from(customers).where(eq(customers.id, customer.id)).for("update");
+    if (current?.status !== "new") return fail("Hồ sơ đã chọn ngân hàng.", 409);
+    const candidates = await loadCandidates(tx, current.schoolId, month, true);
+    const open = openBanksOf(candidates, await existingBankIds(tx, customer.id));
+    if (!open.length) {
+      await tx.update(customers).set({ status: "no_bank" }).where(eq(customers.id, customer.id));
+      return fail("Không còn ngân hàng nào phù hợp.", 409);
+    }
+    const chosen = [...new Set(bankIds)];
+    if (chosen.some((id) => !open.some((b) => b.id === id))) return fail("Ngân hàng vừa hết lượt. Chọn lại.", 409, "bankIds");
+    const need = Math.min(2, open.length);
+    if (chosen.length !== need || chosen.length !== bankIds.length) return fail(need === 2 ? "Chọn đúng 2 ngân hàng." : "Chọn 1 ngân hàng.", 400, "bankIds");
+    for (const [i, bankId] of chosen.entries()) {
+      const code = pickCode(candidates, bankId);
+      await tx.insert(referralCodeMonths).values({ referralCodeId: code.id, yearMonth: month, quota: code.quota }).onConflictDoNothing();
+      await tx.insert(customerBanks).values({ customerId: customer.id, bankId, slot: i + 1, referralCodeId: code.id, referralCode: code.code ?? "", yearMonth: month });
+    }
+    await tx.update(customers).set({ status: "banks_selected" }).where(eq(customers.id, customer.id));
+    return { ok: true as const };
+  });
+}
+
+export async function studentState(customer: Customer, month = currentYearMonth()): Promise<StudentState> {
   const [school] = await db.select({ id: schools.id, name: schools.name }).from(schools).where(eq(schools.id, customer.schoolId));
+  const [existing, settings] = await Promise.all([existingBankIds(db, customer.id), getSettings()]);
+  const existingBanks = existing.size ? (await db.select({ name: banks.name }).from(banks).where(inArray(banks.id, [...existing])).orderBy(asc(banks.sortOrder), asc(banks.name))).map((b) => b.name) : [];
+  let status = customer.status;
+  let eligibleBanks: StudentState["eligibleBanks"] = [];
+  if (status === "new") {
+    eligibleBanks = openBanksOf(await loadCandidates(db, customer.schoolId, month), existing);
+    // Điểm dừng như lúc khai B1: hết ngân hàng thì hồ sơ ghi "Không có ngân hàng" cho hậu kiểm thấy.
+    if (!eligibleBanks.length) {
+      await db.update(customers).set({ status: "no_bank" }).where(and(eq(customers.id, customer.id), eq(customers.status, "new")));
+      status = "no_bank";
+    }
+  }
   return {
-    customer: { id: customer.id, fullName: customer.fullName, className: customer.className, status: customer.status },
+    customer: { id: customer.id, fullName: customer.fullName, className: customer.className, status },
     school,
+    eligibleBanks,
+    existingBanks,
+    zaloUrl: settings.zaloUrl,
+    pviAppUrl: settings.pviAppUrl,
   };
 }

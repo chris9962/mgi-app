@@ -5,4 +5,8 @@ export type StudentSchool = { id: string; name: string; active: boolean; banks: 
 export type StudentState = {
   customer: { id: string; fullName: string; className: string; status: CustomerStatus };
   school: { id: string; name: string };
+  eligibleBanks: { id: string; name: string }[];
+  existingBanks: string[];
+  zaloUrl: string;
+  pviAppUrl: string;
 };

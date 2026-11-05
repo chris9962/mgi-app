@@ -6,6 +6,7 @@ import { clearProfile, decideLink, isSchoolId, readDevice, saveSchool } from "@/
 import { studentApi } from "@/lib/studentApi";
 import type { StudentSchool, StudentState } from "@/lib/studentState";
 import { AppHead, Bottom, EndBlock, Steps } from "./parts";
+import { ChooseBanks, NoBank } from "./ChooseBanks";
 import { InfoForm } from "./InfoForm";
 import { QrScanner } from "./QrScanner";
 
@@ -16,7 +17,7 @@ type Screen =
   | { kind: "closed"; school: StudentSchool }
   | { kind: "ask"; current: StudentSchool; next: StudentSchool }
   | { kind: "form"; school: StudentSchool }
-  | { kind: "profile"; state: StudentState };
+  | { kind: "profile"; state: StudentState; notice?: string };
 
 const NETWORK = "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.";
 
@@ -74,16 +75,18 @@ export function StudentApp({ linkId }: { linkId?: string }) {
     };
   }, [linkId]);
 
-  const go = async (link?: string) => {
-    setScreen({ kind: "loading" });
-    setScreen(await resolveScreen(link));
+  const go = async (link?: string, notice?: string) => {
+    const next = await resolveScreen(link);
+    setScreen(next.kind === "profile" ? { ...next, notice } : next);
   };
 
   switch (screen.kind) {
     case "loading":
-      return <p role="status" className="py-10 text-center text-sm text-text-2">
+      return (
+        <p role="status" className="py-10 text-center text-sm text-text-2">
           Đang tải
-        </p>;
+        </p>
+      );
     case "error":
       return (
         <>
@@ -109,6 +112,7 @@ export function StudentApp({ linkId }: { linkId?: string }) {
               onClose={() => setScanning(false)}
               onSchool={(id) => {
                 setScanning(false);
+                setScreen({ kind: "loading" });
                 go(id);
               }}
             />
@@ -133,7 +137,18 @@ export function StudentApp({ linkId }: { linkId?: string }) {
         </>
       );
     case "profile":
-      return <AppHead school={screen.state.school.name} title={`${screen.state.customer.fullName} - ${screen.state.customer.className}`} />;
+      return <Profile state={screen.state} notice={screen.notice} onChange={(notice) => go(undefined, notice)} />;
+  }
+}
+
+function Profile({ state, notice, onChange }: { state: StudentState; notice?: string; onChange: (notice?: string) => void }) {
+  switch (state.customer.status) {
+    case "new":
+      return <ChooseBanks key={state.eligibleBanks.map((b) => b.id).join()} state={state} notice={notice} onDone={onChange} />;
+    case "no_bank":
+      return <NoBank state={state} />;
+    default:
+      return <AppHead school={state.school.name} title={`${state.customer.fullName} - ${state.customer.className}`} />;
   }
 }
 
