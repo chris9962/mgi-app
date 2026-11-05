@@ -1,12 +1,13 @@
 import { and, eq, ne } from "drizzle-orm";
 import { db } from "./db/client";
 import { sessions, users } from "./db/schema";
-import { hashPassword, verifyPassword } from "./auth/password";
+import { hashPassword } from "./auth/password";
+import { checkPasswordWithLock, LOCKED_MESSAGE } from "./auth/login";
 import { writeAudit } from "./audit";
 import type { SessionUser } from "@/lib/types";
 import type { InfoFormValues, PasswordFormValues } from "@/lib/profileForm";
 
-type Fail = { ok: false; message: string; field?: string; status: 400 | 404 };
+type Fail = { ok: false; message: string; field?: string; status: 400 | 404 | 423 };
 
 export async function changeOwnPassword(
   user: SessionUser,
@@ -14,11 +15,11 @@ export async function changeOwnPassword(
   form: PasswordFormValues,
   ip?: string | null,
 ): Promise<{ ok: true } | Fail> {
-  const [row] = await db.select({ hash: users.passwordHash }).from(users).where(eq(users.id, user.id));
+  const [row] = await db.select({ id: users.id, passwordHash: users.passwordHash }).from(users).where(eq(users.id, user.id));
   if (!row) return { ok: false, message: "Không tìm thấy tài khoản.", status: 404 };
-  if (!(await verifyPassword(form.currentPassword, row.hash))) {
-    return { ok: false, message: "Mật khẩu hiện tại không đúng.", field: "currentPassword", status: 400 };
-  }
+  const checked = await checkPasswordWithLock(row, form.currentPassword);
+  if (checked === "locked") return { ok: false, message: LOCKED_MESSAGE, status: 423 };
+  if (checked === "bad") return { ok: false, message: "Mật khẩu hiện tại không đúng.", field: "currentPassword", status: 400 };
   const passwordHash = await hashPassword(form.newPassword);
   await db.transaction(async (tx) => {
     await tx.update(users).set({ passwordHash, updatedAt: new Date() }).where(eq(users.id, user.id));

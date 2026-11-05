@@ -9,11 +9,8 @@ export type LoginResult =
   | { ok: false; code: "bad_credentials" | "locked"; message: string };
 
 const BAD: LoginResult = { ok: false, code: "bad_credentials", message: "Tên đăng nhập hoặc mật khẩu không đúng." };
-const LOCKED: LoginResult = {
-  ok: false,
-  code: "locked",
-  message: `Sai ${LOGIN_MAX_ATTEMPTS} lần liên tiếp, tài khoản bị khoá ${LOGIN_LOCK_MINUTES} phút. Liên hệ quản trị để mở lại.`,
-};
+export const LOCKED_MESSAGE = `Sai ${LOGIN_MAX_ATTEMPTS} lần liên tiếp, tài khoản bị khoá ${LOGIN_LOCK_MINUTES} phút. Liên hệ quản trị để mở lại.`;
+const LOCKED: LoginResult = { ok: false, code: "locked", message: LOCKED_MESSAGE };
 
 // Băm giả để tên không có thật cũng tốn thời gian như sai mật khẩu, không đo thời gian mà dò ra tên.
 const DUMMY_HASH = "$2b$10$CwTycUXWue0Thq9StjUM0uJ8.0OzmMrrBG9.PeVpqEJcR0n.5vHWa";
@@ -38,11 +35,8 @@ async function phantomAttempt(username: string, password: string): Promise<Login
   return BAD;
 }
 
-export async function attemptLogin(rawUsername: string, password: string): Promise<LoginResult> {
-  const username = rawUsername.trim().toLowerCase();
-  const [account] = await db.select().from(users).where(eq(users.username, username));
-  if (!account || !account.active) return phantomAttempt(username, password);
-
+// Đăng nhập và Đổi mật khẩu dùng chung bộ đếm sai: có phiên bị lộ cũng không dò được mật khẩu ở hộp thoại Đổi mật khẩu.
+export async function checkPasswordWithLock(account: { id: string; passwordHash: string }, password: string): Promise<"ok" | "bad" | "locked"> {
   // Nhận lượt thử bằng một câu update nguyên tử trước khi băm. Gửi nhiều request cùng lúc thì mỗi request nhận một số thứ tự riêng.
   const stillOpen = or(isNull(users.lockedUntil), lte(users.lockedUntil, sql`now()`));
   const [slot] = await db
@@ -50,20 +44,20 @@ export async function attemptLogin(rawUsername: string, password: string): Promi
     .set({ failedAttempts: sql`${users.failedAttempts} + 1` })
     .where(and(eq(users.id, account.id), stillOpen))
     .returning({ attempts: users.failedAttempts });
-  if (!slot) return LOCKED;
+  if (!slot) return "locked";
 
   const lockNow = async () => {
     await db
       .update(users)
       .set({ failedAttempts: 0, lockedUntil: sql`now() + make_interval(mins => ${LOGIN_LOCK_MINUTES})` })
       .where(eq(users.id, account.id));
-    return LOCKED;
+    return "locked" as const;
   };
 
   if (slot.attempts > LOGIN_MAX_ATTEMPTS) return lockNow();
 
   if (!(await verifyPassword(password, account.passwordHash))) {
-    return slot.attempts >= LOGIN_MAX_ATTEMPTS ? lockNow() : BAD;
+    return slot.attempts >= LOGIN_MAX_ATTEMPTS ? lockNow() : "bad";
   }
 
   // Chỉ xoá bộ đếm khi hàng chưa bị khoá trong lúc băm, để lần đoán đúng trong một đợt request song song không gỡ khoá.
@@ -72,5 +66,13 @@ export async function attemptLogin(rawUsername: string, password: string): Promi
     .set({ failedAttempts: 0, lockedUntil: null })
     .where(and(eq(users.id, account.id), stillOpen))
     .returning({ id: users.id });
-  return cleared ? { ok: true, userId: account.id } : LOCKED;
+  return cleared ? "ok" : "locked";
+}
+
+export async function attemptLogin(rawUsername: string, password: string): Promise<LoginResult> {
+  const username = rawUsername.trim().toLowerCase();
+  const [account] = await db.select().from(users).where(eq(users.username, username));
+  if (!account || !account.active) return phantomAttempt(username, password);
+  const result = await checkPasswordWithLock(account, password);
+  return result === "ok" ? { ok: true, userId: account.id } : result === "bad" ? BAD : LOCKED;
 }
