@@ -53,7 +53,7 @@ describe("scripts/e2e-clean.ts", () => {
       ids = await realProfile();
       await cleanE2e();
       expect((await db.select({ id: customerBanks.id }).from(customerBanks).where(eq(customerBanks.id, ids.customerBank!))).length).toBe(1);
-      expect((await db.select({ key: proofPhotos.s3Key }).from(proofPhotos).where(eq(proofPhotos.id, ids.photo!))).map((r) => r.key)).toEqual([ids.key]);
+      expect((await db.select({ key: proofPhotos.s3Key }).from(proofPhotos).where(eq(proofPhotos.id, ids.photo!))).map((r) => r.key)).toEqual([ids.key!]);
     } finally {
       await removeProfile(ids);
     }
