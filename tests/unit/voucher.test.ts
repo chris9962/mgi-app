@@ -63,6 +63,15 @@ describe("mã voucher", () => {
     }
   });
 
+  test("lượt sinh lại khi trùng mã cho ký tự kiểm khác, lượt đầu giữ nguyên mã cũ", () => {
+    const first = voucherCode(base, SECRET);
+    expect(voucherCode(base, SECRET, 0)).toBe(first);
+    const again = [1, 2, 3].map((n) => voucherCode(base, SECRET, n));
+    expect(new Set([first, ...again]).size).toBe(4);
+    for (const c of again) expect(c.slice(0, -4)).toBe(first.slice(0, -4));
+    expect(voucherCode(base, SECRET, 1)).toBe(again[0]);
+  });
+
   test("thiếu khoá thì không sinh mã", () => {
     expect(() => voucherCode(base, "")).toThrow();
   });

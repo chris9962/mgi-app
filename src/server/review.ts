@@ -16,6 +16,14 @@ const fail = (message: string, status: Fail["status"], field?: string): Fail => 
 const NOT_FOUND = fail("Không tìm thấy ngân hàng của hồ sơ.", 404);
 const TAKEN = fail("Ngân hàng này đã có người đánh dấu. Tải lại trang để xem kết quả mới.", 409);
 
+const VOUCHER_TRIES = 5;
+
+const isCodeTaken = (e: unknown): boolean => {
+  const err = (e as { cause?: unknown })?.cause ?? e;
+  const pg = err as { code?: string; constraint?: string };
+  return pg.code === "23505" && pg.constraint === "vouchers_code_unique";
+};
+
 export type ReviewInput = { customerBankId: string; result: "passed" | "failed"; expected: CustomerBankStatus };
 
 async function targetOf(actor: SessionUser, customerBankId: string) {
@@ -69,9 +77,25 @@ export async function reviewCustomerBank(actor: SessionUser, input: ReviewInput,
 
     let code: string | undefined;
     if (issue) {
-      code = voucherCode({ customerId: c.id, provinceCode: c.provinceCode, wardCode: c.wardCode, parentName: c.parentName, schoolName: c.schoolName, fullName: c.fullName, className: c.className }, secret!);
+      const voucherInput = { customerId: c.id, provinceCode: c.provinceCode, wardCode: c.wardCode, parentName: c.parentName, schoolName: c.schoolName, fullName: c.fullName, className: c.className };
       await tx.update(customers).set({ firstPassedAt: now }).where(eq(customers.id, c.id));
-      await tx.insert(vouchers).values({ code, customerId: c.id, issuedAt: now });
+      for (let attempt = 0; ; attempt++) {
+        const candidate = voucherCode(voucherInput, secret!, attempt);
+        // Savepoint: mã trùng thì chỉ lượt ghi voucher bị huỷ, transaction đánh dấu chạy tiếp với lượt sinh kế tiếp.
+        const inserted = await tx
+          .transaction(async (sp) => {
+            await sp.insert(vouchers).values({ code: candidate, customerId: c.id, issuedAt: now });
+            return true;
+          })
+          .catch((e: unknown) => {
+            if (attempt + 1 < VOUCHER_TRIES && isCodeTaken(e)) return false;
+            throw e;
+          });
+        if (inserted) {
+          code = candidate;
+          break;
+        }
+      }
       const body = renderSms(settings.smsTemplate, smsValues({ fullName: c.fullName, className: c.className, schoolName: c.schoolName, bankName: row.bankName, code }));
       const [sms] = await tx.insert(smsMessages).values({ customerId: c.id, kind: SMS_KIND_VOUCHER, toPhone: c.parentPhone, body }).returning({ id: smsMessages.id });
       // Worker SMS nghe kênh này; Postgres chỉ phát sau commit.

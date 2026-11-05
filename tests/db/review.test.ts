@@ -7,6 +7,7 @@ import { db } from "../../src/server/db/client";
 import { auditLog, customerBanks, customers, photoChecks, proofPhotos, reviewEvents, smsMessages, vouchers } from "../../src/server/db/schema";
 import { replacePhoto, reviewCustomerBank, saveNote, type AdminPhotoStore } from "../../src/server/review";
 import { DEFAULT_SMS_TEMPLATE } from "../../src/lib/sms";
+import { voucherCode } from "../../src/server/voucher";
 import type { SessionUser } from "../../src/lib/types";
 
 let p: Program;
@@ -145,6 +146,21 @@ describe("đánh dấu", () => {
     } finally {
       process.env.VOUCHER_SECRET = secret;
     }
+  });
+});
+
+describe("trùng mã voucher", () => {
+  test("mã sinh ra đã có người dùng thì sinh lại theo lượt kế tiếp, vẫn cấp được voucher và SMS", async () => {
+    const c = await student();
+    const input = { customerId: c.id, provinceCode: "80", wardCode: "25585", parentName: "Phụ Huynh Test", schoolName: p.schoolName, fullName: "Review Trần Minh Anh", className: "11A3" };
+    const taken = voucherCode(input, process.env.VOUCHER_SECRET!);
+    const other = await student();
+    await db.insert(vouchers).values({ customerId: other.id, code: taken });
+    expect(await mark(staffA, c.rows.A, "passed")).toEqual({ ok: true });
+    const [v] = await vouchersOf(c.id);
+    expect(v.code).toBe(voucherCode(input, process.env.VOUCHER_SECRET!, 1));
+    expect((await smsOf(c.id))[0].body).toContain(v.code);
+    expect((await rowOf(c.rows.A)).status).toBe("passed");
   });
 });
 

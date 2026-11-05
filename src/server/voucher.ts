@@ -25,10 +25,11 @@ export const abbreviate = (name: string): string =>
 export const classPart = (className: string): string => letters(className);
 
 // Ký tự kiểm là HMAC của dữ liệu không in trên mã (id, tỉnh, xã, phụ huynh) và 3 phần chữ: người ngoài không tự tạo được mã hợp lệ.
-export function voucherCode(input: VoucherInput, secret: string): string {
+// attempt > 0 khi mã đã có người dùng: thêm số lượt vào thông điệp để ra ký tự kiểm khác, vẫn tính lại được.
+export function voucherCode(input: VoucherInput, secret: string, attempt = 0): string {
   if (!secret) throw new Error("Thiếu VOUCHER_SECRET, không sinh được mã voucher.");
   const parts = [abbreviate(input.schoolName), nameInitials(input.fullName), classPart(input.className)];
-  const message = [input.customerId, input.provinceCode, input.wardCode, input.parentName.normalize("NFC").trim(), ...parts].join("\n");
+  const message = [input.customerId, input.provinceCode, input.wardCode, input.parentName.normalize("NFC").trim(), ...parts, ...(attempt ? [`#${attempt}`] : [])].join("\n");
   let n = createHmac("sha256", secret).update(message).digest().readBigUInt64BE(0);
   let check = "";
   for (let i = 0; i < 4; i++) {
