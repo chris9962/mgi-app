@@ -1,11 +1,66 @@
 import { randomBytes } from "node:crypto";
-import { eq } from "drizzle-orm";
+import { isIP } from "node:net";
+import { and, count, eq, inArray } from "drizzle-orm";
 import { db } from "./db/client";
-import { customers, schools } from "./db/schema";
+import { banks, customerBanks, customerExistingBanks, customers, referralCodeMonths, referralCodeSchools, referralCodes, schools } from "./db/schema";
 import { hashToken } from "./auth/session";
+import { publicSchool } from "./schools";
+import { currentYearMonth } from "@/lib/month";
+import { plain } from "@/lib/text";
+import type { CustomerFormValues } from "@/lib/customerForm";
 import type { StudentState } from "@/lib/studentState";
 
 export type Customer = typeof customers.$inferSelect;
+
+type Fail = { ok: false; message: string; status: 400 | 404 | 409; field?: string };
+const fail = (message: string, status: Fail["status"], field?: string): Fail => ({ ok: false, message, status, field });
+
+type Executor = Pick<typeof db, "select">;
+
+type Candidate = { id: string; bankId: string; bankName: string; bankSort: number; code: string | null; priority: number; createdAt: Date; quota: number; used: number };
+
+// Mã ứng viên của trường: mã đang dùng của ngân hàng đang mở, gắn cho trường. Giữ chỗ thì khoá các dòng mã trước khi đếm lượt.
+async function loadCandidates(ex: Executor, schoolId: string, month: string, lock = false): Promise<Candidate[]> {
+  const query = ex
+    .select({
+      id: referralCodes.id,
+      bankId: referralCodes.bankId,
+      bankName: banks.name,
+      bankSort: banks.sortOrder,
+      code: referralCodes.code,
+      priority: referralCodes.priority,
+      monthlyQuota: referralCodes.monthlyQuota,
+      createdAt: referralCodes.createdAt,
+    })
+    .from(referralCodes)
+    .innerJoin(referralCodeSchools, and(eq(referralCodeSchools.referralCodeId, referralCodes.id), eq(referralCodeSchools.schoolId, schoolId)))
+    .innerJoin(banks, eq(banks.id, referralCodes.bankId))
+    .where(and(eq(referralCodes.active, true), eq(banks.active, true)))
+    .orderBy(referralCodes.id);
+  const codes = lock ? await query.for("update", { of: referralCodes }) : await query;
+  if (!codes.length) return [];
+  const ids = codes.map((c) => c.id);
+  // Đếm ở câu riêng sau khi đã khoá: câu đếm chạy sau lượt chờ khoá mới thấy các dòng giữ chỗ vừa commit.
+  const [months, used] = await Promise.all([
+    ex.select({ id: referralCodeMonths.referralCodeId, quota: referralCodeMonths.quota }).from(referralCodeMonths).where(and(inArray(referralCodeMonths.referralCodeId, ids), eq(referralCodeMonths.yearMonth, month))),
+    ex
+      .select({ id: customerBanks.referralCodeId, n: count() })
+      .from(customerBanks)
+      .where(and(inArray(customerBanks.referralCodeId, ids), eq(customerBanks.yearMonth, month)))
+      .groupBy(customerBanks.referralCodeId),
+  ]);
+  const quotaOf = new Map(months.map((m) => [m.id, m.quota]));
+  const usedOf = new Map(used.map((u) => [u.id, u.n]));
+  return codes.map(({ monthlyQuota, ...c }) => ({ ...c, quota: quotaOf.get(c.id) ?? monthlyQuota, used: usedOf.get(c.id) ?? 0 }));
+}
+
+function openBanksOf(candidates: Candidate[], exclude: Set<string>): { id: string; name: string }[] {
+  const open = new Map<string, Candidate>();
+  for (const c of candidates) if (c.used < c.quota && !exclude.has(c.bankId)) open.set(c.bankId, c);
+  return [...open.values()].sort((a, b) => a.bankSort - b.bankSort || a.bankName.localeCompare(b.bankName, "vi")).map((c) => ({ id: c.bankId, name: c.bankName }));
+}
+
+export const openBanksAtSchool = async (schoolId: string, month = currentYearMonth()) => openBanksOf(await loadCandidates(db, schoolId, month), new Set());
 
 // Học sinh không có tài khoản: token trên điện thoại là thứ duy nhất chứng minh hồ sơ là của mình.
 export function newCustomerToken(): { token: string; tokenHash: string } {
@@ -27,6 +82,38 @@ export async function customerFromRequest(request: Request): Promise<Customer | 
 
 export async function touchCustomer(id: string): Promise<void> {
   await db.update(customers).set({ lastSeenAt: new Date() }).where(eq(customers.id, id));
+}
+
+export async function createCustomer(values: CustomerFormValues, ip: string | null, month = currentYearMonth()): Promise<{ ok: true; id: string; token: string } | Fail> {
+  const school = await publicSchool(values.schoolId);
+  if (!school) return fail("Không tìm thấy trường.", 404, "schoolId");
+  if (!school.active) return fail("Trường đã đóng.", 409, "schoolId");
+  const existing = [...new Set(values.existingBankIds)];
+  if (existing.length && (await db.select({ id: banks.id }).from(banks).where(inArray(banks.id, existing))).length !== existing.length) {
+    return fail("Ngân hàng không có trong danh sách.", 400, "existingBankIds");
+  }
+  const open = openBanksOf(await loadCandidates(db, school.id, month), new Set(existing));
+  const { token, tokenHash } = newCustomerToken();
+  const id = await db.transaction(async (tx) => {
+    const [row] = await tx
+      .insert(customers)
+      .values({
+        schoolId: school.id,
+        fullName: values.fullName,
+        nameSearch: plain(values.fullName),
+        className: values.className,
+        phone: values.phone,
+        parentName: values.parentName,
+        parentPhone: values.parentPhone,
+        tokenHash,
+        createdIp: ip && isIP(ip) ? ip : null,
+        status: open.length ? "new" : "no_bank",
+      })
+      .returning({ id: customers.id });
+    if (existing.length) await tx.insert(customerExistingBanks).values(existing.map((bankId) => ({ customerId: row.id, bankId })));
+    return row.id;
+  });
+  return { ok: true, id, token };
 }
 
 export async function studentState(customer: Customer): Promise<StudentState> {

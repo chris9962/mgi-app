@@ -5,7 +5,8 @@ import { Button } from "@/components/ui/Button";
 import { clearProfile, decideLink, isSchoolId, readDevice, saveSchool } from "@/lib/studentDevice";
 import { studentApi } from "@/lib/studentApi";
 import type { StudentSchool, StudentState } from "@/lib/studentState";
-import { AppHead, Bottom, EndBlock } from "./parts";
+import { AppHead, Bottom, EndBlock, Steps } from "./parts";
+import { InfoForm } from "./InfoForm";
 import { QrScanner } from "./QrScanner";
 
 type Screen =
@@ -124,7 +125,13 @@ export function StudentApp({ linkId }: { linkId?: string }) {
     case "ask":
       return <SwitchSchool current={screen.current} next={screen.next} onSwitch={() => go()} onKeep={() => go()} />;
     case "form":
-      return <AppHead school={screen.school.name} title="Thông tin" />;
+      return (
+        <>
+          <AppHead school={screen.school.name} title="Thông tin" />
+          <Steps current={1} />
+          <InfoForm school={screen.school} onCreated={() => go()} />
+        </>
+      );
     case "profile":
       return <AppHead school={screen.state.school.name} title={`${screen.state.customer.fullName} - ${screen.state.customer.className}`} />;
   }

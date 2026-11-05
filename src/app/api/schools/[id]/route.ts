@@ -1,3 +1,4 @@
+import { openBanksAtSchool } from "@/server/customers";
 import { isUuid, notFound } from "@/server/http/responses";
 import { publicSchool } from "@/server/schools";
 
@@ -5,5 +6,6 @@ import { publicSchool } from "@/server/schools";
 export async function GET(_request: Request, { params }: { params: Promise<{ id: string }> }) {
   const { id } = await params;
   const school = isUuid(id) ? await publicSchool(id) : null;
-  return school ? Response.json(school) : notFound();
+  if (!school) return notFound();
+  return Response.json({ ...school, banks: school.active ? await openBanksAtSchool(id) : [] });
 }
