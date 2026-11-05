@@ -17,15 +17,19 @@
     "e2e": "bun --env-file=.env.local scripts/e2e-seed.ts && bunx playwright test; s=$?; bun --env-file=.env.local scripts/e2e-clean.ts; exit $s"
   },
   "dependencies": {
+    "@aws-sdk/client-s3": "^3.1104.0",
+    "@aws-sdk/s3-request-presigner": "^3.1104.0",
     "bcryptjs": "^3.0.3",
     "clsx": "^2.1.1",
     "drizzle-orm": "^0.45.2",
     "lucide-react": "^1.27.0",
     "next": "16.2.12",
     "pg": "^8",
+    "qrcode": "^1.5.4",
     "react": "19.2.4",
     "react-dom": "19.2.4",
-    "zod": "^4.4.3"
+    "zod": "^4.4.3",
+    "zxing-wasm": "^3.1.5"
   },
   "devDependencies": {
     "@playwright/test": "1.62.1",
@@ -33,6 +37,7 @@
     "@types/bun": "^1.4.4",
     "@types/node": "^20",
     "@types/pg": "^8.23.1",
+    "@types/qrcode": "^1.5.6",
     "@types/react": "^19",
     "@types/react-dom": "^19",
     "drizzle-kit": "^0.31.10",
