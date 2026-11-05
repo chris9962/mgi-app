@@ -19,6 +19,7 @@ Mỗi kế hoạch giai đoạn có mục "Việc để lại" của review trư
   sinh vào `src/app/student/**`. API quản lý là `/api/admin/**`, API học sinh là `/api/**` còn lại.
   Local: `http://admin.localhost:3100`, `http://bank.localhost:3100`. Dev server: `bun dev` (cổng 3100).
 - Route, bảng, cột ghi `customer`. Chữ trên màn hình ghi "học sinh".
+- Máy chủ, Docker, Nginx, sao lưu: đọc `docs/deploy.md` trước khi đụng tới. Không SSH, không deploy khi chủ dự án chưa nói thẳng trong lượt đó.
 
 ## Code
 
