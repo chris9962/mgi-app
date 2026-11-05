@@ -26,9 +26,81 @@
 
 ## Task
 
-- [ ] **Task 1: Worker nén ảnh.** `scripts/compress-worker.ts`, nghiệp vụ ở `src/server/compress.ts`. Test S3 trên bucket dev: ảnh png lớn thành webp nhỏ hơn 300 KB, cạnh dài 1600; ảnh đã đạt không đổi; lỗi 3 lần thì dừng.
-- [ ] **Task 2: Hàm so chữ.** Chép `text.ts` cần dùng. Test unit với chữ OCR mẫu: tên dính khoảng trắng, tên dư chữ, mã AT105 với AT1050, O với 0.
-- [ ] **Task 3: Xếp lượt và worker kiểm ảnh.** Migration unique pending, `src/server/photoCheck.ts`, `src/server/ocr/reader.ts`, `scripts/ocr-server.py`, `scripts/photo-check-worker.ts`. Test DB: xếp lượt thay lượt cũ, kết quả ghi đúng `passed`/`total`, lượt bị thay thì bỏ. Test tích hợp với OCR thật (bỏ qua nếu thiếu `OCR_PYTHON`): ảnh sinh từ chữ (vẽ họ tên và mã lên ảnh bằng sharp hoặc canvas) đọc ra đạt.
-- [ ] **Task 4: Giao diện.** Khối Xác thực ảnh ở Trang 4, dòng x/y và bộ lọc ở Trang 3. E2E: học sinh nộp ảnh có chữ họ tên và mã, chạy worker một vòng (`--mot-vong`), Trang 4 hiện Đạt.
+- [x] **Task 1: Worker nén ảnh.** `scripts/compress-worker.ts`, nghiệp vụ ở `src/server/compress.ts`. Test S3 trên bucket dev: ảnh png lớn thành webp nhỏ hơn 300 KB, cạnh dài 1600; ảnh đã đạt không đổi; lỗi 3 lần thì dừng.
+- [x] **Task 2: Hàm so chữ.** Chép `text.ts` cần dùng. Test unit với chữ OCR mẫu: tên dính khoảng trắng, tên dư chữ, mã AT105 với AT1050, O với 0.
+- [x] **Task 3: Xếp lượt và worker kiểm ảnh.** Migration unique pending, `src/server/photoCheck.ts`, `src/server/ocr/reader.ts`, `scripts/ocr-server.py`, `scripts/photo-check-worker.ts`. Test DB: xếp lượt thay lượt cũ, kết quả ghi đúng `passed`/`total`, lượt bị thay thì bỏ. Test tích hợp với OCR thật (bỏ qua nếu thiếu `OCR_PYTHON`): ảnh sinh từ chữ (vẽ họ tên và mã lên ảnh bằng sharp hoặc canvas) đọc ra đạt.
+- [x] **Task 4: Giao diện.** Khối Xác thực ảnh ở Trang 4, dòng x/y và bộ lọc ở Trang 3. E2E: học sinh nộp ảnh có chữ họ tên và mã, chạy worker một vòng (`--mot-vong`), Trang 4 hiện Đạt.
 
 Cuối giai đoạn chạy đủ: `bun run test`, `bun test:db`, `bun test:s3`, `bun run e2e`, `bunx tsc --noEmit`, `bun run lint`.
+
+## Kết quả
+
+Agent làm xong 4 task ngày 2026-11-05, commit 1d278eb tới commit ghi mục này, trên nhánh `dev`.
+
+### Đã làm
+
+- Worker nén ảnh (`src/server/compress.ts`, `scripts/compress-worker.ts`, `bun compress:worker`): lấy ảnh có `compressed_at` rỗng và `compress_attempts < 3`, cũ nhất trước, 20 ảnh một vòng. Ảnh webp dưới 300 KB chỉ ghi `compressed_at`. Ảnh khác tải về, ép webp cạnh dài 1600 (chất lượng 85, 80, 75, 70, dừng ở bậc đầu lọt trần), HEIC đổi sang JPEG bằng `heic-convert` trước. Khoá mới giữ thư mục, ngày, uuid và đổi đuôi sang `.webp`; ảnh đã là webp thì ghi đè đúng khoá. Object gốc xoá sau commit. Lỗi thì tăng `compress_attempts`, đủ 3 lần thì dừng, ảnh gốc giữ nguyên.
+- `src/server/storage.ts` thêm `readImage` (object không còn thì trả null) và `writeImage`.
+- Hàm so chữ (`src/server/ocr/text.ts`) chép `lineHasName`, `linesHaveExactCode` của mgst-app, bỏ dấu bằng `removeDiacritics` có sẵn.
+- Migration 0004: unique `photo_checks (customer_bank_id) where status = 'pending'` và cột `photo_checks.claimed_at`.
+- Đọc chữ: `scripts/ocr-server.py` (PaddleOCR `PP-OCRv5_mobile_det` dò vùng, VietOCR `vgg_transformer` đọc, `PP-OCRv6_medium_rec` đọc lại vùng mã lệch O/0, I/1) và `src/server/ocr/reader.ts` giữ một tiến trình Python suốt đời worker.
+- Worker kiểm ảnh (`src/server/photoCheckWorker.ts`, `scripts/photo-check-worker.ts`, `bun photo-check:worker`): nghe `LISTEN photo_checks` (kênh app đã gọi `pg_notify`), quét lại mỗi 30 giây, 20 lượt một vòng. Mỗi khung chưa bỏ có bật `check_name` hoặc `check_code` đọc ảnh đang dùng của chính khung đó. Kết quả ghi đúng dạng `PhotoCheckItem` của `src/lib/photoCheck.ts`, `passed`/`total` đếm khung. Câu lý do không trích chữ trên ảnh. Worker không đổi trạng thái `customer_banks`.
+- Hai worker có cờ `--mot-vong` và dừng sạch khi nhận SIGTERM: làm nốt ảnh hoặc lượt đang xử lý rồi thoát mã 0.
+- Giao diện: nhãn Không đạt trong khối Xác thực ảnh ở Trang 4 dùng tông cảnh báo có dấu "!" như thiết kế, khác màu đỏ của lượt người quản bấm Không đạt. Token `--warn`, `--warn-ink` cho bộ sáng và tối.
+- `OCR_PYTHON` có trong `.env.local` (`~/.mgst-ocr/bin/python`) và `.env.example` (rỗng). Thêm `sharp`, `heic-convert`, `@types/heic-convert`.
+
+### Test
+
+- `bun run test`: 139 pass. `bun test:db`: 176 pass. `bun test:s3`: 22 pass. `bun run e2e`: 15 pass. `bunx tsc --noEmit`: sạch. `bun run lint`: 0 lỗi, 2 cảnh báo `<img>` có từ giai đoạn 3.
+- Test S3 nén ảnh trên bucket `mgi-bank-dev`: png 2400x3200 thành webp dưới 300 KB cạnh dài 1600; webp đã đạt giữ nguyên; webp quá 300 KB ghi đè đúng khoá; HEIC (dựng bằng `sips` của macOS) thành webp; lỗi 3 lần thì dừng; hai worker cùng nén một ảnh chạy song song thật bằng `Promise.all`, chỉ một bên nén. Test xoá mọi object đã tạo.
+- Test DB kiểm ảnh dùng ảnh giả là chữ UTF-8 và OCR giả: xếp lượt thay lượt cũ, DB từ chối lượt pending thứ hai, `passed`/`total` và từng mục `result`, khung chưa có ảnh, dòng không có mã chữ, ngân hàng tắt hết khung kiểm, lượt bị thay trong lúc đọc (OCR giả xếp lượt mới giữa chừng, ép thứ tự chắc chắn), hai worker cùng nhận một lượt (`Promise.all`), lượt giữ quá 5 phút, lỗi máy ghi `failed` không thử lại, ảnh vừa bị nén đổi khoá thì đọc lại khoá mới.
+- Test OCR thật (`tests/s3/photoCheckOcr.test.ts`, bỏ qua khi thiếu `OCR_PYTHON`) và e2e vẽ chữ lên ảnh bằng sharp lúc chạy, không lưu ảnh vào repo.
+- Kiểm đột biến, agent trả code về sau mỗi lần: bỏ khoá dòng ở worker nén thì test hai worker fail; bỏ lọc `compress_attempts < 3` thì test lỗi 3 lần fail; bỏ điều kiện giữ lượt thì 3 test fail; ghi kết quả theo dòng ngân hàng thay vì id lượt thì test lượt bị thay fail; bỏ lượt đọc lại khoá thì test ảnh vừa nén fail; xoá unique index thì test lượt pending thứ hai fail; bỏ so mã thì e2e fail ở dòng "Xác thực ảnh 0/1".
+
+### OCR đo trên ảnh sinh từ chữ
+
+- Ảnh màn hình giả 900x1600, chữ Arial, nền trắng. Nạp model khoảng 10 giây, mỗi ảnh khoảng 1 giây trên máy local.
+- 6 họ tên có dấu đọc đúng cả dấu: TRẦN MINH ANH, NGUYỄN THỊ HỒNG NHUNG, Lê Văn Ổi, Phạm Quốc Đạt, Đỗ Thị Ánh Tuyết, Võ Hoàng Yến.
+- VietOCR đọc sai cả 3 mã có O hoặc I: BO08 ra BOO8, OI10 ra 0110, MGI-O1I0 ra MGI-0110. Khi worker gửi kèm mã, PP-OCRv6 đọc lại đúng cả 3. Mã không có O, I đọc đúng: AT105, ND-TPB-01, AT106.
+- Ca gần đúng AT1050 đọc ra đúng AT1050 và không đạt cho mã AT105. Tên thiếu một chữ (TRẦN MINH AN) không đạt.
+- E2E: 2 ảnh qua bước nén của trình duyệt đọc đúng (HS-VPBANK-01 đạt, HS-TPBANK-010 không đạt cho HS-TPBANK-01).
+- Tổng 15 ảnh (6 ảnh thử tay, 7 ảnh test tích hợp, 2 ảnh e2e): kết quả cuối đúng 15/15. Chưa đo trên ảnh chụp app ngân hàng thật.
+
+### Ruling
+
+- Plan ghi task dạng gạch đầu dòng nên script tách brief không chạy; brief của mỗi task là dòng task cộng mục Quyết định đã chốt.
+- Worker kiểm ảnh tải ảnh theo id dòng ảnh; object không còn thì đọc lại `s3_key` một lần, vì worker nén đổi khoá rồi xoá object cũ. Hai worker không khoá chéo nhau.
+- Worker nén khoá dòng `proof_photos` bằng `for update skip locked` suốt lúc tải, nén, ghi. Học sinh chụp lại hay nhân viên thay đúng ảnh đang nén phải chờ vài giây.
+- Khoá mới chỉ đổi đuôi sang `.webp`; ảnh đã là webp mà quá 300 KB thì ghi đè đúng khoá như thiết kế ghi "ghi đè lên S3".
+- "Ảnh đã đạt" xét theo `size_bytes <= 300 KB` và đuôi `.webp`, không đo cạnh dài.
+- Worker nén chỉ quét mỗi 30 giây, không nghe LISTEN: thiết kế không nêu kênh cho nén và ảnh gốc xem được ngay.
+- Nén ra vẫn quá 300 KB ở chất lượng 70 thì vẫn ghi bản đó, như mgst-app.
+- Chép nguyên `lineHasName`, kể cả nhánh tên nối liền "chuyen tien" của lời nhắn chuyển khoản.
+- Bỏ dấu dùng `removeDiacritics` có sẵn (đổi cả Ð, ð) thay vì chép `stripAccents`.
+- Nửa worker đặt ở `src/server/photoCheckWorker.ts` thay vì `src/server/photoCheck.ts`: đã có `src/server/photoChecks.ts` (xếp lượt, app import), và file worker kéo theo tiến trình OCR nên route Next không được import.
+- Thêm cột `photo_checks.claimed_at`. Worker nhận lượt bằng một câu update khi cột rỗng hoặc quá 5 phút, không giữ khoá dòng lúc đọc, để xếp lượt mới vẫn xoá được lượt đang đọc.
+- Khung bật kiểm mà chưa có ảnh ghi Không đạt, lý do "Chưa có ảnh.". Khung đã bỏ không kiểm dù còn ảnh.
+- Dòng ngân hàng không có mã chữ (mã chỉ có QR) thì bỏ phần so mã; khung chỉ kiểm mã thì không tính vào `total`.
+- Lúc đọc mà ngân hàng không còn khung bật kiểm thì worker xoá lượt chờ, không ghi 0/0.
+- Câu lý do khung đạt là thứ đã kiểm ("Họ tên", "Mã giới thiệu", "Họ tên và mã giới thiệu"). Khung không đạt ghi "Không tìm thấy họ tên X và mã giới thiệu Y trong ảnh." theo phần thiếu.
+- `ocr-server.py` chọn vùng cần đọc lại bằng chuỗi đã bỏ ký tự ngoài chữ số, không theo cụm như mgst-app, vì mã có gạch nối như ND-TPB-01 tách thành 3 cụm và cách cũ không bao giờ đọc lại. So nguyên văn vẫn nằm ở `text.ts`.
+- `reader.ts` bỏ `OCR_PROCESSES`, model seq2seq và `pad_y` của mgst-app; worker đọc tuần tự bằng một tiến trình.
+- Worker kiểm ảnh mất kết nối LISTEN thì thoát mã 1 như worker SMS.
+- SIGTERM thì làm nốt lượt đang đọc rồi thoát. Lượt đầu tiên còn phải nạp model khoảng 10 giây.
+- Giai đoạn 5 đã có khối Xác thực ảnh ở Trang 4, dòng x/y và bộ lọc ở Trang 3. Task 4 chỉ thêm tông cảnh báo cho nhãn Không đạt của máy và e2e.
+- Giữ thứ tự dòng của giai đoạn 5 (tên khung, câu lý do, Hệ thống) dù thiết kế đặt câu "Không tìm thấy" sau dòng Hệ thống, vì `result` chỉ có một câu lý do.
+- Seed e2e bật `check_code` ở khung đầu của cả 3 ngân hàng để e2e kiểm được mã.
+
+### Việc để lại
+
+| Việc | Khi nào |
+|---|---|
+| Quay lại từ B3 đọc `s3_key` trước khi xoá dòng ảnh: worker nén đổi khoá đúng lúc đó thì object `.webp` mới thành rác trên S3 | Giai đoạn 7 cùng job dọn object mồ côi |
+| Worker nén và worker kiểm ảnh chưa có container. Container kiểm ảnh cần Python có PaddleOCR, VietOCR, model tải sẵn (`ocr-server.py --tai-model`), đặt `OCR_PYTHON`, `OCR_CONFIG`, `OCR_WEIGHTS`, restart khi thoát, stop grace đủ cho lượt đang đọc | Giai đoạn 7 |
+| Thiếu `OCR_PYTHON` thì worker gọi `python3`; máy không có thư viện thì mọi lượt ghi `failed` | Giai đoạn 7 |
+| OCR mới đo trên ảnh vẽ chữ bằng Arial nền trắng, chưa đo trên ảnh chụp app ngân hàng thật của học sinh | Khi có ảnh thật |
+| Worker kiểm ảnh đọc tuần tự một tiến trình, khoảng 1 giây một ảnh; nhiều học sinh gửi cùng lúc thì hàng chờ dài | Khi tải lớn |
+| Ảnh webp dưới 300 KB mà cạnh dài hơn 1600 không được nén lại | Khi user cần |
+| Lượt đọc quá 5 phút thì worker khác nhận lại và đọc trùng; kết quả vẫn chỉ ghi một lần | Khi chạy nhiều worker |
+| Trang Vận hành hệ thống chưa hiện hàng chờ `photo_checks` | Giai đoạn 7 |
+
