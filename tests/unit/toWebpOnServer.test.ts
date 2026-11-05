@@ -5,7 +5,7 @@ import { heicFixture } from "../support/heic";
 import { broken, HEIC_HEAD, JPEG_HEAD, PNG_HEAD, screenshot } from "../support/screenshot";
 import { MAX_IMAGE_BYTES } from "../../src/lib/imageKey";
 import { putImage } from "../../src/server/storage";
-import { heicPixels } from "../../src/server/heic";
+import { heicPixels, heicToJpeg } from "../../src/server/heic";
 import { toWebpOnServer } from "../../src/server/toWebpOnServer";
 
 const MAX_BYTES = 300 * 1024;
@@ -57,7 +57,7 @@ function pngClaiming(width: number, height: number): Uint8Array {
 describe("trần điểm ảnh: route nộp ảnh mở cho học sinh không đăng nhập", () => {
   test("đọc số điểm ảnh của HEIC từ hộp ispe, không giải mã", () => {
     expect(heicPixels(heicFixture("heic-320x240.heic"))).toBe(320 * 240);
-    expect(heicPixels(heicFixture("heic-10240x10240-phang.heic"))).toBe(10240 * 10240);
+    expect(heicPixels(heicFixture("heic-8000x8000-phang.heic"))).toBe(8000 * 8000);
     expect(heicPixels(broken(HEIC_HEAD))).toBeNull();
   });
 
@@ -67,11 +67,27 @@ describe("trần điểm ảnh: route nộp ảnh mở cho học sinh không đ�
     expect(Date.now() - started).toBeLessThan(1500);
   }, 120_000);
 
-  test("HEIC 10240x10240 nền phẳng (48 KB) không bị giải mã: trả null ngay, nơi gọi giữ bản gốc", async () => {
+  test("HEIC 8000x8000 nền phẳng (33 KB, 64 MP) vượt trần 50 MP của HEIC: không giải mã, trả null ngay, nơi gọi giữ bản gốc", async () => {
     const started = Date.now();
-    expect(await toWebpOnServer(heicFixture("heic-10240x10240-phang.heic"), "heic")).toBeNull();
-    expect(Date.now() - started).toBeLessThan(1500);
+    expect(await toWebpOnServer(heicFixture("heic-8000x8000-phang.heic"), "heic")).toBeNull();
+    expect(Date.now() - started).toBeLessThan(1000);
   }, 120_000);
+
+  test("hai lượt đổi HEIC cùng lúc chạy lần lượt: lượt sau chờ lượt trước xong, lượt lỗi không chặn hàng", async () => {
+    const events: string[] = [];
+    const decoder = (name: string, fails = false) =>
+      (async () => {
+        events.push(`${name} bắt đầu`);
+        await Bun.sleep(30);
+        events.push(`${name} xong`);
+        if (fails) throw new Error("hỏng");
+        return new ArrayBuffer(1);
+      }) as unknown as Parameters<typeof heicToJpeg>[1];
+    const bytes = heicFixture("heic-320x240.heic");
+    const results = await Promise.allSettled([heicToJpeg(bytes, decoder("A", true)), heicToJpeg(bytes, decoder("B")), heicToJpeg(bytes, decoder("C"))]);
+    expect(results.map((r) => r.status)).toEqual(["rejected", "fulfilled", "fulfilled"]);
+    expect(events).toEqual(["A bắt đầu", "A xong", "B bắt đầu", "B xong", "C bắt đầu", "C xong"]);
+  });
 });
 
 describe("putImage từ chối trước khi ghi S3", () => {

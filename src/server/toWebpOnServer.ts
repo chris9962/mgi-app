@@ -8,13 +8,15 @@ const MAX_BYTES = 300 * 1024;
 const QUALITY_STEPS = [85, 80, 75, 70];
 // Khác mgst-app: route nộp ảnh mở cho học sinh không đăng nhập, ảnh vài chục KB khai 100 MP làm app tốn hơn 1 GB RAM và đứng vài giây.
 const MAX_INPUT_PIXELS = 100_000_000;
+// Điện thoại chụp tới 48 MP; heic-convert tốn khoảng 1,22 GB cho ảnh 48 MP nên HEIC có trần thấp hơn.
+const MAX_HEIC_PIXELS = 50_000_000;
 
 // Trả null khi ảnh đã là WebP trong trần hoặc không giải mã được: nơi gọi giữ file gốc, ảnh xem không được vẫn hơn mất ảnh.
 export async function toWebpOnServer(bytes: Uint8Array, ext: string): Promise<Uint8Array | null> {
   try {
     if (ext === "heic") {
       const pixels = heicPixels(bytes);
-      if (pixels === null || pixels > MAX_INPUT_PIXELS) throw new Error(`HEIC ${pixels ?? "không rõ"} điểm ảnh, vượt trần ${MAX_INPUT_PIXELS}.`);
+      if (pixels === null || pixels > MAX_HEIC_PIXELS) throw new Error(`HEIC ${pixels ?? "không rõ"} điểm ảnh, vượt trần ${MAX_HEIC_PIXELS}.`);
     }
     const src = Buffer.from(ext === "heic" ? await heicToJpeg(bytes) : bytes);
     // failOn none: JPEG thiếu vài byte cuối vẫn dựng được phần đã có thay vì mất cả ảnh.

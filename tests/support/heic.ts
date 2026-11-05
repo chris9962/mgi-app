@@ -17,4 +17,4 @@ export function toHeic(png: Uint8Array): Uint8Array | null {
 }
 
 // Ảnh HEIC dựng sẵn bằng sips, nằm trong repo: máy không có sips vẫn chạy đủ test HEIC.
-export const heicFixture = (name: "heic-320x240.heic" | "heic-10240x10240-phang.heic"): Uint8Array => new Uint8Array(readFileSync(join(import.meta.dir, "../fixtures", name)));
+export const heicFixture = (name: "heic-320x240.heic" | "heic-8000x8000-phang.heic"): Uint8Array => new Uint8Array(readFileSync(join(import.meta.dir, "../fixtures", name)));
