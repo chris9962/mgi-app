@@ -30,7 +30,7 @@ export type CustomerListRow = {
 const CUSTOMER_ID = sql.raw(`"customers"."id"`);
 const CUSTOMER_BANK_ID = sql.raw(`"customer_banks"."id"`);
 
-export const inBanks = (ids: string[] | null): SQL =>
+const inBanks = (ids: string[] | null): SQL =>
   ids === null
     ? sql`true`
     : ids.length
