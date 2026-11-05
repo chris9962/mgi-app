@@ -3,6 +3,7 @@ import { CopyObjectCommand, DeleteObjectCommand, GetObjectCommand, HeadObjectCom
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 import { allowedExt, FOLDERS, isImageKey, MAX_IMAGE_BYTES, type Folder } from "@/lib/imageKey";
+import { toWebpOnServer } from "./toWebpOnServer";
 
 export { FOLDERS, MAX_IMAGE_BYTES, type Folder };
 
@@ -57,14 +58,21 @@ export const isValidKey = (key: string): boolean => isImageKey(key);
 
 export const newKey = (folder: Folder, ext: string): string => `${folder}/${new Date().toISOString().slice(0, 10)}/${randomUUID()}.${ext}`;
 
-export async function putImage(bytes: Uint8Array, folder: Folder): Promise<{ ok: true; key: string } | { ok: false; message: string }> {
-  if (bytes.length > MAX_IMAGE_BYTES) return { ok: false, message: "Ảnh lớn hơn 10 MB." };
-  const ext = imageExtOf(bytes);
-  if (!ext || !allowedExt(folder, ext)) return { ok: false, message: "Chỉ nhận ảnh jpg, png hoặc webp." };
+export type PutResult = { ok: true; key: string; size: number } | { ok: false; message: string };
+
+// Mọi đường tải ảnh đi qua đây như mgst-app: kho chỉ giữ WebP, đổi lỗi thì giữ bản gốc.
+export async function putImage(raw: Uint8Array, folder: Folder): Promise<PutResult> {
+  if (raw.length > MAX_IMAGE_BYTES) return { ok: false, message: "Ảnh lớn hơn 20 MB." };
+  const rawExt = imageExtOf(raw);
+  if (!rawExt) return { ok: false, message: "Chỉ nhận ảnh jpg, png, webp hoặc heic." };
+  const converted = await toWebpOnServer(raw, rawExt);
+  const bytes = converted ?? raw;
+  const ext = converted ? "webp" : rawExt;
+  if (!allowedExt(folder, ext)) return { ok: false, message: "Không mở được ảnh này. Chọn ảnh khác." };
   const c = readConfig();
   const key = newKey(folder, ext);
   await client(c).send(new PutObjectCommand({ Bucket: c.bucket, Key: key, Body: bytes, ContentType: MIME.get(ext) }), deadline());
-  return { ok: true, key };
+  return { ok: true, key, size: bytes.length };
 }
 
 // Content-Type trả về theo đuôi khoá, không theo loại lúc tải lên: file lạ mang đuôi ảnh không được trình duyệt chạy như trang web.
