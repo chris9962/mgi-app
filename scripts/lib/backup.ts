@@ -74,7 +74,8 @@ function run(args: string[], stdio: { in?: number; out?: number } = {}) {
   return r;
 }
 
-// Dump rỗng vẫn có thể cho mã 0, nên đọc lại mục lục của file: phải có dữ liệu bảng users.
+// pg_dump hỏng giữa chừng vẫn có thể cho mã 0: đọc lại mục lục để chắc file đọc được và có mục dữ liệu của bảng users.
+// Mục lục không cho biết bảng có bao nhiêu dòng: DB đủ bảng mà rỗng vẫn qua bước này, shrinkError bắt ca đó.
 export function dumpDatabase(container: string, target: DbTarget, file: string): void {
   const fd = openSync(file, "w");
   let r;
@@ -151,6 +152,13 @@ export function tableCounts(container: string, user: string, database: string): 
         return [name, Number(n)];
       }),
   );
+}
+
+// DB bị xoá dữ liệu (tạo lại rỗng, script dọn chạy nhầm) vẫn dump ra file hợp lệ. Đẩy bản đó lên đều đặn thì sau BACKUP_KEEP_DAYS
+// mọi bản tốt bị dọn: bản mới nhỏ hơn nửa bản trước thì dừng trước khi đẩy lên và trước khi dọn bản cũ.
+export function shrinkError(size: number, previous: { key: string; size: number } | null, allowed: boolean): string | null {
+  if (allowed || !previous || size >= previous.size * 0.5) return null;
+  return `bản dump mới ${Math.round(size / 1024)} KB, nhỏ hơn nửa bản trước ${previous.key} (${Math.round(previous.size / 1024)} KB): nghi DB bị xoá dữ liệu. Không đẩy lên S3, không dọn bản cũ. Chắc chắn DB đúng thì chạy lại với BACKUP_ALLOW_SHRINK=1.`;
 }
 
 // PutObject không lỗi vẫn có thể ghi thiếu khi đường truyền đứt: đọc lại dung lượng trên S3.

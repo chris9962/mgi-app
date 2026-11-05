@@ -1,10 +1,11 @@
 import { mkdirSync, readdirSync, rmSync, statSync } from "node:fs";
 import path from "node:path";
-import { backupFileName, backupKey, backupS3, dbTarget, dumpDatabase, pruneBackups, uploadBackup } from "./lib/backup";
+import { backupFileName, backupKey, backupS3, dbTarget, dumpDatabase, newestBackup, pruneBackups, shrinkError, uploadBackup } from "./lib/backup";
 
 // Sao lưu DB lên bucket sao lưu, chạy trên máy chủ bằng timer mgi-bank-backup.timer (docs/deploy.md mục Sao lưu).
 // Biến: BACKUP_S3_BUCKET (bắt buộc, khác bucket ảnh), BACKUP_S3_* (thiếu thì dùng S3_*), BACKUP_DB_CONTAINER (mgi-bank-db),
-// BACKUP_LOCAL_DIR (/root/mgi-bank-backup), BACKUP_KEEP_LOCAL (18 file), BACKUP_KEEP_DAYS (7 ngày trên S3).
+// BACKUP_LOCAL_DIR (/root/mgi-bank-backup), BACKUP_KEEP_LOCAL (18 file), BACKUP_KEEP_DAYS (7 ngày trên S3),
+// BACKUP_ALLOW_SHRINK=1 (một lượt chạy tay khi dữ liệu giảm là thật).
 function fail(message: string): never {
   console.error(`[backup] HỎNG: ${message}`);
   process.exit(1);
@@ -22,7 +23,13 @@ async function main() {
   mkdirSync(localDir, { recursive: true });
   const file = path.join(localDir, backupFileName(now));
   dumpDatabase(container, target, file);
-  console.log(`[backup] dump xong ${file} (${Math.round(statSync(file).size / 1024)} KB)`);
+  const size = statSync(file).size;
+  console.log(`[backup] dump xong ${file} (${Math.round(size / 1024)} KB)`);
+  const shrunk = shrinkError(size, await newestBackup(s3), process.env.BACKUP_ALLOW_SHRINK === "1");
+  if (shrunk) {
+    rmSync(file);
+    fail(shrunk);
+  }
 
   const key = backupKey(now);
   await uploadBackup(s3, key, file);

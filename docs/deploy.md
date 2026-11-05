@@ -292,6 +292,8 @@ docker image prune -f
 
 Timer `mgi-bank-backup.timer` chạy `scripts/db-backup.ts` đầu mỗi giờ từ 06:00 đến 23:00. Script dump database bằng `pg_dump` trong container `mgi-bank-db`, kiểm file dump đọc được, đẩy lên bucket sao lưu ở khoá `<ngày>/mgi-bank-<ngày>-<giờ>.dump`, đọc lại dung lượng trên S3. Đĩa giữ 18 file mới nhất ở `/root/mgi-bank-backup`. S3 giữ 7 ngày.
 
+Bản dump mới nhỏ hơn nửa bản mới nhất trên S3 thì script dừng trước khi đẩy lên và trước khi dọn bản cũ, unit hỏng và báo động. DB bị xoá dữ liệu (tạo lại rỗng, script dọn chạy nhầm) vẫn dump ra file hợp lệ; đẩy bản đó lên đều đặn thì sau 7 ngày mọi bản tốt bị dọn. Dữ liệu giảm là thật (chủ dự án xoá hàng loạt) thì người vận hành chạy tay một lần `BACKUP_ALLOW_SHRINK=1 bun run db:backup`.
+
 Timer `mgi-bank-backup-check.timer` chạy `scripts/db-backup-check.ts` lúc 08:00. Bản mới nhất cũ hơn 10 giờ thì unit hỏng. Unit hỏng nào cũng gọi `mgi-bank-alert@.service`, dòng báo động nằm trong journal mức `err`.
 
 Viết `.env.backup` một lần:
@@ -457,6 +459,7 @@ Script dừng khi chạy ngoài `/opt/mgi-bank-test` hoặc khi `DATABASE_URL` k
 | `BACKUP_S3_ACCESS_KEY_ID`, `BACKUP_S3_SECRET_ACCESS_KEY` | khoá riêng, thiếu thì dùng khoá S3 của app |
 | `BACKUP_S3_ENDPOINT`, `BACKUP_S3_REGION` | thiếu thì dùng của app |
 | `BACKUP_KEEP_DAYS`, `BACKUP_KEEP_LOCAL`, `BACKUP_MAX_AGE_HOURS` | 7 ngày trên S3, 18 file trên đĩa, ngưỡng tuổi 10 giờ |
+| `BACKUP_ALLOW_SHRINK` | đặt `1` cho một lượt chạy tay khi dữ liệu giảm hơn nửa là thật |
 | `BACKUP_LOCAL_DIR`, `BACKUP_DB_CONTAINER` | `/root/mgi-bank-backup`, `mgi-bank-db` |
 
 ## 14. Lệnh thường dùng

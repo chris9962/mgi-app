@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { appContainersFor, backupConfig, backupKey, dbTarget, staleKeys } from "../../scripts/lib/backup";
+import { appContainersFor, backupConfig, backupKey, dbTarget, shrinkError, staleKeys } from "../../scripts/lib/backup";
 
 const S3 = { S3_ENDPOINT: "https://s3.example/", S3_REGION: "han02", S3_BUCKET: "mgi-bank-images", S3_ACCESS_KEY_ID: "app-key", S3_SECRET_ACCESS_KEY: "app-secret" };
 
@@ -37,6 +37,22 @@ describe("tên bản sao lưu", () => {
     const keys = ["2026-10-28/a.dump", "2026-10-29/b.dump", "2026-11-04/c.dump", "2026-11-05/d.dump", "ghi-chu.txt"];
     expect(staleKeys(keys, new Date("2026-11-05T03:00:00Z"), 7, "")).toEqual(["2026-10-28/a.dump"]);
     expect(staleKeys(["zz-test-backup/2026-01-01/x.dump", "2026-01-01/y.dump"], new Date("2026-11-05T03:00:00Z"), 7, "zz-test-backup/")).toEqual(["zz-test-backup/2026-01-01/x.dump"]);
+  });
+});
+
+describe("bản dump co lại bất thường", () => {
+  const previous = { key: "2026-11-05/mgi-bank-2026-11-05-2100.dump", size: 800 * 1024 };
+
+  test("nhỏ hơn nửa bản trước thì báo lỗi: DB đủ bảng mà rỗng vẫn qua bước đọc mục lục, đẩy lên đều đặn thì 7 ngày sau mọi bản tốt bị dọn", () => {
+    expect(shrinkError(90 * 1024, previous, false)).toContain("2026-11-05/mgi-bank-2026-11-05-2100.dump");
+    expect(shrinkError(399 * 1024, previous, false)).toContain("BACKUP_ALLOW_SHRINK=1");
+  });
+
+  test("lớn dần hoặc nhỏ đi chút ít thì qua; lần đầu chưa có bản trước thì qua; người vận hành cho phép thì qua", () => {
+    expect(shrinkError(900 * 1024, previous, false)).toBeNull();
+    expect(shrinkError(500 * 1024, previous, false)).toBeNull();
+    expect(shrinkError(1, null, false)).toBeNull();
+    expect(shrinkError(1, previous, true)).toBeNull();
   });
 });
 
