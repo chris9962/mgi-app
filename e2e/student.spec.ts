@@ -1,4 +1,6 @@
+import { randomBytes } from "node:crypto";
 import { expect, test } from "@playwright/test";
+import sharp from "sharp";
 import { E2E_STUDENT_SCHOOL, E2E_STUDENT_SCHOOL_ID } from "../scripts/e2e-data";
 
 test.use({ baseURL: "http://bank.localhost:3100", viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true });
@@ -92,7 +94,7 @@ test("đang tải ảnh thì không gửi kiểm tra được; tải ảnh lỗi
 
   let release = () => {};
   const gate = new Promise<void>((resolve) => (release = resolve));
-  await page.route(/\/uploads\//, async (route) => {
+  await page.route("**/api/customers/me/photos", async (route) => {
     await gate;
     await route.continue();
   });
@@ -102,14 +104,35 @@ test("đang tải ảnh thì không gửi kiểm tra được; tải ảnh lỗi
   release();
   await expect(panel.getByText("Đang tải ảnh")).toHaveCount(0, { timeout: 30_000 });
   await expect(send).toBeEnabled();
-  await page.unroute(/\/uploads\//);
+  await page.unroute("**/api/customers/me/photos");
 
-  await page.route("**/api/customers/me/photos/upload-url", (route) => route.fulfill({ status: 200, contentType: "text/plain", body: "oops" }));
+  await page.route("**/api/customers/me/photos", (route) => route.abort("connectionreset"));
   await panel.getByLabel("Ảnh màn hình chính: chụp lại").setInputFiles(PHOTO);
   await expect(panel.getByRole("alert")).toContainText("Không tải được ảnh");
   await expect(panel.getByText("Đang tải ảnh")).toHaveCount(0);
-  await page.unroute("**/api/customers/me/photos/upload-url");
+  await page.unroute("**/api/customers/me/photos");
   await panel.getByLabel("Ảnh màn hình chính: chụp lại").setInputFiles(PHOTO);
   await expect(panel.getByRole("alert")).toHaveCount(0, { timeout: 30_000 });
   await expect(send).toBeEnabled();
+});
+
+test("ảnh 15 MB gửi qua API tới đủ route: proxy không cắt body ở 10 MB, máy chủ đổi sang WebP", async ({ request }) => {
+  const origin = "http://bank.localhost:3100";
+  const created = await request.post("/api/customers", {
+    headers: { Origin: origin },
+    data: { schoolId: E2E_STUDENT_SCHOOL_ID, fullName: "Đặng Ảnh Lớn", className: "12c1", phone: "0912000222", parentName: "Đặng Văn Ba", parentPhone: "0987000222", existingBankIds: [] },
+  });
+  expect(created.status()).toBe(201);
+  const auth = { Origin: origin, Authorization: `Bearer ${(await created.json()).token}` };
+  const me = async () => (await request.get("/api/customers/me", { headers: auth })).json();
+  const eligible: { id: string }[] = (await me()).eligibleBanks;
+  expect((await request.post("/api/customers/me/banks", { headers: auth, data: { bankIds: eligible.slice(0, 2).map((b) => b.id) } })).status()).toBe(204);
+  const [bank] = (await me()).banks;
+  // Ảnh nhiễu không nén được: PNG giữ gần đủ 15 MB điểm ảnh thô.
+  const png = await sharp(randomBytes(2240 * 2240 * 3), { raw: { width: 2240, height: 2240, channels: 3 } }).png({ compressionLevel: 0 }).toBuffer();
+  expect(png.length).toBeGreaterThan(14 * 1024 * 1024);
+  const res = await request.post("/api/customers/me/photos", { headers: auth, multipart: { customerBankId: bank.id, slotId: bank.slots[0].id, file: { name: "IMG_0002.png", mimeType: "image/png", buffer: png } } });
+  expect(res.status()).toBe(201);
+  const [after] = (await me()).banks;
+  expect(after.slots[0].photo.sizeBytes).toBeLessThan(png.length);
 });

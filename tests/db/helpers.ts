@@ -60,21 +60,20 @@ export async function makeActor(name: string, role: "admin" | "manager" | "staff
   return (await loadSessionUser(row.id))!;
 }
 
-// S3 là hệ ngoài: test DB dùng kho ảnh giả trong bộ nhớ, test S3 kiểm presigned PUT thật.
+// S3 là hệ ngoài: test DB dùng kho ảnh giả trong bộ nhớ, test S3 ghi ảnh thật. Kho giả nhận theo chữ ký file như putImage, không đổi WebP.
+export const FAKE_WEBP = new Uint8Array([0x52, 0x49, 0x46, 0x46, 0, 0, 0, 0, 0x57, 0x45, 0x42, 0x50, ...new Array(988).fill(7)]);
 export function fakeStore() {
   const objects = new Map<string, number>();
   const removed: string[] = [];
-  const signed: { key: string; contentType: string; size: number }[] = [];
+  let puts = 0;
   const store = {
-    presignPut: async (key: string, contentType: string, size: number) => {
-      signed.push({ key, contentType, size });
-      return `https://s3.test/${key}?signed`;
-    },
-    headSize: async (key: string) => objects.get(key) ?? null,
-    copy: async (from: string, to: string) => {
-      const size = objects.get(from);
-      if (size === undefined) throw new Error("NoSuchKey");
-      objects.set(to, size);
+    put: async (bytes: Uint8Array): Promise<{ ok: true; key: string; size: number } | { ok: false; message: string }> => {
+      const { imageExtOf, newKey } = await import("../../src/server/storage");
+      puts += 1;
+      if (!imageExtOf(bytes)) return { ok: false, message: "Chỉ nhận ảnh jpg, png, webp hoặc heic." };
+      const key = newKey("proofs", "webp");
+      objects.set(key, bytes.length);
+      return { ok: true, key, size: bytes.length };
     },
     remove: async (key: string) => {
       objects.delete(key);
@@ -82,5 +81,5 @@ export function fakeStore() {
     },
     signGet: async (key: string) => `https://s3.test/${key}?get`,
   };
-  return { objects, removed, signed, store };
+  return { objects, removed, store, puts: () => puts };
 }

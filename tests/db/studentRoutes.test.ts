@@ -9,7 +9,7 @@ import { CustomerForm } from "../../src/lib/customerForm";
 import { SchoolForm } from "../../src/lib/schoolForm";
 import { POST as createRoute } from "../../src/app/api/customers/route";
 import { POST as reserveRoute } from "../../src/app/api/customers/me/banks/route";
-import { POST as uploadUrlRoute } from "../../src/app/api/customers/me/photos/upload-url/route";
+import { POST as photosRoute } from "../../src/app/api/customers/me/photos/route";
 import { GET as meRoute } from "../../src/app/api/customers/me/route";
 
 const SITE = `http://${process.env.STUDENT_HOST ?? "bank.localhost"}:3100`;
@@ -22,6 +22,9 @@ const req = (path: string, { origin = SITE, auth, body }: { origin?: string; aut
     headers: { "Content-Type": "application/json", Origin: origin, ...(auth ? { Authorization: auth } : {}) },
     body: JSON.stringify(body ?? {}),
   });
+
+const photoReq = (body: FormData, auth?: string, headers: Record<string, string> = {}) =>
+  new Request(`${SITE}/api/customers/me/photos`, { method: "POST", headers: { Origin: SITE, ...(auth ? { Authorization: auth } : {}), ...headers }, body });
 
 beforeAll(async () => {
   await cleanTestUsers();
@@ -42,7 +45,7 @@ describe("route ghi của học sinh", () => {
   test("thiếu Bearer hoặc Bearer sai thì 401", async () => {
     expect((await reserveRoute(req("/api/customers/me/banks", { body: { bankIds: [schoolId] } }))).status).toBe(401);
     expect((await reserveRoute(req("/api/customers/me/banks", { auth: "Bearer " + "x".repeat(43), body: { bankIds: [schoolId] } }))).status).toBe(401);
-    expect((await uploadUrlRoute(req("/api/customers/me/photos/upload-url", { auth: token, body: {} }))).status).toBe(401);
+    expect((await photosRoute(photoReq(new FormData(), token))).status).toBe(401);
     expect((await meRoute(new Request(`${SITE}/api/customers/me`))).status).toBe(401);
   });
 
@@ -68,5 +71,37 @@ describe("route ghi của học sinh", () => {
     expect((await createRoute(request)).status).toBeLessThan(300);
     const [row] = await db.select({ ip: customers.createdIp }).from(customers).where(eq(customers.phone, "0900000603"));
     expect(row.ip).toBe("203.0.113.9");
+  });
+});
+
+describe("route nộp ảnh nhận multipart", () => {
+  const UUID = "3f2b9c1e-8a4d-4f6b-9c2e-1a2b3c4d5e6f";
+  const form = (fields: Record<string, string | Blob>) => {
+    const f = new FormData();
+    for (const [k, v] of Object.entries(fields)) f.append(k, v);
+    return f;
+  };
+
+  test("Content-Length quá 22 MB thì 413 trước khi đọc body", async () => {
+    const res = await photosRoute(photoReq(form({ customerBankId: UUID, slotId: UUID }), `Bearer ${token}`, { "content-length": String(23 * 1024 * 1024) }));
+    expect(res.status).toBe(413);
+    expect((await res.json()).message).toBe("Ảnh lớn hơn 20 MB.");
+  });
+
+  test("thiếu file hoặc khung ảnh sai thì 400 và chỉ đúng ô", async () => {
+    const noFile = await photosRoute(photoReq(form({ customerBankId: UUID, slotId: UUID }), `Bearer ${token}`));
+    expect([noFile.status, (await noFile.json()).field]).toEqual([400, "file"]);
+    const badSlot = await photosRoute(photoReq(form({ customerBankId: UUID, slotId: "x", file: new Blob([new Uint8Array([1])]) }), `Bearer ${token}`));
+    expect([badSlot.status, (await badSlot.json()).field]).toEqual([400, "slotId"]);
+  });
+
+  test("body không phải multipart thì 400", async () => {
+    const res = await photosRoute(new Request(`${SITE}/api/customers/me/photos`, { method: "POST", headers: { Origin: SITE, Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: "{}" }));
+    expect(res.status).toBe(400);
+  });
+
+  test("hồ sơ chưa chọn ngân hàng thì 409, không ghi S3", async () => {
+    const res = await photosRoute(photoReq(form({ customerBankId: UUID, slotId: UUID, file: new Blob([new Uint8Array([0x89, 0x50, 0x4e, 0x47])]) }), `Bearer ${token}`));
+    expect(res.status).toBe(409);
   });
 });

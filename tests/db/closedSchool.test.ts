@@ -1,13 +1,13 @@
 import { afterAll, beforeAll, beforeEach, describe, expect, test } from "bun:test";
 import { and, eq } from "drizzle-orm";
-import { TEST_NAME, cleanTestUsers, fakeStore, makeActor } from "./helpers";
+import { FAKE_WEBP, TEST_NAME, cleanTestUsers, fakeStore, makeActor } from "./helpers";
 import { db } from "../../src/server/db/client";
 import { bankPhotoSlots, customerBanks, customers } from "../../src/server/db/schema";
 import { createBank } from "../../src/server/banks";
 import { createSchool, setSchoolActive } from "../../src/server/schools";
 import { createCode } from "../../src/server/referralCodes";
 import { createCustomer, reserveBanks, studentState, submitForReview, type Customer } from "../../src/server/customers";
-import { cancelBanks, photoUploadUrl, recordPhoto } from "../../src/server/customerPhotos";
+import { cancelBanks, uploadPhoto } from "../../src/server/customerPhotos";
 import { BankForm } from "../../src/lib/bankForm";
 import { CodeForm } from "../../src/lib/codeForm";
 import { CustomerForm } from "../../src/lib/customerForm";
@@ -69,10 +69,7 @@ describe("trường đã đóng", () => {
     const fake = fakeStore();
     const [cb] = await db.select().from(customerBanks).where(and(eq(customerBanks.customerId, c.id), eq(customerBanks.bankId, bankId)));
     expect(await cancelBanks(held, fake.store)).toMatchObject({ ok: false, status: 409 });
-    const u = await photoUploadUrl(held, { customerBankId: cb.id, slotId, contentType: "image/webp", size: 1000 }, fake.store);
-    if (!u.ok) throw new Error(u.message);
-    fake.objects.set(u.key, 1000);
-    expect(await recordPhoto(held, { customerBankId: cb.id, slotId, key: u.key }, fake.store)).toEqual({ ok: true });
+    expect(await uploadPhoto(held, { customerBankId: cb.id, slotId }, FAKE_WEBP, fake.store)).toEqual({ ok: true });
     expect(await submitForReview(held)).toEqual({ ok: true });
     expect((await fresh(c)).status).toBe("pending_review");
   });

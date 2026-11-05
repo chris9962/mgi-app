@@ -1,13 +1,13 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { and, eq, inArray } from "drizzle-orm";
-import { TEST_NAME, cleanTestUsers, fakeStore, makeActor } from "./helpers";
+import { FAKE_WEBP, TEST_NAME, cleanTestUsers, fakeStore, makeActor } from "./helpers";
 import { db } from "../../src/server/db/client";
 import { bankPhotoSlots, customerBanks, customers, photoChecks, smsMessages, vouchers } from "../../src/server/db/schema";
 import { createBank } from "../../src/server/banks";
 import { createSchool } from "../../src/server/schools";
 import { createCode } from "../../src/server/referralCodes";
 import { createCustomer, reserveBanks, studentState, submitForReview, type Customer } from "../../src/server/customers";
-import { cancelBanks, photoUploadUrl, recordPhoto } from "../../src/server/customerPhotos";
+import { cancelBanks, uploadPhoto } from "../../src/server/customerPhotos";
 import { BankForm } from "../../src/lib/bankForm";
 import { CodeForm } from "../../src/lib/codeForm";
 import { CustomerForm } from "../../src/lib/customerForm";
@@ -39,10 +39,7 @@ const rowOf = async (c: Customer, bankKey: string) => (await db.select().from(cu
 
 async function put(c: Customer, bankKey: string, slotKey: string, fake = fakeStore()) {
   const cb = await rowOf(c, bankKey);
-  const u = await photoUploadUrl(c, { customerBankId: cb.id, slotId: slot[slotKey], contentType: "image/webp", size: 1000 }, fake.store);
-  if (!u.ok) throw new Error(u.message);
-  fake.objects.set(u.key, 1000);
-  const r = await recordPhoto(c, { customerBankId: cb.id, slotId: slot[slotKey], key: u.key }, fake.store);
+  const r = await uploadPhoto(c, { customerBankId: cb.id, slotId: slot[slotKey] }, FAKE_WEBP, fake.store);
   if (!r.ok) throw new Error(r.message);
 }
 
@@ -98,7 +95,7 @@ describe("Gửi kiểm tra", () => {
     expect(checks.map((x) => [x.customerBankId, x.status])).toEqual([[(await rowOf(c, "A")).id, "pending"]]);
   });
 
-  test("sau khi gửi không xin link, không ghi ảnh, không quay lại, không gửi lại được", async () => {
+  test("sau khi gửi không nộp ảnh, không quay lại, không gửi lại được", async () => {
     const c = await student();
     await put(c, "A", "A1");
     await put(c, "A", "A2");
@@ -107,10 +104,8 @@ describe("Gửi kiểm tra", () => {
     const [locked] = await db.select().from(customers).where(eq(customers.id, c.id));
     const fake = fakeStore();
     const cb = await rowOf(c, "A");
-    expect(await photoUploadUrl(locked, { customerBankId: cb.id, slotId: slot.A1, contentType: "image/webp", size: 1000 }, fake.store)).toMatchObject({ ok: false, status: 409 });
-    const key = `uploads/2026-11-05/3f2b9c1e-8a4d-4f6b-9c2e-1a2b3c4d5e6f.webp`;
-    fake.objects.set(key, 1000);
-    expect(await recordPhoto(c, { customerBankId: cb.id, slotId: slot.A1, key }, fake.store)).toMatchObject({ ok: false, status: 409 });
+    expect(await uploadPhoto(locked, { customerBankId: cb.id, slotId: slot.A1 }, FAKE_WEBP, fake.store)).toMatchObject({ ok: false, status: 409 });
+    expect(fake.objects.size).toBe(0);
     expect(await cancelBanks(locked, fake.store)).toMatchObject({ ok: false, status: 409 });
     expect(await submitForReview(locked)).toMatchObject({ ok: false, status: 409 });
   });

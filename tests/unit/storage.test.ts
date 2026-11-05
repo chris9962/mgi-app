@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { headSize, imageExtOf, isValidKey, newKey, readImage, writeImage } from "../../src/server/storage";
+import { deleteImage, imageExtOf, isValidKey, newKey, readImage, writeImage } from "../../src/server/storage";
 
 const UUID = "3f2b9c1e-8a4d-4f6b-9c2e-1a2b3c4d5e6f";
 
@@ -44,7 +44,7 @@ describe("S3 treo", () => {
       const key = `proofs/2026-11-05/${UUID}.webp`;
       const started = Date.now();
       await expect(readImage(key)).rejects.toThrow();
-      await expect(headSize(key)).rejects.toThrow();
+      await expect(deleteImage(key)).rejects.toThrow();
       await expect(writeImage(key, new Uint8Array([1]))).rejects.toThrow();
       expect(Date.now() - started).toBeLessThan(4000);
     } finally {

@@ -1,5 +1,4 @@
 import { z } from "zod";
-import { MAX_IMAGE_BYTES } from "./imageKey";
 
 const PHONE = "SĐT phải có 10 số, bắt đầu bằng 0.";
 // Học sinh thấy câu lỗi của máy chủ: mọi câu phải là tiếng Việt, không để câu mặc định tiếng Anh của zod lọt ra.
@@ -63,13 +62,4 @@ export const BankChoiceForm = z.object(
   { error: BAD },
 );
 
-export const PhotoUploadForm = z.object(
-  {
-    customerBankId: uuid(),
-    slotId: uuid(),
-    contentType: z.string({ error: BAD }).max(100, BAD),
-    size: z.number({ error: BAD }).int(BAD).min(1, BAD).max(MAX_IMAGE_BYTES, "Ảnh lớn hơn 10 MB."),
-  },
-  { error: BAD },
-);
-export const PhotoRecordForm = z.object({ customerBankId: uuid(), slotId: uuid(), key: z.string({ error: BAD }).max(200, BAD) }, { error: BAD });
+export const PhotoTargetForm = z.object({ customerBankId: uuid(), slotId: uuid() }, { error: BAD });

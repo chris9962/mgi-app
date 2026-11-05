@@ -5,6 +5,8 @@ const nextConfig: NextConfig = {
   output: "standalone",
   // Huy hiệu dev mặc định nằm góc trái dưới, đè lên menu tài khoản của sidebar.
   devIndicators: { position: "bottom-right" },
+  // Proxy chép body vào bộ nhớ và mặc định chỉ giữ 10 MB: ảnh lớn hơn bị cắt, route nhận multipart hỏng. Bằng trần body của Nginx.
+  experimental: { proxyClientMaxBodySize: "22mb" },
 };
 
 export default nextConfig;

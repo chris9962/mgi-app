@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { CopyObjectCommand, DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { DeleteObjectCommand, GetObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 import { allowedExt, FOLDERS, isImageKey, MAX_IMAGE_BYTES, type Folder } from "@/lib/imageKey";
@@ -19,13 +19,11 @@ function readConfig(): Config {
   return { endpoint, region, bucket, accessKeyId, secretAccessKey };
 }
 
-// WHEN_REQUIRED: SDK mặc định ký thêm checksum của body rỗng vào presigned PUT, trình duyệt gửi ảnh thật thì S3 từ chối.
 const client = (c: Config) =>
   new S3Client({
     region: c.region,
     endpoint: c.endpoint,
     forcePathStyle: true,
-    requestChecksumCalculation: "WHEN_REQUIRED",
     credentials: { accessKeyId: c.accessKeyId, secretAccessKey: c.secretAccessKey },
   });
 
@@ -80,33 +78,6 @@ export async function presignGet(key: string, seconds = 600): Promise<string> {
   const c = readConfig();
   const type = MIME.get(key.split(".").pop() ?? "") ?? "application/octet-stream";
   return getSignedUrl(client(c), new GetObjectCommand({ Bucket: c.bucket, Key: key, ResponseContentType: type }), { expiresIn: seconds });
-}
-
-// Ký cả Content-Type và Content-Length: link chỉ nhận đúng loại và đúng dung lượng điện thoại đã khai.
-export async function presignPut(key: string, contentType: string, size: number, seconds = 120): Promise<string> {
-  if (!isValidKey(key)) throw new Error("Khoá ảnh không hợp lệ.");
-  const c = readConfig();
-  return getSignedUrl(client(c), new PutObjectCommand({ Bucket: c.bucket, Key: key, ContentType: contentType, ContentLength: size }), {
-    expiresIn: seconds,
-    signableHeaders: new Set(["content-type", "content-length"]),
-  });
-}
-
-export async function copyImage(from: string, to: string): Promise<void> {
-  if (!isValidKey(from) || !isValidKey(to)) throw new Error("Khoá ảnh không hợp lệ.");
-  const c = readConfig();
-  await client(c).send(new CopyObjectCommand({ Bucket: c.bucket, CopySource: `${c.bucket}/${from}`, Key: to }), deadline());
-}
-
-export async function headSize(key: string): Promise<number | null> {
-  const c = readConfig();
-  try {
-    const r = await client(c).send(new HeadObjectCommand({ Bucket: c.bucket, Key: key }), deadline());
-    return r.ContentLength ?? 0;
-  } catch (e) {
-    if ((e as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode === 404) return null;
-    throw e;
-  }
 }
 
 // Object không còn thì trả null: worker phân biệt "ảnh đã bị thay" với lỗi mạng.

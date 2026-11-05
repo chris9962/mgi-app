@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import type { ZodType } from "zod";
-import { BankChoiceForm, CustomerForm, PhotoRecordForm, PhotoUploadForm } from "../../src/lib/customerForm";
+import { BankChoiceForm, CustomerForm, PhotoTargetForm } from "../../src/lib/customerForm";
 
 const UUID = "3f2b9c1e-8a4d-4f6b-9c2e-1a2b3c4d5e6f";
 const VALID = { schoolId: UUID, fullName: "Trần Minh Anh", className: "11A3", phone: "0912345678", parentName: "Trần Văn Hùng", parentPhone: "0987654321", existingBankIds: [] };
@@ -22,11 +22,9 @@ describe("câu báo lỗi của form học sinh", () => {
     ["chọn ngân hàng: body rỗng", BankChoiceForm, null],
     ["chọn ngân hàng: id sai", BankChoiceForm, { bankIds: ["x"] }],
     ["chọn ngân hàng: 3 ngân hàng", BankChoiceForm, { bankIds: [UUID, UUID, UUID] }],
-    ["xin link: thiếu hết", PhotoUploadForm, {}],
-    ["xin link: kiểu sai", PhotoUploadForm, { customerBankId: "x", slotId: "y", contentType: 5, size: "a" }],
-    ["xin link: dung lượng 0", PhotoUploadForm, { customerBankId: UUID, slotId: UUID, contentType: "image/webp", size: 0 }],
-    ["ghi ảnh: thiếu hết", PhotoRecordForm, {}],
-    ["ghi ảnh: khoá là số", PhotoRecordForm, { customerBankId: UUID, slotId: UUID, key: 5 }],
+    ["nộp ảnh: thiếu hết", PhotoTargetForm, {}],
+    ["nộp ảnh: khung sai", PhotoTargetForm, { customerBankId: UUID, slotId: "y" }],
+    ["nộp ảnh: không phải chuỗi", PhotoTargetForm, { customerBankId: null, slotId: 5 }],
   ];
   for (const [name, schema, input] of cases) {
     test(`${name}: mọi câu báo lỗi là tiếng Việt`, () => {

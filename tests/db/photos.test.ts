@@ -1,13 +1,13 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { and, eq, isNull } from "drizzle-orm";
-import { TEST_NAME, cleanTestUsers, fakeStore, makeActor } from "./helpers";
+import { FAKE_WEBP, TEST_NAME, cleanTestUsers, fakeStore, makeActor } from "./helpers";
 import { db } from "../../src/server/db/client";
 import { bankPhotoSlots, customerBanks, customers, proofPhotos } from "../../src/server/db/schema";
 import { createBank } from "../../src/server/banks";
 import { createSchool } from "../../src/server/schools";
 import { createCode } from "../../src/server/referralCodes";
-import { createCustomer, reserveBanks, studentState, type Customer } from "../../src/server/customers";
-import { cancelBanks, photoUploadUrl, recordPhoto } from "../../src/server/customerPhotos";
+import { createCustomer, reserveBanks, studentState, submitForReview, type Customer } from "../../src/server/customers";
+import { cancelBanks, uploadPhoto } from "../../src/server/customerPhotos";
 import { BankForm } from "../../src/lib/bankForm";
 import { CodeForm } from "../../src/lib/codeForm";
 import { CustomerForm } from "../../src/lib/customerForm";
@@ -38,15 +38,14 @@ async function student(): Promise<Customer> {
 
 const rowOf = async (c: Customer, bankKey: string) => (await db.select().from(customerBanks).where(and(eq(customerBanks.customerId, c.id), eq(customerBanks.bankId, bank[bankKey]))))[0];
 
-async function upload(c: Customer, bankKey: string, slotKey: string, fake: ReturnType<typeof fakeStore>, size = 200_000) {
+async function upload(c: Customer, bankKey: string, slotKey: string, fake: ReturnType<typeof fakeStore>, bytes = FAKE_WEBP) {
   const cb = await rowOf(c, bankKey);
-  const u = await photoUploadUrl(c, { customerBankId: cb.id, slotId: slot[slotKey], contentType: "image/webp", size }, fake.store);
-  if (!u.ok) throw new Error(u.message);
-  fake.objects.set(u.key, size);
-  const result = await recordPhoto(c, { customerBankId: cb.id, slotId: slot[slotKey], key: u.key }, fake.store);
+  const result = await uploadPhoto(c, { customerBankId: cb.id, slotId: slot[slotKey] }, bytes, fake.store);
   const [row] = await db.select().from(proofPhotos).where(and(eq(proofPhotos.customerBankId, cb.id), eq(proofPhotos.slotId, slot[slotKey]), isNull(proofPhotos.replacedAt)));
-  return { cb, key: u.key, stored: row?.s3Key, result };
+  return { cb, stored: row?.s3Key, result };
 }
+
+const activeRows = (customerBankId: string) => db.select().from(proofPhotos).where(and(eq(proofPhotos.customerBankId, customerBankId), isNull(proofPhotos.replacedAt)));
 
 beforeAll(async () => {
   await cleanTestUsers();
@@ -74,139 +73,129 @@ beforeAll(async () => {
 });
 afterAll(cleanTestUsers);
 
-describe("xin link tải ảnh", () => {
-  test("khung của ngân hàng đã chọn thì cấp link PUT ký đúng loại và dung lượng, khoá nằm trong thư mục uploads", async () => {
+describe("nộp ảnh", () => {
+  test("ảnh nộp xong ghi một dòng với khoá và dung lượng của object đã ghi lên S3", async () => {
     const c = await student();
     const fake = fakeStore();
-    const u = await photoUploadUrl(c, { customerBankId: (await rowOf(c, "A")).id, slotId: slot.A1, contentType: "image/webp", size: 1000 }, fake.store);
-    if (!u.ok) throw new Error(u.message);
-    expect(isImageKey(u.key, "uploads")).toBe(true);
-    expect(u.key.endsWith(".webp")).toBe(true);
-    expect(fake.signed).toEqual([{ key: u.key, contentType: "image/webp", size: 1000 }]);
+    const { cb, result } = await upload(c, "A", "A1", fake, new Uint8Array([...FAKE_WEBP, ...new Array(500).fill(1)]));
+    expect(result).toEqual({ ok: true });
+    const rows = await db.select().from(proofPhotos).where(eq(proofPhotos.customerBankId, cb.id));
+    expect(rows.map((r) => [r.slotId, r.sizeBytes, r.uploadedBy])).toEqual([[slot.A1, 1500, null]]);
+    expect(isImageKey(rows[0].s3Key, "proofs")).toBe(true);
+    expect([...fake.objects.keys()]).toEqual([rows[0].s3Key]);
   });
 
-  test("dung lượng khai báo phải từ 1 byte tới 10 MB", async () => {
-    const c = await student();
-    const fake = fakeStore();
-    const t = { customerBankId: (await rowOf(c, "A")).id, slotId: slot.A1, contentType: "image/webp" };
-    expect(await photoUploadUrl(c, { ...t, size: 0 }, fake.store)).toMatchObject({ ok: false, status: 400 });
-    expect(await photoUploadUrl(c, { ...t, size: 10 * 1024 * 1024 + 1 }, fake.store)).toMatchObject({ ok: false, status: 400 });
-    expect(fake.signed).toEqual([]);
-  });
-
-  test("khung của ngân hàng khác, khung đã bỏ, dòng của học sinh khác, loại file lạ đều bị từ chối", async () => {
+  test("khung của ngân hàng khác, khung đã bỏ, dòng của học sinh khác bị từ chối trước khi ghi S3", async () => {
     const [c, other] = [await student(), await student()];
     const fake = fakeStore();
     const cbA = (await rowOf(c, "A")).id;
-    expect(await photoUploadUrl(c, { customerBankId: cbA, slotId: slot.B1, contentType: "image/webp", size: 1000 }, fake.store)).toMatchObject({ ok: false, status: 404 });
-    expect(await photoUploadUrl(c, { customerBankId: cbA, slotId: slot.Agone, contentType: "image/webp", size: 1000 }, fake.store)).toMatchObject({ ok: false, status: 404 });
-    expect(await photoUploadUrl(other, { customerBankId: cbA, slotId: slot.A1, contentType: "image/webp", size: 1000 }, fake.store)).toMatchObject({ ok: false, status: 404 });
-    expect(await photoUploadUrl(c, { customerBankId: cbA, slotId: slot.A1, contentType: "text/html", size: 1000 }, fake.store)).toMatchObject({ ok: false, status: 400 });
+    for (const [who, slotId] of [
+      [c, slot.B1],
+      [c, slot.Agone],
+      [other, slot.A1],
+    ] as const) {
+      expect(await uploadPhoto(who, { customerBankId: cbA, slotId }, FAKE_WEBP, fake.store)).toMatchObject({ ok: false, status: 404 });
+    }
+    expect(fake.puts()).toBe(0);
+    expect(await activeRows(cbA)).toEqual([]);
   });
-});
 
-describe("ghi ảnh", () => {
-  test("ghi ảnh: máy chủ chép sang khoá proofs do máy chủ chọn, xoá khoá tải lên, ghi dung lượng đọc từ S3", async () => {
+  test("hồ sơ đã gửi kiểm tra bị từ chối trước khi ghi S3", async () => {
     const c = await student();
     const fake = fakeStore();
-    const { cb, key, result } = await upload(c, "A", "A1", fake, 286_000);
-    expect(result.ok).toBe(true);
-    const rows = await db.select().from(proofPhotos).where(eq(proofPhotos.customerBankId, cb.id));
-    expect(rows.map((r) => [r.slotId, r.sizeBytes, r.uploadedBy])).toEqual([[slot.A1, 286_000, null]]);
-    expect(isImageKey(rows[0].s3Key, "proofs")).toBe(true);
-    expect(rows[0].s3Key).not.toBe(key);
-    expect(fake.objects.has(rows[0].s3Key)).toBe(true);
-    expect(fake.objects.has(key)).toBe(false);
-    expect(fake.signed.some((x) => x.key === rows[0].s3Key)).toBe(false);
+    await upload(c, "A", "A1", fake);
+    await upload(c, "A", "A2", fake);
+    await upload(c, "B", "B1", fake);
+    expect(await submitForReview(c)).toEqual({ ok: true });
+    const [locked] = await db.select().from(customers).where(eq(customers.id, c.id));
+    const before = fake.puts();
+    expect(await uploadPhoto(locked, { customerBankId: (await rowOf(c, "A")).id, slotId: slot.A1 }, FAKE_WEBP, fake.store)).toMatchObject({ ok: false, status: 409 });
+    expect(await uploadPhoto(c, { customerBankId: (await rowOf(c, "A")).id, slotId: slot.A1 }, FAKE_WEBP, fake.store)).toMatchObject({ ok: false, status: 409 });
+    expect(fake.puts()).toBe(before);
   });
 
-  test("khoá trong thư mục proofs không ghi được: học sinh chỉ báo khoá tải lên", async () => {
+  test("file không phải ảnh bị từ chối, không ghi dòng", async () => {
     const c = await student();
     const fake = fakeStore();
-    const { cb, stored } = await upload(c, "A", "A1", fake);
-    expect(await recordPhoto(c, { customerBankId: cb.id, slotId: slot.A2, key: stored! }, fake.store)).toMatchObject({ ok: false, status: 400 });
-    expect(fake.objects.has(stored!)).toBe(true);
+    const { cb, result } = await upload(c, "A", "A1", fake, new TextEncoder().encode("<html>"));
+    expect(result).toMatchObject({ ok: false, status: 400, field: "file" });
+    expect(await activeRows(cb.id)).toEqual([]);
+    expect(fake.objects.size).toBe(0);
   });
 
-  test("ảnh chưa có trên S3 hoặc lớn hơn 10 MB thì không ghi", async () => {
+  test("hồ sơ bị gửi kiểm tra trong lúc ảnh đang ghi S3 thì từ chối và xoá object vừa ghi", async () => {
+    const c = await student();
+    const fake = fakeStore();
+    await upload(c, "A", "A2", fake);
+    await upload(c, "B", "B1", fake);
+    await upload(c, "A", "A1", fake);
+    const kept = new Set(fake.objects.keys());
+    const store = {
+      ...fake.store,
+      put: async (bytes: Uint8Array) => {
+        const r = await fake.store.put(bytes);
+        expect(await submitForReview(c)).toEqual({ ok: true });
+        return r;
+      },
+    };
+    const cb = await rowOf(c, "A");
+    expect(await uploadPhoto(c, { customerBankId: cb.id, slotId: slot.A1 }, FAKE_WEBP, store)).toMatchObject({ ok: false, status: 409 });
+    expect(new Set(fake.objects.keys())).toEqual(kept);
+  });
+
+  test("ghi DB lỗi sau khi đã ghi S3 thì xoá object vừa ghi", async () => {
     const c = await student();
     const fake = fakeStore();
     const cb = await rowOf(c, "A");
-    const u = await photoUploadUrl(c, { customerBankId: cb.id, slotId: slot.A1, contentType: "image/jpeg", size: 1000 }, fake.store);
-    if (!u.ok) throw new Error(u.message);
-    expect(await recordPhoto(c, { customerBankId: cb.id, slotId: slot.A1, key: u.key }, fake.store)).toMatchObject({ ok: false, status: 400 });
-    fake.objects.set(u.key, 11 * 1024 * 1024);
-    expect(await recordPhoto(c, { customerBankId: cb.id, slotId: slot.A1, key: u.key }, fake.store)).toMatchObject({ ok: false, status: 400 });
-    expect(fake.removed).toContain(u.key);
-    expect(await db.select().from(proofPhotos).where(eq(proofPhotos.customerBankId, cb.id))).toEqual([]);
-  });
-
-  test("ghi ảnh vào khung của ngân hàng khác bị từ chối, object vừa tải bị xoá", async () => {
-    const c = await student();
-    const fake = fakeStore();
-    const cbA = await rowOf(c, "A");
-    const u = await photoUploadUrl(c, { customerBankId: (await rowOf(c, "B")).id, slotId: slot.B1, contentType: "image/webp", size: 1000 }, fake.store);
-    if (!u.ok) throw new Error(u.message);
-    fake.objects.set(u.key, 1000);
-    expect(await recordPhoto(c, { customerBankId: cbA.id, slotId: slot.B1, key: u.key }, fake.store)).toMatchObject({ ok: false, status: 404 });
-    expect(await db.select().from(proofPhotos).where(eq(proofPhotos.customerBankId, cbA.id))).toEqual([]);
-    expect(fake.removed).toContain(u.key);
+    // Dung lượng vượt kiểu integer của cột size_bytes: câu insert lỗi thật ở Postgres.
+    const store = { ...fake.store, put: async (bytes: Uint8Array) => ({ ...(await fake.store.put(bytes)), size: 2 ** 31 }) as { ok: true; key: string; size: number } };
+    await expect(uploadPhoto(c, { customerBankId: cb.id, slotId: slot.A1 }, FAKE_WEBP, store)).rejects.toThrow();
+    expect(fake.puts()).toBe(1);
     expect(fake.objects.size).toBe(0);
+    expect(await activeRows(cb.id)).toEqual([]);
   });
 
-  test("học sinh A không xin link và không ghi ảnh được vào dòng ngân hàng, khung của học sinh B", async () => {
-    const [a, b] = [await student(), await student()];
-    const fake = fakeStore();
-    const cbB = await rowOf(b, "A");
-    expect(await photoUploadUrl(a, { customerBankId: cbB.id, slotId: slot.A1, contentType: "image/webp", size: 1000 }, fake.store)).toMatchObject({ ok: false, status: 404 });
-    const own = await photoUploadUrl(a, { customerBankId: (await rowOf(a, "A")).id, slotId: slot.A1, contentType: "image/webp", size: 1000 }, fake.store);
-    if (!own.ok) throw new Error(own.message);
-    fake.objects.set(own.key, 1000);
-    expect(await recordPhoto(a, { customerBankId: cbB.id, slotId: slot.A1, key: own.key }, fake.store)).toMatchObject({ ok: false, status: 404 });
-    expect(await db.select().from(proofPhotos).where(eq(proofPhotos.customerBankId, cbB.id))).toEqual([]);
-    expect(fake.objects.size).toBe(0);
-  });
-
-  test("chụp lại khung đó thì xoá dòng và object cũ, giữ một ảnh cho khung", async () => {
+  test("chụp lại khung đó thì xoá dòng cũ và object cũ sau khi commit, giữ một ảnh cho khung", async () => {
     const c = await student();
     const fake = fakeStore();
     const first = await upload(c, "A", "A1", fake);
-    const second = await upload(c, "A", "A1", fake, 150_000);
+    const second = await upload(c, "A", "A1", fake, new Uint8Array([...FAKE_WEBP, 1, 2, 3]));
     expect(second.result.ok).toBe(true);
     const rows = await db.select().from(proofPhotos).where(eq(proofPhotos.customerBankId, first.cb.id));
-    expect(rows.map((r) => [r.s3Key, r.sizeBytes])).toEqual([[second.stored, 150_000]]);
-    expect(fake.removed).toContain(first.stored);
+    expect(rows.map((r) => [r.s3Key, r.sizeBytes])).toEqual([[second.stored, 1003]]);
+    expect(fake.removed).toEqual([first.stored!]);
     expect([...fake.objects.keys()]).toEqual([second.stored]);
   });
 
-  test("hai request ghi cùng một ảnh chạy song song: còn đúng một dòng và object của dòng đó còn trên S3", async () => {
+  test("hai lần gửi cùng khung chạy song song thật: còn đúng một dòng, object của dòng đó còn, object kia bị xoá", async () => {
     const c = await student();
     const fake = fakeStore();
     const cb = await rowOf(c, "A");
-    const u = await photoUploadUrl(c, { customerBankId: cb.id, slotId: slot.A1, contentType: "image/webp", size: 1000 }, fake.store);
-    if (!u.ok) throw new Error(u.message);
-    fake.objects.set(u.key, 1000);
-    const input = { customerBankId: cb.id, slotId: slot.A1, key: u.key };
-    await Promise.all([recordPhoto(c, input, fake.store), recordPhoto(c, input, fake.store)]);
-    const rows = await db.select().from(proofPhotos).where(and(eq(proofPhotos.customerBankId, cb.id), isNull(proofPhotos.replacedAt)));
+    // Hai request cùng ghi xong S3 rồi mới vào transaction, nên cả hai cùng tranh khoá dòng hồ sơ.
+    let arrived = 0;
+    let open = () => {};
+    const both = new Promise<void>((resolve) => (open = resolve));
+    const store = {
+      ...fake.store,
+      put: async (bytes: Uint8Array) => {
+        const r = await fake.store.put(bytes);
+        if (++arrived === 2) open();
+        await both;
+        return r;
+      },
+    };
+    const results = await Promise.all([1, 2].map((n) => uploadPhoto(c, { customerBankId: cb.id, slotId: slot.A1 }, new Uint8Array([...FAKE_WEBP, n]), store)));
+    expect(results).toEqual([{ ok: true }, { ok: true }]);
+    const rows = await activeRows(cb.id);
     expect(rows.length).toBe(1);
-    expect(fake.objects.has(rows[0].s3Key)).toBe(true);
-  });
-
-  test("báo lại khoá tải lên đã ghi thì bị từ chối, ảnh đã ghi giữ nguyên", async () => {
-    const c = await student();
-    const fake = fakeStore();
-    const { cb, key, stored } = await upload(c, "A", "A1", fake);
-    expect(await recordPhoto(c, { customerBankId: cb.id, slotId: slot.A1, key }, fake.store)).toMatchObject({ ok: false, status: 400 });
-    const rows = await db.select().from(proofPhotos).where(eq(proofPhotos.customerBankId, cb.id));
-    expect(rows.map((r) => r.s3Key)).toEqual([stored!]);
-    expect(fake.objects.has(stored!)).toBe(true);
+    expect([...fake.objects.keys()]).toEqual([rows[0].s3Key]);
+    expect(fake.removed.length).toBe(1);
   });
 
   test("hồ sơ hiện các khung chưa bỏ theo thứ tự, khung đã có ảnh kèm link xem", async () => {
     const c = await student();
     const fake = fakeStore();
-    const { stored } = await upload(c, "A", "A2", fake, 241_000);
+    const { stored } = await upload(c, "A", "A2", fake, new Uint8Array([...FAKE_WEBP, ...new Array(240_000).fill(1)]));
     const state = await studentState(c, MONTH, fake.store);
     expect(state.banks.map((b) => [b.slot, b.bankId, b.referralCode])).toEqual([
       [1, bank.A, "PH-A"],

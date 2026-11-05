@@ -12,16 +12,16 @@ const kb = (bytes: number) => `${Math.max(1, Math.round(bytes / 1024))} KB`;
 
 async function upload(customerBankId: string, slotId: string, file: File): Promise<string | null> {
   const compressed = await compressImage(file);
-  const contentType = compressed?.type || contentTypeOf(file);
+  if (!compressed && !contentTypeOf(file)) return "Không mở được ảnh này. Chọn ảnh khác.";
   const body: Blob = compressed ?? file;
-  if (!contentType) return "Không mở được ảnh này. Chọn ảnh khác.";
-  if (body.size > MAX_IMAGE_BYTES) return "Ảnh lớn hơn 10 MB.";
-  const link = await studentApi<{ url: string; key: string }>("POST", "/api/customers/me/photos/upload-url", { customerBankId, slotId, contentType, size: body.size });
-  if (!link.ok) return link.message;
-  const put = await fetch(link.data.url, { method: "PUT", headers: { "Content-Type": contentType }, body }).catch(() => null);
-  if (!put?.ok) return "Không tải được ảnh lên. Kiểm tra mạng rồi thử lại.";
-  const saved = await studentApi("POST", "/api/customers/me/photos", { customerBankId, slotId, key: link.data.key });
-  return saved.ok ? null : saved.message;
+  if (body.size > MAX_IMAGE_BYTES) return "Ảnh lớn hơn 20 MB.";
+  const form = new FormData();
+  form.append("customerBankId", customerBankId);
+  form.append("slotId", slotId);
+  form.append("file", body, file.name);
+  const saved = await studentApi("POST", "/api/customers/me/photos", form);
+  if (saved.ok) return null;
+  return saved.status === 0 ? "Không tải được ảnh lên. Kiểm tra mạng rồi thử lại." : saved.message;
 }
 
 export function PhotoSlot({

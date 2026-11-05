@@ -7,9 +7,11 @@ export async function studentApi<T = null>(method: "GET" | "POST" | "DELETE", ur
   const { token } = readDevice(localStorage);
   const headers: Record<string, string> = {};
   if (token) headers.Authorization = `Bearer ${token}`;
-  if (body !== undefined) headers["Content-Type"] = "application/json";
+  // FormData tự đặt Content-Type kèm boundary của multipart.
+  const form = body instanceof FormData;
+  if (body !== undefined && !form) headers["Content-Type"] = "application/json";
   try {
-    const res = await fetch(url, { method, headers, body: body === undefined ? undefined : JSON.stringify(body), cache: "no-store" });
+    const res = await fetch(url, { method, headers, body: body === undefined ? undefined : form ? body : JSON.stringify(body), cache: "no-store" });
     const data = res.status === 204 ? null : await res.json().catch(() => null);
     if (res.ok) return { ok: true, data: data as T };
     return { ok: false, status: res.status, message: data?.message ?? "Không lưu được. Thử lại sau ít phút.", field: data?.field };
