@@ -54,6 +54,7 @@ Làm ngày 2026-11-05, commit `ee2a695`, `96ae8fa`, `3ac71e8` trên `dev`.
 - Trang 3: cột "Ngân hàng" liệt kê mỗi ngân hàng một dòng trong ô. File Excel hồ sơ giữ nguyên.
 - Test mới: `tests/unit/customerBankFilters.test.ts`, `tests/unit/menu.test.ts`, `tests/db/customerBankList.test.ts`, thêm ca ở `tests/db/exports.test.ts` và `tests/db/adminRoutes.test.ts`, `e2e/customerBanks.spec.ts`.
 - Đã chạy trên DB tạm `zz_test_bankpage`: `bun run test` 220/220, `bun test:db` 219/219, `bun test:s3` 29/29. `bunx tsc --noEmit` và `bun run lint` đạt.
+- `bun run e2e` chạy trên dev server và DB chính: 20/20 đạt, gồm `e2e/customerBanks.spec.ts`.
 - Đã xem trang ở 1366x768 bằng bản sao app trỏ DB tạm: Quản trị, Nhân viên quản một ngân hàng, bảng Bộ lọc, ô tìm trường, bảng rỗng, Trang 3.
 
 ### Ruling
@@ -69,5 +70,4 @@ Làm ngày 2026-11-05, commit `ee2a695`, `96ae8fa`, `3ac71e8` trên `dev`.
 
 ### Việc để lại
 
-- `bun run e2e` chưa chạy: coordinator giữ lượt e2e cho agent khác. `e2e/customerBanks.spec.ts` đã viết, qua `tsc` và `lint`.
 - Trang 4 còn chữ "Ngân hàng 1/2" ở dòng meta, nếu chủ dự án muốn bỏ ở mọi nơi.
