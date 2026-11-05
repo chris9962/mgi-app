@@ -8,11 +8,17 @@ export type VoucherInput = { customerId: string; provinceCode: string; wardCode:
 
 const letters = (s: string) => removeDiacritics(s).toUpperCase().replace(/[^A-Z0-9]/g, "");
 
-// Từ viết hoa toàn bộ như THPT, THCS là chữ viết tắt sẵn nên giữ cả từ; từ khác lấy chữ cái đầu.
+const words = (name: string) => name.split(/\s+/).filter(Boolean);
+
+// Họ tên học sinh luôn lấy chữ cái đầu mỗi từ: học sinh hay gõ tên viết hoa toàn bộ.
+export const nameInitials = (name: string): string =>
+  words(name)
+    .map((w) => letters(w).slice(0, 1))
+    .join("");
+
+// Tên trường: từ viết hoa toàn bộ như THPT, THCS là chữ viết tắt sẵn nên giữ cả từ; từ khác lấy chữ cái đầu.
 export const abbreviate = (name: string): string =>
-  name
-    .split(/\s+/)
-    .filter(Boolean)
+  words(name)
     .map((w) => (w.length > 1 && w === w.toUpperCase() && w !== w.toLowerCase() ? letters(w) : letters(w).slice(0, 1)))
     .join("");
 
@@ -21,7 +27,7 @@ export const classPart = (className: string): string => letters(className);
 // Ký tự kiểm là HMAC của dữ liệu không in trên mã (id, tỉnh, xã, phụ huynh) và 3 phần chữ: người ngoài không tự tạo được mã hợp lệ.
 export function voucherCode(input: VoucherInput, secret: string): string {
   if (!secret) throw new Error("Thiếu VOUCHER_SECRET, không sinh được mã voucher.");
-  const parts = [abbreviate(input.schoolName), abbreviate(input.fullName), classPart(input.className)];
+  const parts = [abbreviate(input.schoolName), nameInitials(input.fullName), classPart(input.className)];
   const message = [input.customerId, input.provinceCode, input.wardCode, input.parentName.normalize("NFC").trim(), ...parts].join("\n");
   let n = createHmac("sha256", secret).update(message).digest().readBigUInt64BE(0);
   let check = "";

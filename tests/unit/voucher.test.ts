@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { abbreviate, classPart, voucherCode, VOUCHER_ALPHABET, type VoucherInput } from "../../src/server/voucher";
+import { abbreviate, classPart, nameInitials, voucherCode, VOUCHER_ALPHABET, type VoucherInput } from "../../src/server/voucher";
 
 const base: VoucherInput = {
   customerId: "8f2c0000-0000-4000-8000-000000000001",
@@ -19,6 +19,17 @@ describe("viết tắt", () => {
     expect(abbreviate("THCS  Lê Quý Đôn")).toBe("THCSLQD");
     expect(abbreviate("Đặng thị Ánh")).toBe("DTA");
     expect(abbreviate("trường thpt Chuyên")).toBe("TTC");
+  });
+
+  test("họ tên học sinh luôn lấy chữ cái đầu mỗi từ, kể cả khi gõ viết hoa toàn bộ", () => {
+    expect(nameInitials("Trần Minh Anh")).toBe("TMA");
+    expect(nameInitials("TRẦN MINH ANH")).toBe("TMA");
+    expect(nameInitials("Lê Thị NGỌC")).toBe("LTN");
+    expect(nameInitials("  đỗ   văn  A ")).toBe("DVA");
+  });
+
+  test("mã voucher của học sinh gõ tên viết hoa vẫn dùng chữ cái đầu", () => {
+    expect(voucherCode({ ...base, fullName: "TRẦN MINH ANH" }, SECRET)).toMatch(/^THPTND-TMA-11A3-[A-Z0-9]{4}$/);
   });
 
   test("lớp viết hoa, bỏ khoảng trắng, chỉ giữ chữ và số", () => {
