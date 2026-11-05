@@ -26,12 +26,16 @@ export async function cleanE2e() {
   ).map((r) => r.id);
   const schools = (await db.select({ id: s.schools.id }).from(s.schools).where(like(s.schools.name, `${E2E_NAME}%`))).map((r) => r.id);
   const customers = schools.length ? (await db.select({ id: s.customers.id }).from(s.customers).where(inArray(s.customers.schoolId, schools))).map((r) => r.id) : [];
-  const customerBanks = (
-    await db
-      .select({ id: s.customerBanks.id })
-      .from(s.customerBanks)
-      .where(or(customers.length ? inArray(s.customerBanks.customerId, customers) : undefined, codes.length ? inArray(s.customerBanks.referralCodeId, codes) : undefined))
-  ).map((r) => r.id);
+  // or() của hai điều kiện đều rỗng trả undefined, và where(undefined) chọn mọi dòng của hồ sơ thật: không có id nào thì không chọn gì.
+  const customerBanks =
+    customers.length || codes.length
+      ? (
+          await db
+            .select({ id: s.customerBanks.id })
+            .from(s.customerBanks)
+            .where(or(customers.length ? inArray(s.customerBanks.customerId, customers) : undefined, codes.length ? inArray(s.customerBanks.referralCodeId, codes) : undefined))
+        ).map((r) => r.id)
+      : [];
   // Ảnh học sinh và ảnh mẫu do e2e tải lên nằm trên bucket dev: đọc khoá trước khi xoá dòng.
   const keys = [
     ...(customerBanks.length ? await db.select({ key: s.proofPhotos.s3Key }).from(s.proofPhotos).where(inArray(s.proofPhotos.customerBankId, customerBanks)) : []),
