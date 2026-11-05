@@ -30,7 +30,7 @@ export type CustomerListRow = {
 const CUSTOMER_ID = sql.raw(`"customers"."id"`);
 const CUSTOMER_BANK_ID = sql.raw(`"customer_banks"."id"`);
 
-const inBanks = (ids: string[] | null): SQL =>
+export const inBanks = (ids: string[] | null): SQL =>
   ids === null
     ? sql`true`
     : ids.length
@@ -40,18 +40,23 @@ const inBanks = (ids: string[] | null): SQL =>
         )})`
       : sql`false`;
 
-const scopedBankIds = (actor: SessionUser): string[] | null => {
+export const scopedBankIds = (actor: SessionUser): string[] | null => {
   const scope = customerScope(actor);
   return scope.all ? null : scope.bankIds;
 };
 
 // Lượt kiểm mới nhất của mỗi dòng ngân hàng; lượt cũ hơn không còn đúng với ảnh đang dùng.
-const latestCheck = (cbId: SQL) => sql`(select pc.status, pc.passed, pc.total from photo_checks pc where pc.customer_bank_id = ${cbId} order by pc.created_at desc limit 1)`;
+export const latestCheck = (cbId: SQL) => sql`(select pc.status, pc.passed, pc.total from photo_checks pc where pc.customer_bank_id = ${cbId} order by pc.created_at desc limit 1)`;
+
+export function customerSearch(q: string): SQL | undefined {
+  if (!q) return undefined;
+  const digits = phoneDigits(q);
+  return digits ? or(like(customers.phone, containsPattern(digits)), like(customers.parentPhone, containsPattern(digits))) : like(customers.nameSearch, containsPattern(plain(q).replace(/\s+/g, " ")));
+}
 
 export function customerWhere(actor: SessionUser, f: CustomerFilters): SQL | undefined {
   const ids = scopedBankIds(actor);
   const { start, end } = dayRange(f.from, f.to);
-  const digits = f.q ? phoneDigits(f.q) : null;
   return and(
     ids ? sql`exists (select 1 from ${customerBanks} cb where cb.customer_id = ${CUSTOMER_ID} and ${inBanks(ids)})` : undefined,
     f.status ? eq(customers.status, f.status) : undefined,
@@ -63,11 +68,7 @@ export function customerWhere(actor: SessionUser, f: CustomerFilters): SQL | und
           where cb.customer_id = ${CUSTOMER_ID} and ${inBanks(ids)} and pc.status = 'done'
           and ${f.check === "full" ? sql`pc.total > 0 and pc.passed = pc.total` : sql`pc.passed < pc.total`})`
       : undefined,
-    f.q
-      ? digits
-        ? or(like(customers.phone, containsPattern(digits)), like(customers.parentPhone, containsPattern(digits)))
-        : like(customers.nameSearch, containsPattern(plain(f.q).replace(/\s+/g, " ")))
-      : undefined,
+    customerSearch(f.q),
   );
 }
 
