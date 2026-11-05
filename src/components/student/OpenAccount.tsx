@@ -158,18 +158,20 @@ export function OpenAccount({ state, onChange }: { state: StudentState; onChange
         </p>
       )}
       <Bottom>
-        <Button
-          variant="secondary"
-          large
-          block
-          onClick={async () => {
-            if (hasPhoto) return setConfirmBack(true);
-            const message = await back();
-            if (message) setError(message);
-          }}
-        >
-          Quay lại chọn ngân hàng
-        </Button>
+        {state.school.active && (
+          <Button
+            variant="secondary"
+            large
+            block
+            onClick={async () => {
+              if (hasPhoto) return setConfirmBack(true);
+              const message = await back();
+              if (message) setError(message);
+            }}
+          >
+            Quay lại chọn ngân hàng
+          </Button>
+        )}
         <Button large block disabled={!ready || sending} onClick={submit}>
           Gửi kiểm tra
         </Button>

@@ -150,7 +150,9 @@ export function StudentApp({ linkId }: { linkId?: string }) {
 }
 
 function Profile({ state, notice, onChange }: { state: StudentState; notice?: string; onChange: (notice?: string) => Promise<void> }) {
-  switch (state.customer.status) {
+  const { status } = state.customer;
+  if (!state.school.active && (status === "new" || status === "no_bank")) return <AppHead school={state.school.name} title="Trường đã đóng" />;
+  switch (status) {
     case "new":
       if (!state.eligibleBanks.length) return <BanksFull state={state} />;
       return <ChooseBanks key={state.eligibleBanks.map((b) => b.id).join()} state={state} notice={notice} onDone={onChange} />;

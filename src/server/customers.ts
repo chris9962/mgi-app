@@ -139,8 +139,15 @@ const pickCode = (candidates: Candidate[], bankId: string) =>
 export async function reserveBanks(customer: Customer, bankIds: string[], month = currentYearMonth()): Promise<{ ok: true } | Fail> {
   if (!isYearMonth(month)) throw new Error(`Tháng giữ chỗ sai dạng: ${month}`);
   return db.transaction(async (tx) => {
-    const [current] = await tx.select({ status: customers.status, schoolId: customers.schoolId }).from(customers).where(eq(customers.id, customer.id)).for("update");
+    const [current] = await tx
+      .select({ status: customers.status, schoolId: customers.schoolId, schoolActive: schools.active })
+      .from(customers)
+      .innerJoin(schools, eq(schools.id, customers.schoolId))
+      .where(eq(customers.id, customer.id))
+      .for("update", { of: customers });
     if (current?.status !== "new") return fail("Hồ sơ đã chọn ngân hàng.", 409);
+    // Trường đóng thì không giữ chỗ mới; học sinh đã giữ chỗ vẫn nộp ảnh và gửi kiểm tra.
+    if (!current.schoolActive) return fail("Trường đã đóng.", 409);
     const candidates = await loadCandidates(tx, current.schoolId, month, true);
     const existing = await existingBankIds(tx, customer.id);
     const open = openBanksOf(candidates, existing);
@@ -259,7 +266,7 @@ async function chosenBanks(customer: Customer, store: PhotoStore): Promise<Stude
 }
 
 export async function studentState(customer: Customer, month = currentYearMonth(), store: PhotoStore = s3PhotoStore): Promise<StudentState> {
-  const [school] = await db.select({ id: schools.id, name: schools.name }).from(schools).where(eq(schools.id, customer.schoolId));
+  const [school] = await db.select({ id: schools.id, name: schools.name, active: schools.active }).from(schools).where(eq(schools.id, customer.schoolId));
   const [existing, settings] = await Promise.all([existingBankIds(db, customer.id), getSettings()]);
   const existingBanks = existing.size ? (await db.select({ name: banks.name }).from(banks).where(inArray(banks.id, [...existing])).orderBy(asc(banks.sortOrder), asc(banks.name))).map((b) => b.name) : [];
   let status = customer.status;

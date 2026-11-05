@@ -1,6 +1,6 @@
 import { and, eq, inArray, isNull } from "drizzle-orm";
 import { db } from "./db/client";
-import { bankPhotoSlots, customerBanks, customers, proofPhotos } from "./db/schema";
+import { bankPhotoSlots, customerBanks, customers, proofPhotos, schools } from "./db/schema";
 import { copyImage, deleteImage, headSize, MAX_IMAGE_BYTES, newKey, presignGet, presignPut } from "./storage";
 import { extForMime, isImageKey } from "@/lib/imageKey";
 import type { Customer } from "./customers";
@@ -91,8 +91,15 @@ export async function recordPhoto(customer: Customer, input: PhotoTarget & { key
 
 export async function cancelBanks(customer: Customer, store = s3PhotoStore): Promise<{ ok: true } | Fail> {
   const r = await db.transaction(async (tx) => {
-    const [current] = await tx.select({ status: customers.status }).from(customers).where(eq(customers.id, customer.id)).for("update");
+    const [current] = await tx
+      .select({ status: customers.status, schoolActive: schools.active })
+      .from(customers)
+      .innerJoin(schools, eq(schools.id, customers.schoolId))
+      .where(eq(customers.id, customer.id))
+      .for("update", { of: customers });
     if (current?.status !== "banks_selected") return fail("Hồ sơ không ở bước mở tài khoản.", 409);
+    // Trường đã đóng thì bỏ chỗ là mất luôn, không chọn lại được.
+    if (!current.schoolActive) return fail("Trường đã đóng.", 409);
     const selected = await tx
       .select({ id: customerBanks.id })
       .from(customerBanks)

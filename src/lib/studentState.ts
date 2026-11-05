@@ -21,7 +21,7 @@ export type StudentBank = {
 
 export type StudentState = {
   customer: { id: string; fullName: string; className: string; status: CustomerStatus };
-  school: { id: string; name: string };
+  school: { id: string; name: string; active: boolean };
   submittedAt: string | null;
   reviewedAt: string | null;
   parentPhone: string;
