@@ -34,7 +34,7 @@ async function realProfile() {
   return ids;
 }
 
-// Xoá theo id, bỏ qua id rỗng: dựng dở giữa chừng vẫn dọn được phần đã tạo.
+// Chỉ dọn được hồ sơ đã dựng xong: realProfile lỗi giữa chừng thì ids còn rỗng, phần đã tạo nằm lại trong DB.
 async function removeProfile(ids: Partial<Awaited<ReturnType<typeof realProfile>>>) {
   if (ids.customerBank) await db.delete(customerBanks).where(eq(customerBanks.id, ids.customerBank));
   if (ids.customer) await db.delete(customers).where(eq(customers.id, ids.customer));
