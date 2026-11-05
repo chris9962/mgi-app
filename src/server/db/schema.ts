@@ -315,6 +315,8 @@ export const proofPhotos = pgTable(
     createdAt: createdAt(),
   },
   (t) => [
+    // Chỉ mục riêng phần trên không dùng được cho cascade khi xoá dòng ngân hàng.
+    index("proof_photos_customer_bank").on(t.customerBankId),
     uniqueIndex("proof_photos_one_per_slot")
       .on(t.customerBankId, t.slotId)
       .where(sql`${t.replacedAt} is null`),

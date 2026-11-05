@@ -1,0 +1,1 @@
+CREATE INDEX "proof_photos_customer_bank" ON "proof_photos" USING btree ("customer_bank_id");

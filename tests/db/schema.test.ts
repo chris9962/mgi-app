@@ -32,6 +32,13 @@ describe("schema", () => {
     expect(rows[0].indexdef).toContain("replaced_at IS NULL");
   });
 
+  test("ảnh tra được theo dòng ngân hàng bằng chỉ mục đầy đủ", async () => {
+    const { rows } = await pool.query(
+      "select indexdef from pg_indexes where tablename = 'proof_photos' and indexdef like '%(customer_bank_id)' and indexdef not like '%WHERE%'",
+    );
+    expect(rows).toHaveLength(1);
+  });
+
   test("tìm tên dùng GIN trigram", async () => {
     const { rows } = await pool.query(
       "select indexdef from pg_indexes where tablename = 'customers' and indexdef like '%gin%name_search%'",

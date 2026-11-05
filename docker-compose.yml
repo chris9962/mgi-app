@@ -4,7 +4,8 @@ services:
     image: postgres:16-alpine
     container_name: mgi-bank-db
     ports:
-      - "5434:5432"
+      # Chỉ mở trên máy này, không mở ra mạng LAN.
+      - "127.0.0.1:5434:5432"
     environment:
       POSTGRES_DB: mgibank
       POSTGRES_USER: mgibank
