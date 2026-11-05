@@ -41,3 +41,21 @@ describe("customerScope", () => {
     expect(customerScope(base)).toEqual({ all: false, bankIds: [] });
   });
 });
+
+describe("quyền theo ngân hàng", () => {
+  test("Quản lý ngân hàng sửa được mọi ngân hàng", async () => {
+    const { canManageBank, canManageAnyBank } = await import("../../src/lib/permissions");
+    const holder = { ...base, permissions: ["manage_banks" as const] };
+    expect(canManageBank(holder, "bx")).toBe(true);
+    expect(canManageAnyBank(holder)).toBe(true);
+    expect(canManageBank(manager, "bx")).toBe(true);
+  });
+
+  test("Nhân viên được giao chỉ sửa ngân hàng của mình", async () => {
+    const { canManageBank, canManageAnyBank } = await import("../../src/lib/permissions");
+    expect(canManageBank(staff, "b1")).toBe(true);
+    expect(canManageBank(staff, "b9")).toBe(false);
+    expect(canManageAnyBank(staff)).toBe(true);
+    expect(canManageAnyBank(base)).toBe(false);
+  });
+});

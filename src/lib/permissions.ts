@@ -19,3 +19,8 @@ export type CustomerScope = { all: true } | { all: false; bankIds: string[] };
 export function customerScope(user: SessionUser): CustomerScope {
   return user.role === "staff" ? { all: false, bankIds: user.managedBankIds } : { all: true };
 }
+
+// Quản lý ngân hàng sửa mọi ngân hàng; Nhân viên được giao chỉ sửa ngân hàng của mình.
+export const canManageBank = (user: SessionUser, bankId: string): boolean => can(user, "manage_banks") || user.managedBankIds.includes(bankId);
+
+export const canManageAnyBank = (user: SessionUser): boolean => can(user, "manage_banks") || user.managedBankIds.length > 0;
