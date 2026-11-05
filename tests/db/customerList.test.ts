@@ -49,13 +49,13 @@ describe("phạm vi", () => {
   });
 
   test("ô ngân hàng có trạng thái; xác thực ảnh chỉ hiện ở ngân hàng người xem quản", async () => {
-    const [row] = (await listCustomers(staffA, filters({ q: "kim ngan" }), 1)).rows;
+    const [row] = (await listCustomers(staffA, filters({ q: "locds kim ngan" }), 1)).rows;
     expect(row.banks.map((b) => [b.slot, b.status, b.managed, b.check])).toEqual([
       [1, "passed", true, { passed: 2, total: 2 }],
       [2, "passed", false, null],
     ]);
     expect(row.reviewers).toEqual([p.manager.fullName]);
-    const [mine] = (await listCustomers(p.manager, filters({ q: "kim ngan" }), 1)).rows;
+    const [mine] = (await listCustomers(p.manager, filters({ q: "locds kim ngan" }), 1)).rows;
     expect(mine.banks.map((b) => b.check)).toEqual([
       { passed: 2, total: 2 },
       { passed: 0, total: 2 },
@@ -88,9 +88,9 @@ describe("lọc", () => {
 
 describe("tìm", () => {
   test("họ tên không phân biệt dấu, kể cả chữ đ", async () => {
-    expect(await names(p.manager, { q: "nguyen gia bao" })).toEqual(["Locds Nguyễn Gia Bảo"]);
-    expect(await names(p.manager, { q: "Đỗ văn" })).toEqual(["Locds Đỗ Văn Đức"]);
-    expect(await names(p.manager, { q: "do van duc" })).toEqual(["Locds Đỗ Văn Đức"]);
+    expect(await names(p.manager, { q: "locds nguyen gia bao" })).toEqual(["Locds Nguyễn Gia Bảo"]);
+    expect(await names(p.manager, { q: "Locds Đỗ văn" })).toEqual(["Locds Đỗ Văn Đức"]);
+    expect(await names(p.manager, { q: "locds do van duc" })).toEqual(["Locds Đỗ Văn Đức"]);
   });
 
   test("theo SĐT, có dấu cách hoặc dấu chấm", async () => {
