@@ -1,7 +1,7 @@
 "use client";
 
 import { clsx } from "clsx";
-import { Building2, ChevronDown, LogOut, Moon, UserRound } from "lucide-react";
+import { Building2, ChevronDown, LogOut, Moon, Settings, UserRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -9,7 +9,7 @@ import { Logo } from "@/components/ui/Logo";
 import { BRAND_NAME } from "@/lib/brand";
 import type { MenuGroup } from "./menu";
 
-const GROUP_ICON: Record<string, React.ReactNode> = { manage: <Building2 size={18} aria-hidden /> };
+const GROUP_ICON: Record<string, React.ReactNode> = { data: <Settings size={18} aria-hidden />, manage: <Building2 size={18} aria-hidden /> };
 
 const initials = (name: string) =>
   name
