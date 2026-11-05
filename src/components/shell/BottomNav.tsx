@@ -15,7 +15,6 @@ const ICON: Record<string, ReactNode> = {
 
 const itemClass = "relative flex min-h-[52px] flex-1 flex-col items-center justify-center gap-1 px-1 py-2 text-center text-[11px] font-semibold focus-visible:-outline-offset-2 [&_svg]:opacity-80";
 
-// Chép BottomNav của mgst-app: chỉ hiện dưới 900 px, nút Thêm mở lại sidebar đầy đủ.
 export function BottomNav({ items, menuOpen, onOpenMenu, moreRef }: { items: MenuItem[]; menuOpen: boolean; onOpenMenu: () => void; moreRef: Ref<HTMLButtonElement> }) {
   const pathname = (usePathname() ?? "/").replace(/^\/admin(?=\/|$)/, "") || "/";
   // transform-gpu ép lớp GPU riêng: không có thì WebKit vẽ sai chỗ phần tử fixed lúc thanh địa chỉ ẩn hiện.
