@@ -48,6 +48,9 @@ function stampVn(now: Date): { day: string; time: string } {
   return { day, time: clock.replace(":", "") };
 }
 
+// Container ghi vào database: tên đi theo tên container DB (mgi-bank-db, mgi-bank-test-db) như các script trong deploy/.
+export const appContainersFor = (dbContainer: string): string[] => ["app", "sms", "photo"].map((part) => dbContainer.replace(/-db$/, `-${part}`));
+
 export const backupFileName = (now: Date) => {
   const { day, time } = stampVn(now);
   return `mgi-bank-${day}-${time}.dump`;

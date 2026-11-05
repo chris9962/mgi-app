@@ -1,5 +1,5 @@
 import { describe, expect, test } from "bun:test";
-import { backupConfig, backupKey, dbTarget, staleKeys } from "../../scripts/lib/backup";
+import { appContainersFor, backupConfig, backupKey, dbTarget, staleKeys } from "../../scripts/lib/backup";
 
 const S3 = { S3_ENDPOINT: "https://s3.example/", S3_REGION: "han02", S3_BUCKET: "mgi-bank-images", S3_ACCESS_KEY_ID: "app-key", S3_SECRET_ACCESS_KEY: "app-secret" };
 
@@ -37,6 +37,13 @@ describe("tên bản sao lưu", () => {
     const keys = ["2026-10-28/a.dump", "2026-10-29/b.dump", "2026-11-04/c.dump", "2026-11-05/d.dump", "ghi-chu.txt"];
     expect(staleKeys(keys, new Date("2026-11-05T03:00:00Z"), 7, "")).toEqual(["2026-10-28/a.dump"]);
     expect(staleKeys(["zz-test-backup/2026-01-01/x.dump", "2026-01-01/y.dump"], new Date("2026-11-05T03:00:00Z"), 7, "zz-test-backup/")).toEqual(["zz-test-backup/2026-01-01/x.dump"]);
+  });
+});
+
+describe("khôi phục đè", () => {
+  test("container phải dừng trước khi khôi phục đè lấy theo tên container DB: production và bản test không lẫn nhau", () => {
+    expect(appContainersFor("mgi-bank-db")).toEqual(["mgi-bank-app", "mgi-bank-sms", "mgi-bank-photo"]);
+    expect(appContainersFor("mgi-bank-test-db")).toEqual(["mgi-bank-test-app", "mgi-bank-test-sms", "mgi-bank-test-photo"]);
   });
 });
 

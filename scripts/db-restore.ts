@@ -2,15 +2,13 @@ import { spawnSync } from "node:child_process";
 import { existsSync, rmSync } from "node:fs";
 import { tmpdir } from "node:os";
 import path from "node:path";
-import { backupS3, createDatabase, dbTarget, downloadBackup, dropDatabase, listBackups, restoreDump, tableCounts } from "./lib/backup";
+import { appContainersFor, backupS3, createDatabase, dbTarget, downloadBackup, dropDatabase, listBackups, restoreDump, tableCounts } from "./lib/backup";
 
 // Khôi phục DB từ bản sao lưu, chép cách gọi của mgst-app:
 //   bun run db:restore                         liệt kê bản đang có, không khôi phục
 //   bun run db:restore -- <khoá|file> --thu    khôi phục vào database <tên>_thu, so số dòng với database thật
 //   bun run db:restore -- <khoá|file> --that   khôi phục đè database thật; phải dừng app và worker trước
 // Mặc định là --thu: dump hỏng mà khôi phục đè thì mất cả hai thứ cùng lúc.
-const APP_CONTAINERS = ["mgi-bank-app", "mgi-bank-sms", "mgi-bank-photo"];
-
 function fail(message: string): never {
   console.error(`[restore] ${message}`);
   process.exit(1);
@@ -35,7 +33,7 @@ async function main() {
   }
 
   if (real) {
-    const busy = APP_CONTAINERS.filter(running);
+    const busy = appContainersFor(container).filter(running);
     if (busy.length) fail(`Dừng ${busy.join(", ")} trước khi khôi phục đè: chúng đang ghi vào database sắp bị thay.`);
   }
 
