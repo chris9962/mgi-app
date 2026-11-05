@@ -35,7 +35,7 @@ Cổng chọn để không trùng mgst-app (app 3000, demo 3100, Postgres 5433 v
 
 App và worker gọi Postgres bằng tên container `mgi-bank-db` trong mạng `mgi-bank-net`. Lệnh chạy thẳng trên máy chủ (migrate, ops-watch, sao lưu) gọi `127.0.0.1:5436`. `deploy/lib.sh` đổi địa chỉ trong `DATABASE_URL` khi chạy container, người vận hành không sửa tay.
 
-Ba container chạy thường trực: `mgi-bank-app`, `mgi-bank-sms`, `mgi-bank-photo`. Không có container nén ảnh.
+Ba container chạy thường trực: `mgi-bank-app`, `mgi-bank-sms`, `mgi-bank-photo`. Ảnh đi qua API của app như mgst-app: app đổi mọi ảnh sang WebP lúc nhận bằng `sharp` và `heic-convert` (`src/server/toWebpOnServer.ts`), rồi mới ghi S3.
 
 ## 2. Việc chủ dự án phải làm
 
@@ -214,7 +214,7 @@ Cấu hình làm năm việc:
 - Chuyển đúng header `Host`. `src/proxy.ts` chọn trang quản lý hay web học sinh theo Host, thiếu header thì mọi trang trả 404.
 - Ghi đè `X-Forwarded-For` bằng địa chỉ thật của kết nối. App lấy địa chỉ cuối của header này cho `audit_log.ip` và `customers.created_ip` (`src/server/http/ip.ts`). Học sinh tự khai header thì bị Nginx ghi đè.
 - Giới hạn request theo IP với ngưỡng cao, vì cả trường dùng chung một IP Wi-Fi: 30 request mỗi giây, dồn được 600. Đường gửi ảnh `/api/customers/me/photos` có vùng riêng: 2 lượt mỗi giây, dồn được 200. File tĩnh `/_next/static/` không tính. Vượt ngưỡng thì trả 429.
-- Trần body 22 MB ở cả hai tên miền: ảnh tối đa 20 MB cộng phần bao của multipart.
+- Trần body 22 MB ở cả hai tên miền (`client_max_body_size 22m` trong `deploy/nginx/app.conf`): ảnh tối đa 20 MB cộng phần bao của multipart. Trong app có thêm hai trần. `next.config.ts` đặt `experimental.proxyClientMaxBodySize` là 22 MB, vì `src/proxy.ts` chạy cho mọi đường dẫn và Next chỉ giữ 10 MB body khi có proxy, ảnh lớn hơn bị cắt. `putImage` từ chối file quá 20 MB.
 - Bảo trì: file `deploy/maintenance/on` có thì trang trả 503 với trang bảo trì, API trả 503 với JSON. `deploy/maintenance-on.sh` và `deploy/maintenance-off.sh` bật tắt, không cần reload Nginx.
 
 Đặt thêm proxy khác (Cloudflare, cân bằng tải) trước Nginx thì `$remote_addr` thành địa chỉ của proxy đó. Khi đó phải cấu hình module `real_ip` trước, không thì mọi học sinh chung một IP và chung một ngưỡng.
@@ -252,7 +252,7 @@ cd /opt/mgi-bank && git pull && ./deploy/deploy.sh
 | 1 | lấy code, kiểm `.env.local`, cài gói, dựng image `mgi-bank-app:new`, thử image ở cổng 3201, sao lưu DB vào `/root/mgi-bank-truoc-deploy-<ngày giờ>.dump` | không |
 | 2 | bật bảo trì, migrate, đổi container, kiểm, gắn tag `:latest`, tắt bảo trì | vài chục giây |
 
-Bước thử image đòi bốn điều: `/login` trả 200 với Host quản lý, API quản lý chưa đăng nhập trả 401, web học sinh trả 200 với Host học sinh, đăng nhập sai trả 401. Điều cuối chứng minh app nối được DB. Log container thử không được có `ECONNREFUSED`, `ERR_DLOPEN`, `Failed query`.
+Bước thử image chạy `sharp` đổi một ảnh nhỏ sang WebP trong image mới trước. Image thiếu thư viện native của `sharp` thì script dừng ở đây, chưa đụng container đang chạy. Sau đó bước thử đòi bốn điều: `/login` trả 200 với Host quản lý, API quản lý chưa đăng nhập trả 401, web học sinh trả 200 với Host học sinh, đăng nhập sai trả 401. Điều cuối chứng minh app nối được DB. Log container thử không được có `ECONNREFUSED`, `ERR_DLOPEN`, `Failed query`.
 
 Bước kiểm sau khi đổi container không đạt thì script tự lùi về container cũ rồi mới tắt bảo trì, thoát mã 1. Lượt deploy đầu tiên không có container cũ để lùi.
 

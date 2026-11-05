@@ -311,10 +311,6 @@ export const proofPhotos = pgTable(
       .references(() => bankPhotoSlots.id),
     s3Key: text("s3_key").notNull().unique(),
     sizeBytes: integer("size_bytes"),
-    compressedAt: at("compressed_at"),
-    compressAttempts: smallint("compress_attempts").notNull().default(0),
-    // Lúc worker nén nhận ảnh, ghi trước khi tải: worker khác chờ hết hạn mới lấy lại, không nén trùng.
-    compressTriedAt: at("compress_tried_at"),
     uploadedBy: uuid("uploaded_by").references(() => users.id),
     replacedAt: at("replaced_at"),
     createdAt: createdAt(),
@@ -325,10 +321,6 @@ export const proofPhotos = pgTable(
     uniqueIndex("proof_photos_one_per_slot")
       .on(t.customerBankId, t.slotId)
       .where(sql`${t.replacedAt} is null`),
-    index("proof_photos_compress_queue")
-      .on(t.createdAt)
-      .where(sql`${t.compressedAt} is null`),
-    check("proof_photos_compress_attempts_range", sql`${t.compressAttempts} between 0 and 3`),
   ],
 );
 

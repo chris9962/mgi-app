@@ -39,6 +39,8 @@ bun install --frozen-lockfile
 docker build --target runner -t "$IMAGE:new" .
 
 echo "== 4/7 Thử image ở cổng $CONG_THU =="
+# App đổi mọi ảnh sang WebP bằng sharp lúc nhận. sharp là module native: thiếu libvips trong image thì chỉ lộ ra lúc học sinh gửi ảnh.
+docker run --rm -w /app "$IMAGE:new" bun -e 'require("sharp")({ create: { width: 8, height: 8, channels: 3, background: "#fff" } }).webp().toBuffer().then((b) => console.log("  sharp: đổi được WebP, " + b.length + " byte"))'
 docker rm -f "$TEN-app-thu" >/dev/null 2>&1 || true
 docker run -d --name "$TEN-app-thu" "${CHUNG[@]}" -p "127.0.0.1:${CONG_THU}:3000" "$IMAGE:new" >/dev/null
 sleep 8

@@ -95,12 +95,12 @@ Agent làm xong 4 task ngày 2026-11-05, commit 1d278eb tới commit ghi mục n
 
 | Việc | Khi nào |
 |---|---|
-| Quay lại từ B3 đọc `s3_key` trước khi xoá dòng ảnh: worker nén đổi khoá đúng lúc đó thì object `.webp` mới thành rác trên S3 | Giai đoạn 7 cùng job dọn object mồ côi |
-| Worker nén và worker kiểm ảnh chưa có container. Container kiểm ảnh cần Python có PaddleOCR, VietOCR, model tải sẵn (`ocr-server.py --tai-model`), đặt `OCR_PYTHON`, `OCR_CONFIG`, `OCR_WEIGHTS`, restart khi thoát, stop grace đủ cho lượt đang đọc | Giai đoạn 7 |
+| Quay lại từ B3 đọc `s3_key` trước khi xoá dòng ảnh: worker nén đổi khoá đúng lúc đó thì object `.webp` mới thành rác trên S3 | Bỏ: tải ảnh chép mgst-app |
+| Worker nén và worker kiểm ảnh chưa có container. Container kiểm ảnh cần Python có PaddleOCR, VietOCR, model tải sẵn (`ocr-server.py --tai-model`), đặt `OCR_PYTHON`, `OCR_CONFIG`, `OCR_WEIGHTS`, restart khi thoát, stop grace đủ cho lượt đang đọc | Bỏ: tải ảnh chép mgst-app (phần worker nén); container kiểm ảnh làm ở giai đoạn 7 |
 | Thiếu `OCR_PYTHON` thì worker gọi `python3`; máy không có thư viện thì mọi lượt ghi `failed` | Giai đoạn 7 |
 | OCR mới đo trên ảnh vẽ chữ bằng Arial nền trắng, chưa đo trên ảnh chụp app ngân hàng thật của học sinh | Khi có ảnh thật |
 | Worker kiểm ảnh đọc tuần tự một tiến trình, khoảng 1 giây một ảnh; nhiều học sinh gửi cùng lúc thì hàng chờ dài | Khi tải lớn |
-| Ảnh webp dưới 300 KB mà cạnh dài hơn 1600 không được nén lại | Khi user cần |
+| Ảnh webp dưới 300 KB mà cạnh dài hơn 1600 không được nén lại | Bỏ: tải ảnh chép mgst-app; putImage đổi cả WebP cạnh dài hơn 1600 |
 | Lượt đọc quá 5 phút thì worker khác nhận lại và đọc trùng; kết quả vẫn chỉ ghi một lần | Khi chạy nhiều worker |
 | Trang Vận hành hệ thống chưa hiện hàng chờ `photo_checks` | Giai đoạn 7 |
 
@@ -131,11 +131,11 @@ Việc để lại thêm:
 |---|---|
 | Lý do lỗi OCR ở Trang 4 còn chứa đường dẫn tạm của máy chủ, ví dụ "OCR lỗi: ValueError: Không mở được ảnh /var/folders/..." | Khi sửa Trang 4 |
 | Gạch nối tính là ranh giới mã: mã `TPB-01` đạt trên dòng có `ND-TPB-01` | Khi có mã dạng này |
-| Lỗi kết nối ngay sau khi câu ghi kết quả nén đã commit ở máy chủ: dòng trỏ ảnh webp mới, ảnh gốc không bị xoá và thành rác | Giai đoạn 7 cùng job dọn object mồ côi |
-| Link xem ảnh của học sinh sống 1 giờ; worker nén xoá ảnh gốc thì link cũ trả 404 tới khi web tải lại hồ sơ | Khi user cần |
+| Lỗi kết nối ngay sau khi câu ghi kết quả nén đã commit ở máy chủ: dòng trỏ ảnh webp mới, ảnh gốc không bị xoá và thành rác | Bỏ: tải ảnh chép mgst-app |
+| Link xem ảnh của học sinh sống 1 giờ; worker nén xoá ảnh gốc thì link cũ trả 404 tới khi web tải lại hồ sơ | Bỏ: tải ảnh chép mgst-app |
 | `scripts/ocr-server.py` còn docstring chép từ mgst-app, AGENTS cấm docstring | Khi sửa file này |
 | Lượt chờ bị worker xoá vì ngân hàng tắt hết khung kiểm thì Trang 4 hiện lượt cũ hơn, có thể tính theo họ tên cũ | Khi user cần |
-| `heic-convert` giải mã HEIC trong JavaScript, không giới hạn được số điểm ảnh; ảnh 48 MP tốn khoảng 1,2 GB RAM | Giai đoạn 7 khi đặt RAM cho container |
+| `heic-convert` giải mã HEIC trong JavaScript, không giới hạn được số điểm ảnh; ảnh 48 MP tốn khoảng 1,2 GB RAM | Bỏ: tải ảnh chép mgst-app (phần worker nén); app nay đổi HEIC lúc nhận, xem Việc để lại của kế hoạch tải ảnh |
 
 ### Review lần 2
 

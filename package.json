@@ -17,7 +17,6 @@
     "e2e": "bun --env-file=.env.local scripts/e2e-seed.ts && bunx playwright test; s=$?; bun --env-file=.env.local scripts/e2e-clean.ts; exit $s",
     "test:s3": "bun --env-file=.env.local test tests/s3",
     "sms:worker": "bun --env-file=.env.local scripts/sms-worker.ts",
-    "compress:worker": "bun --env-file=.env.local scripts/compress-worker.ts",
     "photo-check:worker": "bun --env-file=.env.local scripts/photo-check-worker.ts",
     "ops:watch": "bun --env-file=.env.local scripts/ops-watch.ts",
     "db:backup": "bun --env-file=.env.local --env-file=.env.backup scripts/db-backup.ts",

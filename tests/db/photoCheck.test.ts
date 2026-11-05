@@ -221,22 +221,4 @@ describe("worker kiểm ảnh", () => {
     expect(await runPhotoCheck(checkId, fake({ read: async () => null }))).toBe("failed");
     expect((await checkRow(checkId)).error).toBe("Không tải được ảnh Ảnh 1.");
   });
-
-  test("ảnh vừa bị worker nén đổi khoá trong lúc đọc thì đọc lại khoá mới", async () => {
-    const { checkId, cb } = await submitted([{ name: "Ảnh 1", checkName: true, photo: "TRAN MINH ANH" }]);
-    const [photo] = await db.select().from(proofPhotos).where(eq(proofPhotos.customerBankId, cb));
-    const compressed = newKey("proofs", "webp");
-    const deps = fake({
-      read: async (key) => {
-        if (key === photo.s3Key) {
-          images.set(compressed, images.get(key)!);
-          await db.update(proofPhotos).set({ s3Key: compressed }).where(eq(proofPhotos.id, photo.id));
-          return null;
-        }
-        return images.get(key) ?? null;
-      },
-    });
-    expect(await runPhotoCheck(checkId, deps)).toBe("done");
-    expect((await checkRow(checkId)).passed).toBe(1);
-  });
 });

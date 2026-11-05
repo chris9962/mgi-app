@@ -57,6 +57,13 @@
       "when": 1793889659268,
       "tag": "0007_curious_monster_badoon",
       "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1793892646406,
+      "tag": "0008_icy_the_leader",
+      "breakpoints": true
     }
   ]
 }

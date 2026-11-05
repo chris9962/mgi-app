@@ -99,9 +99,9 @@ Agent làm xong 6 task ngày 2026-11-05, commit 156b08e tới commit ghi mục n
 | Việc | Khi nào |
 |---|---|
 | MultiSelect giữ listbox mở sau khi chọn, listbox che nút ở chân hộp thoại | Khi sửa form |
-| Object S3 mồ côi: điện thoại xin link PUT rồi không báo ghi, hoặc xoá object sau commit lỗi (chỉ ghi log). Chưa có job dọn | Giai đoạn 6 hoặc 7 |
+| Object S3 mồ côi: điện thoại xin link PUT rồi không báo ghi, hoặc xoá object sau commit lỗi (chỉ ghi log). Chưa có job dọn | Bỏ: tải ảnh chép mgst-app |
 | Giai đoạn 6 phải nghe kênh `photo_checks` và thêm unique `(customer_bank_id) where status = 'pending'` | Giai đoạn 6 |
-| Production phải chạy `scripts/s3-cors.ts` với `STUDENT_ORIGIN` thật | Giai đoạn 7 |
+| Production phải chạy `scripts/s3-cors.ts` với `STUDENT_ORIGIN` thật | Bỏ: tải ảnh chép mgst-app |
 | Quét QR bằng camera ở H0, màn H1, màn trường đã đóng chưa có e2e; hàm quyết định đổi trường có test unit | Khi viết e2e quay video |
 | Nén ảnh trên trình duyệt chỉ có test unit cho vòng lặp; e2e tải một ảnh JPG nhỏ | Khi viết e2e quay video |
 | Dev server chạy lâu có lúc ngừng nạp lại file server sau khi sửa; tắt và chạy lại `bun dev` trước khi chạy e2e | Ghi nhớ |
@@ -110,9 +110,9 @@ Agent làm xong 6 task ngày 2026-11-05, commit 156b08e tới commit ghi mục n
 | Bấm Enter hai lần ở B1 có thể gửi hai request, tạo hai hồ sơ | Khi sửa B1 |
 | Thứ bậc tiêu đề ở B3 nhảy từ h1 sang h3 ("Ảnh cần nộp") | Khi sửa B3 |
 | Mỗi lần quay lại tab, web tải lại cả hồ sơ và ký lại mọi link ảnh | Khi tối ưu web học sinh |
-| `scripts/s3-cors.ts` ghi đè toàn bộ CORS của bucket | Giai đoạn 7 |
+| `scripts/s3-cors.ts` ghi đè toàn bộ CORS của bucket | Bỏ: tải ảnh chép mgst-app |
 | `created_ip` lấy phần tử đầu của `X-Forwarded-For`; Nginx phải ghi đè header này, không thì học sinh giả được IP | Giai đoạn 7 |
-| Object thư mục `uploads/` của link PUT không được báo ghi thì nằm lại; nên đặt lifecycle xoá `uploads/` sau 1 ngày | Giai đoạn 7 |
+| Object thư mục `uploads/` của link PUT không được báo ghi thì nằm lại; nên đặt lifecycle xoá `uploads/` sau 1 ngày | Bỏ: tải ảnh chép mgst-app |
 
 ### Sửa theo review lần 1
 
@@ -140,7 +140,7 @@ Agent review ngày 2026-11-05 kết luận sẵn sàng: không còn lỗi Critic
 
 | Việc | Khi nào |
 |---|---|
-| Object mồ côi trong `proofs/` khi chép xong mà transaction lỗi; lifecycle của `uploads/` không dọn được | Giai đoạn 7 |
-| Báo lại khoá tải lên đã ghi trả 400, học sinh thấy "Chưa tải được ảnh lên" dù ảnh đã lưu | Khi sửa màn nộp ảnh |
-| Chưa có trần tổng dung lượng bucket, xin link tải lên không giới hạn số lần | Giai đoạn 7 (Nginx, lifecycle) |
-| `.filter((k) => k !== stored)` ở `customerPhotos.ts` là code chết | Khi sửa file này |
+| Object mồ côi trong `proofs/` khi chép xong mà transaction lỗi; lifecycle của `uploads/` không dọn được | Bỏ: tải ảnh chép mgst-app |
+| Báo lại khoá tải lên đã ghi trả 400, học sinh thấy "Chưa tải được ảnh lên" dù ảnh đã lưu | Bỏ: tải ảnh chép mgst-app |
+| Chưa có trần tổng dung lượng bucket, xin link tải lên không giới hạn số lần | Bỏ: tải ảnh chép mgst-app (phần xin link); trần dung lượng bucket vẫn chưa có |
+| `.filter((k) => k !== stored)` ở `customerPhotos.ts` là code chết | Bỏ: tải ảnh chép mgst-app (hàm ghi ảnh viết lại) |

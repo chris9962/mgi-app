@@ -121,7 +121,7 @@ Người điều phối báo ngày 2026-11-05: ngay sau giai đoạn 7, cơ ch�
 | Deploy thật: DNS, CAA, bucket production và bucket sao lưu, `.env.local`, migrate, seed, tạo Quản trị, Nginx, certbot, `jobs.sh`, diễn tập khôi phục | Cần máy chủ và tài khoản của chủ dự án; lệnh đầy đủ ở `docs/deploy.md` |
 | `deploy/jobs.sh`, `deploy/test-env.sh` chưa chạy thật | Cần systemd và thư mục `/opt/mgi-bank-test` trên máy chủ |
 | Tầng kiểm ảnh mới dựng bằng giả lập amd64 trên máy Mac | Lần dựng đầu trên máy chủ x86_64 |
-| Khi app import `sharp` (viết lại phần tải ảnh), thêm bước thử nạp `sharp` vào `deploy.sh` như mgst-app | Khi viết lại phần tải ảnh |
+| Khi app import `sharp` (viết lại phần tải ảnh), thêm bước thử nạp `sharp` vào `deploy.sh` như mgst-app | Xong: `deploy.sh` bước 4/7 cho `sharp` đổi một ảnh sang WebP trong image mới (kế hoạch tải ảnh chép mgst-app) |
 | Worker SMS chưa nối nhà cung cấp, `send.ts` chỉ ghi log và đánh dấu Đã gửi | Khi có nhà cung cấp SMS |
 | Ngưỡng giới hạn request theo IP chưa đo với lượng học sinh thật của một trường | Sau đợt quét QR đầu tiên, đọc `/var/log/nginx/error.log` tìm dòng `limiting requests` |
 | Lượt kiểm ảnh ghi failed vì dừng giữa chừng 3 lần không có nút kiểm lại; muốn kiểm lại phải tải ảnh thay thế hoặc gửi lại | Khi user cần |

@@ -33,6 +33,13 @@ describe("schema", () => {
     expect(rows[0].indexdef).toContain("replaced_at IS NULL");
   });
 
+  test("proof_photos không còn cột và chỉ mục hàng chờ nén: máy chủ đổi WebP lúc nhận", async () => {
+    const cols = await pool.query("select column_name from information_schema.columns where table_name = 'proof_photos' and column_name like 'compress%'");
+    expect(cols.rows).toEqual([]);
+    const idx = await pool.query("select indexname from pg_indexes where tablename = 'proof_photos' and indexname like '%compress%'");
+    expect(idx.rows).toEqual([]);
+  });
+
   test("ảnh tra được theo dòng ngân hàng bằng chỉ mục đầy đủ", async () => {
     const { rows } = await pool.query(
       "select indexdef from pg_indexes where tablename = 'proof_photos' and indexdef like '%(customer_bank_id)' and indexdef not like '%WHERE%'",

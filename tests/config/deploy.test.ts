@@ -60,6 +60,14 @@ describe("script deploy", () => {
     expect(text).toContain("--log-opt max-size=10m");
   });
 
+  test("app: thử sharp đổi được ảnh trong image mới trước khi chạy container thử", () => {
+    const text = read("deploy/deploy.sh");
+    const sharpCheck = text.indexOf('require("sharp")');
+    expect(sharpCheck).toBeGreaterThan(text.indexOf("--target runner"));
+    expect(sharpCheck).toBeLessThan(text.indexOf('docker run -d --name "$TEN-app-thu"'));
+    expect(text.slice(sharpCheck, text.indexOf("\n", sharpCheck))).toContain(".webp(");
+  });
+
   test("worker kiểm ảnh: thử OCR trả ready trước khi thay, trần RAM đủ cho HEIC 48 MP, chờ dừng lâu hơn hạn đọc một ảnh", () => {
     const text = read("deploy/worker-photo.sh");
     expect(text).toContain("--target photo-check");
@@ -77,6 +85,15 @@ describe("script deploy", () => {
   });
 });
 
+describe("tải ảnh chép mgst-app", () => {
+  test("không còn worker nén, script CORS, presigned PUT", () => {
+    for (const f of ["scripts/compress-worker.ts", "src/server/compress.ts", "scripts/s3-cors.ts", "src/app/api/customers/me/photos/upload-url/route.ts"]) expect(existsSync(new URL(`../../${f}`, import.meta.url)), f).toBe(false);
+    expect(Object.keys(JSON.parse(read("package.json")).scripts).filter((k) => /compress|cors/.test(k))).toEqual([]);
+    expect(read("src/server/storage.ts")).not.toMatch(/presignPut|CopyObjectCommand|HeadObjectCommand/);
+    expect(read(".env.example")).not.toMatch(/COMPRESS|CORS/);
+  });
+});
+
 describe("docs/deploy.md", () => {
   const doc = read("docs/deploy.md");
 
@@ -85,9 +102,15 @@ describe("docs/deploy.md", () => {
     for (const s of scripts) expect(doc, s).toContain(`deploy/${s}`);
   });
 
-  test("ghi ba container app, worker SMS, worker kiểm ảnh; không còn CORS và lifecycle uploads/", () => {
+  test("ghi ba container app, worker SMS, worker kiểm ảnh; không còn CORS, lifecycle uploads/, worker nén", () => {
     for (const c of ["mgi-bank-app", "mgi-bank-sms", "mgi-bank-photo"]) expect(doc).toContain(c);
-    expect(doc).not.toMatch(/CORS|s3-cors|lifecycle|uploads\//);
+    expect(doc).not.toMatch(/CORS|s3-cors|lifecycle|uploads\/|nén ảnh|compress/);
+  });
+
+  test("ghi đúng ba trần dung lượng của đường tải ảnh: Nginx 22 MB, buffer của proxy Next 22 MB, ảnh 20 MB", () => {
+    expect(doc).toContain("client_max_body_size 22m");
+    expect(doc).toContain("proxyClientMaxBodySize");
+    expect(doc).toMatch(/20 MB/);
   });
 
   test("văn xuôi không dùng dấu gạch ngang dài và dấu chấm giữa", () => {
