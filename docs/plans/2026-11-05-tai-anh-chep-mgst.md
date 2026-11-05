@@ -88,7 +88,7 @@ Agent làm xong 4 task ngày 2026-11-05, commit a04b2ae tới commit ghi mục n
 
 | Việc | Lý do, khi nào |
 |---|---|
-| App đổi HEIC bằng `heic-convert` trong JavaScript, không giới hạn số điểm ảnh; HEIC 48 MP tốn khoảng 1,2 GB RAM. Container app production không đặt trần RAM; bản test đặt trần 1 GB nên có thể chết với ảnh đó | Xong ở lượt sửa theo review lần 1: trần HEIC 50 MP, đổi HEIC từng ảnh một; giai đoạn 7 đặt `APP_MEMORY` 3g cho production, 2g cho bản test |
+| App đổi HEIC bằng `heic-convert` trong JavaScript, không giới hạn số điểm ảnh; HEIC 48 MP tốn khoảng 1,2 GB RAM. Container app production không đặt trần RAM; bản test đặt trần 1 GB nên có thể chết với ảnh đó | Xong ở lượt sửa theo review lần 1 và 2: trần HEIC 64 MP, đổi HEIC từng ảnh một; giai đoạn 7 đặt `APP_MEMORY` 3g cho production, 2g cho bản test |
 | Chủ dự án xác nhận luật trường đã đóng: học sinh đã giữ chỗ vẫn nộp ảnh (ruling ở trên) | Khi chủ dự án đọc kế hoạch này |
 | 3 hồ sơ thử tay của chủ dự án mất dòng ngân hàng và ảnh vì lỗi `e2e-clean` trước khi sửa; agent không khôi phục được | Chủ dự án tạo lại nếu cần |
 | `deploy.sh` không thử ghi S3: bỏ `requestChecksumCalculation` mới kiểm trên bucket dev | Lần deploy đầu: gửi một ảnh thật ở web học sinh rồi xem Trang 4 |
@@ -96,7 +96,7 @@ Agent làm xong 4 task ngày 2026-11-05, commit a04b2ae tới commit ghi mục n
 | Ảnh HEIC máy chủ không đổi được thì giữ bản gốc; worker kiểm ảnh đổi lại bằng chính `heic-convert` nên nhiều khả năng cũng lỗi và ghi Lỗi kiểm | Khi gặp ca thật |
 | `writeImage` ở `storage.ts` chỉ còn test dùng | Khi sửa file này |
 | `replacePhoto` ở `src/server/review.ts` để lại object vừa ghi khi transaction ném lỗi; job dọn ảnh mồ côi xoá sau 24 giờ | Khi sửa ảnh thay thế (review lần 1, để lại) |
-| Worker kiểm ảnh đổi HEIC gốc mà không kiểm trần điểm ảnh: HEIC vượt trần 50 MP mà app giữ bản gốc vẫn được worker giải mã khi kiểm ảnh. Container kiểm ảnh trần 4 GB và đổi từng ảnh một | Khi gặp ca thật, hoặc dùng chung `heicPixels` ở `photoBytes` |
+| Worker kiểm ảnh đổi HEIC gốc mà không kiểm trần điểm ảnh: HEIC vượt trần 50 MP mà app giữ bản gốc vẫn được worker giải mã khi kiểm ảnh. Container kiểm ảnh trần 4 GB và đổi từng ảnh một | Xong ở lượt sửa theo review lần 2: worker kiểm `heicFits` trước khi giải mã, vượt trần thì ghi failed |
 | Ca HEIC của test OCR thật (`tests/s3/photoCheckOcr.test.ts`) còn dựng ảnh bằng `sips`, máy không có `sips` thì bỏ qua: ảnh cần chữ đọc được nên không dùng ảnh dựng sẵn 320x240 | Khi chạy test OCR trên Linux |
 
 ### Sửa theo review lần 1
@@ -113,9 +113,34 @@ Review mới trên af17493 không có lỗi Critical, có 1 lỗi Important. Ng�
 Ruling của lượt này:
 
 - Trần điểm ảnh khác mgst-app có chủ đích: `/api/uploads` của mgst-app chỉ cho nhân viên đã đăng nhập, còn route nộp ảnh của mgi-bank mở cho mọi học sinh có link trường.
-- Trần HEIC 50 MP, thấp hơn trần 100 MP của định dạng khác: một ảnh HEIC 48 MP tốn khoảng 1,22 GB khi đổi (đo ở giai đoạn 7), còn container app trần 3 GB. Điện thoại chụp tới 48 MP nên ảnh thật vẫn đổi được.
+- Trần HEIC 50 MP, thấp hơn trần 100 MP của định dạng khác: một ảnh HEIC 48 MP tốn khoảng 1,22 GB khi đổi (đo ở giai đoạn 7), còn container app trần 3 GB. (Lượt sửa theo review lần 2 nâng lên 64 MP, xem dưới.)
 - Đổi HEIC từng ảnh một trong app, cùng lý do 1,22 GB cho mỗi ảnh 48 MP. Nginx cho 300 lượt gửi ảnh vào ngay, nên hai ảnh HEIC lớn đổi cùng lúc đủ làm app hết RAM. Ảnh khác HEIC vẫn đổi song song bằng sharp. Chi phí: học sinh gửi HEIC lúc đông phải chờ lượt.
 - HEIC không có hộp `ispe` thì không giải mã, giữ bản gốc: chuẩn HEIF bắt buộc hộp này, ảnh thiếu nó là ảnh lạ.
 - Ảnh dựng sẵn 10240x10240 (commit trong 65172df) thay bằng 8000x8000 (33 KB, 64 MP) ở a4f08ee, để một ảnh vượt trần HEIC mà vẫn dưới trần sharp.
 
 Test sau lượt sửa: `bun run test` 220 pass, `bun test:db` 219 pass, `bun test:s3` 29 pass, `bun run e2e` 19 pass (chạy 23:13 tới 23:15, trước a4f08ee; e2e không gửi ảnh HEIC), `bunx tsc --noEmit` sạch, `bun run lint` 0 lỗi (2 cảnh báo `<img>` cũ).
+
+### Sửa theo review lần 2
+
+Review lần 2 trên 2532972 không có lỗi Critical hay Important. Người điều phối nâng 3 lỗi Minor. Mỗi mục một commit, từ 5d79a45 tới commit ghi mục này. `test:db` và `test:s3` chạy trên database tạm `zz_test_upload` dựng mới, xoá khi xong.
+
+- Trần HEIC 64 MP (5d79a45). Trần 50 triệu điểm thấp hơn cảm biến 50 MP thật (8160x6144 là 50.135.040 điểm), nên ảnh HEIF của máy Android 50 MP giữ HEIC và Chrome máy tính không hiện. Trần và hàm kiểm `heicFits` chuyển sang `src/server/heic.ts` để app và worker dùng chung. Test ghi kích thước 8160x6144 vào hộp `ispe` của ảnh 320x240: qua trần. RED: trần 50 MP chặn ảnh đó. Ảnh dựng sẵn 8000x8000 (đúng 64 MP, nay nằm trong trần) thay bằng 8192x8192 nền phẳng (31 KB).
+- Worker kiểm ảnh (64a515a). App cố ý giữ HEIC vượt trần, nên đúng những file đó tới worker. Nay `photoBytes` kiểm `heicFits` trước `heicToJpeg`; vượt trần thì ghi failed với lý do "Ảnh <khung> quá lớn, máy không đọc được.", không giải mã, không gọi OCR, không thử lại. RED: bản cũ giải mã ảnh 8192x8192 mất 2,1 giây rồi ghi done.
+- HEIC dạng lưới (8b20949). Thêm `tests/fixtures/heic-1200x1600-luoi.heic` (3,5 KB, ô 512x512, dựng một lần bằng `sips`). Test nó thành WebP 1200x1600 ở `toWebpOnServer` và ở `putImage` ghi S3 thật, cả `proofs` lẫn `samples`. RED: file ảnh chưa có.
+- Comment ở `tests/db/e2eClean.test.ts` (a5ddb7a) nay ghi đúng: hồ sơ dựng dở giữa chừng không được dọn.
+
+Ruling của lượt này:
+
+- Trần HEIC nâng từ 50 MP lên 64 MP. Reviewer đo ảnh HEIC 64 MP thật tốn thêm khoảng 585 MB khi đổi. App đổi từng ảnh một trong trần 3 GB, nên một ảnh 64 MP vẫn vừa. Ảnh 50 MP của máy Android (8160x6144) nay đổi được. Chi phí nếu sai: điện thoại chụp trên 64 MP giữ HEIC gốc.
+- Worker kiểm ảnh dùng chung trần 64 MP với app. Ảnh vượt trần ghi failed ngay, không thử lại, vì thử lại cũng vượt trần.
+
+Việc để lại thêm từ review lần 2:
+
+| Việc | Lý do, khi nào |
+|---|---|
+| Ảnh lưới khai hộp `ispe` của cả ảnh nhỏ hơn thật vẫn giải mã các ô trước khi libheif báo lỗi | Khi gặp ca thật hoặc khi đọc cả hộp ô |
+| Hàng đợi đổi HEIC không có trần độ dài; request bị bỏ giữa chừng vẫn chờ tới lượt | Khi đo tải thật lúc cả trường gửi ảnh |
+| `tests/db/e2eClean.test.ts` không dọn được hồ sơ dựng dở giữa chừng | Khi test này fail lúc dựng dữ liệu |
+| Hàng đợi đổi HEIC là biến cấp module; Next có thể nạp module riêng cho mỗi bundle route, khi đó mỗi route có một hàng. Chưa kiểm; có thể dùng `globalThis` | Trước khi có thêm route gọi `putImage` song song với route nộp ảnh |
+
+Test sau lượt sửa: `bun run test` 224 pass, `bun test:db` 220 pass, `bun test:s3` 29 pass, `bunx tsc --noEmit` sạch, `bun run lint` 0 lỗi (2 cảnh báo `<img>` cũ). Không chạy e2e: người điều phối chưa cho phép ở lượt này, và không mục nào đổi giao diện hay route.
