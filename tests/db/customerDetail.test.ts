@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
-import { and, eq } from "drizzle-orm";
+import { and, eq, sql } from "drizzle-orm";
 import { cleanTestUsers, makeActor } from "./helpers";
 import { insertCustomer, setupProgram, type Program } from "./fixtures";
 import { db } from "../../src/server/db/client";
@@ -80,15 +80,23 @@ describe("xem ảnh", () => {
     expect((await audits(c.photoB)).length).toBe(0);
   });
 
-  test("mỗi lần xem ảnh ghi một dòng audit view_photo", async () => {
+  test("xem ảnh ghi một dòng audit view_photo; cùng người xem lại cùng ảnh trong 10 phút (hạn link) không ghi thêm", async () => {
     const c = await submitted();
     const r = await photoForView(staffA, c.photoA, "10.0.0.1");
     expect(r).toMatchObject({ ok: true });
     expect(r.ok && r.key.startsWith("proofs/")).toBe(true);
     await photoForView(staffA, c.photoA, null);
-    const rows = await audits(c.photoA);
-    expect(rows.length).toBe(2);
+    let rows = await audits(c.photoA);
+    expect(rows.length).toBe(1);
     expect(rows.every((a) => a.userId === staffA.id && a.targetType === "proof_photos")).toBe(true);
+
+    await photoForView(p.manager, c.photoA, null);
+    expect((await audits(c.photoA)).length).toBe(2);
+
+    await db.update(auditLog).set({ createdAt: sql`now() - interval '11 minutes'` }).where(and(eq(auditLog.targetId, c.photoA), eq(auditLog.userId, staffA.id)));
+    await photoForView(staffA, c.photoA, null);
+    rows = await audits(c.photoA);
+    expect(rows.filter((a) => a.userId === staffA.id).length).toBe(2);
   });
 });
 

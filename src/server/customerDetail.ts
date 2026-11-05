@@ -1,7 +1,7 @@
-import { and, asc, desc, eq, inArray, isNull, ne } from "drizzle-orm";
+import { and, asc, desc, eq, gt, inArray, isNull, ne, sql } from "drizzle-orm";
 import { alias } from "drizzle-orm/pg-core";
 import { db } from "./db/client";
-import { bankPhotoSlots, banks, customerBanks, customerExistingBanks, customers, photoChecks, proofPhotos, schools, smsMessages, userManagedBanks, users, vouchers } from "./db/schema";
+import { auditLog, bankPhotoSlots, banks, customerBanks, customerExistingBanks, customers, photoChecks, proofPhotos, schools, smsMessages, userManagedBanks, users, vouchers } from "./db/schema";
 import { writeAudit } from "./audit";
 import { customerWhere } from "./customerList";
 import { queuePhotoChecks, type Tx } from "./photoChecks";
@@ -177,6 +177,8 @@ export async function getCustomerDetail(actor: SessionUser, id: string): Promise
   };
 }
 
+export const PHOTO_LINK_SECONDS = 600;
+
 export async function photoForView(actor: SessionUser, photoId: string, ip: string | null): Promise<{ ok: true; key: string } | Fail> {
   const [row] = await db
     .select({ key: proofPhotos.s3Key, bankId: customerBanks.bankId, customerId: customerBanks.customerId })
@@ -184,7 +186,13 @@ export async function photoForView(actor: SessionUser, photoId: string, ip: stri
     .innerJoin(customerBanks, eq(customerBanks.id, proofPhotos.customerBankId))
     .where(eq(proofPhotos.id, photoId));
   if (!row || !reviewsBank(actor, row.bankId)) return fail("Không tìm thấy ảnh.", 404);
-  await writeAudit(db, { userId: actor.id, action: "view_photo", targetType: "proof_photos", targetId: photoId, detail: { customerId: row.customerId, bankId: row.bankId }, ip });
+  // Trang 4 tải lại ảnh mỗi lần mở: một người xem một ảnh trong hạn link chỉ ghi một dòng, bảng audit không phình theo số lần tải trang.
+  const [recent] = await db
+    .select({ id: auditLog.id })
+    .from(auditLog)
+    .where(and(eq(auditLog.targetId, photoId), eq(auditLog.action, "view_photo"), eq(auditLog.userId, actor.id), gt(auditLog.createdAt, sql`now() - make_interval(secs => ${PHOTO_LINK_SECONDS})`)))
+    .limit(1);
+  if (!recent) await writeAudit(db, { userId: actor.id, action: "view_photo", targetType: "proof_photos", targetId: photoId, detail: { customerId: row.customerId, bankId: row.bankId }, ip });
   return { ok: true, key: row.key };
 }
 

@@ -97,16 +97,20 @@ export const sessions = pgTable(
   (t) => [index("sessions_user").on(t.userId)],
 );
 
-export const auditLog = pgTable("audit_log", {
-  id: serialId(),
-  userId: uuid("user_id").references(() => users.id),
-  action: text("action").notNull(),
-  targetType: text("target_type").notNull(),
-  targetId: text("target_id").notNull(),
-  detail: jsonb("detail"),
-  ip: inet("ip"),
-  createdAt: createdAt(),
-});
+export const auditLog = pgTable(
+  "audit_log",
+  {
+    id: serialId(),
+    userId: uuid("user_id").references(() => users.id),
+    action: text("action").notNull(),
+    targetType: text("target_type").notNull(),
+    targetId: text("target_id").notNull(),
+    detail: jsonb("detail"),
+    ip: inet("ip"),
+    createdAt: createdAt(),
+  },
+  (t) => [index("audit_log_target").on(t.targetId, t.createdAt)],
+);
 
 /* Ngân hàng, mã giới thiệu, trường */
 
