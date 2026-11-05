@@ -389,6 +389,8 @@ export const smsMessages = pgTable(
     uniqueIndex("sms_messages_customer_kind").on(t.customerId, t.kind),
     index("sms_messages_queue").on(t.status, t.createdAt),
     check("sms_messages_attempts_range", sql`${t.attempts} between 0 and 3`),
+    // Một học sinh một tin theo unique (customer_id, kind): kind lạ sẽ lọt qua unique đó.
+    check("sms_messages_kind", sql`${t.kind} in ('voucher')`),
   ],
 );
 

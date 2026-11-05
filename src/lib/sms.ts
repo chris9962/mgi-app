@@ -1,5 +1,8 @@
 import { z } from "zod";
 
+// Loại tin duy nhất hiện có; DB chỉ nhận giá trị này (check sms_messages_kind).
+export const SMS_KIND_VOUCHER = "voucher";
+
 export const SMS_FIELDS = ["HO_TEN", "LOP", "TRUONG", "NGAN_HANG", "MA_VOUCHER"] as const;
 export type SmsField = (typeof SMS_FIELDS)[number];
 

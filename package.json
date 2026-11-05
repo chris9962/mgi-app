@@ -15,7 +15,8 @@
     "test": "bun test tests/auth tests/config tests/unit",
     "test:db": "bun --env-file=.env.local test tests/db",
     "e2e": "bun --env-file=.env.local scripts/e2e-seed.ts && bunx playwright test; s=$?; bun --env-file=.env.local scripts/e2e-clean.ts; exit $s",
-    "test:s3": "bun --env-file=.env.local test tests/s3"
+    "test:s3": "bun --env-file=.env.local test tests/s3",
+    "sms:worker": "bun --env-file=.env.local scripts/sms-worker.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1104.0",

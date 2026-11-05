@@ -54,4 +54,14 @@ describe("schema", () => {
     );
     expect(rows.map((r) => r.def).join(" ")).toContain("monthly_quota > 0");
   });
+
+  test("loại tin SMS chỉ nhận voucher", async () => {
+    const { rows } = await pool.query("select pg_get_constraintdef(oid) as def from pg_constraint where conrelid = 'sms_messages'::regclass and contype = 'c'");
+    expect(rows.map((r) => r.def).join(" ")).toContain("'voucher'");
+  });
+
+  test("có extension unaccent cho ô tìm không dấu", async () => {
+    const { rowCount } = await pool.query("select 1 from pg_extension where extname = 'unaccent'");
+    expect(rowCount).toBe(1);
+  });
 });

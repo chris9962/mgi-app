@@ -96,6 +96,12 @@ export function Sidebar({ groups, fullName, title }: { groups: MenuGroup[]; full
                           )}
                         >
                           {item.label}
+                          {item.badge !== undefined && (
+                            <span className={clsx("mr-3 ml-auto min-w-5 rounded-full px-1.5 text-center text-xs leading-5 font-semibold", active ? "bg-card text-accent-ink" : "bg-danger-soft text-danger-ink")}>
+                              {item.badge}
+                              <span className="sr-only"> tin lỗi</span>
+                            </span>
+                          )}
                         </Link>
                       </li>
                     );

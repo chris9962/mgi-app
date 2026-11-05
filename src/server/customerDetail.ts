@@ -8,12 +8,11 @@ import { queuePhotoChecks, type Tx } from "./photoChecks";
 import { customerScope, reviewsBank } from "@/lib/permissions";
 import { parseCustomerFilters } from "@/lib/customerFilters";
 import { checkItems, type PhotoCheckView } from "@/lib/photoCheck";
+import { SMS_KIND_VOUCHER } from "@/lib/sms";
 import { plain } from "@/lib/text";
 import type { CustomerEditValues } from "@/lib/customerForm";
 import type { CustomerBankStatus, CustomerStatus } from "@/lib/studentState";
 import type { SessionUser } from "@/lib/types";
-
-export const SMS_KIND_VOUCHER = "voucher";
 
 type Fail = { ok: false; message: string; status: 400 | 404 | 409 | 500; field?: string };
 const fail = (message: string, status: Fail["status"], field?: string): Fail => ({ ok: false, message, status, field });
