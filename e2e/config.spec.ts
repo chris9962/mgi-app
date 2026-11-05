@@ -53,7 +53,7 @@ test("Quản trị tạo trường, ngân hàng có 2 khung ảnh, mã gắn cho
   await code.getByLabel("Ngân hàng").selectOption({ label: "ZZE2E VPBank" });
   await code.getByLabel("Tên hiển thị").fill("ZZE2E VPB Nguyễn Du");
   await code.getByLabel("Mã text (Mã giới thiệu)").fill("ND-E2E-01");
-  await code.getByRole("combobox", { name: "Trường dùng mã này" }).fill("zze2e");
+  await code.getByRole("combobox", { name: "Trường dùng mã này" }).fill("ZZE2E THPT Nguyễn");
   await page.getByRole("option", { name: /ZZE2E THPT Nguyễn Du - Châu Thành/ }).click();
   await code.getByRole("button", { name: "Tạo mã" }).click();
   const row = page.getByRole("row", { name: /ZZE2E VPB Nguyễn Du/ });

@@ -1,6 +1,7 @@
 import { inArray, like, or } from "drizzle-orm";
 import { db, pool } from "../src/server/db/client";
 import * as s from "../src/server/db/schema";
+import { deleteImage } from "../src/server/storage";
 
 export const E2E_PREFIX = "zz_e2e_";
 export const E2E_NAME = "ZZE2E ";
@@ -23,6 +24,27 @@ export async function cleanE2e() {
         ),
       )
   ).map((r) => r.id);
+  const schools = (await db.select({ id: s.schools.id }).from(s.schools).where(like(s.schools.name, `${E2E_NAME}%`))).map((r) => r.id);
+  const customers = schools.length ? (await db.select({ id: s.customers.id }).from(s.customers).where(inArray(s.customers.schoolId, schools))).map((r) => r.id) : [];
+  const customerBanks = (
+    await db
+      .select({ id: s.customerBanks.id })
+      .from(s.customerBanks)
+      .where(or(customers.length ? inArray(s.customerBanks.customerId, customers) : undefined, codes.length ? inArray(s.customerBanks.referralCodeId, codes) : undefined))
+  ).map((r) => r.id);
+  // Ảnh học sinh và ảnh mẫu do e2e tải lên nằm trên bucket dev: đọc khoá trước khi xoá dòng.
+  const keys = [
+    ...(customerBanks.length ? await db.select({ key: s.proofPhotos.s3Key }).from(s.proofPhotos).where(inArray(s.proofPhotos.customerBankId, customerBanks)) : []),
+    ...(banks.length ? await db.select({ key: s.bankPhotoSlots.sampleKey }).from(s.bankPhotoSlots).where(inArray(s.bankPhotoSlots.bankId, banks)).then((rows) => rows.filter((r) => r.key)) : []),
+  ].map((r) => r.key!);
+  if (customers.length) {
+    await db.delete(s.customerExistingBanks).where(inArray(s.customerExistingBanks.customerId, customers));
+    await db.delete(s.smsMessages).where(inArray(s.smsMessages.customerId, customers));
+    await db.delete(s.vouchers).where(inArray(s.vouchers.customerId, customers));
+  }
+  if (customerBanks.length) await db.delete(s.customerBanks).where(inArray(s.customerBanks.id, customerBanks));
+  if (customers.length) await db.delete(s.customers).where(inArray(s.customers.id, customers));
+  for (const key of keys) await deleteImage(key).catch((e) => console.error("Không xoá được ảnh e2e trên S3:", key, e instanceof Error ? e.message : e));
   if (codes.length) {
     await db.delete(s.referralCodeSchools).where(inArray(s.referralCodeSchools.referralCodeId, codes));
     await db.delete(s.referralCodeMonths).where(inArray(s.referralCodeMonths.referralCodeId, codes));
