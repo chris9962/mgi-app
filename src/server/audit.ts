@@ -10,4 +10,4 @@ export async function writeAudit(executor: Executor, entry: AuditEntry): Promise
   await executor.insert(auditLog).values({ ...entry, detail: entry.detail ?? null, ip: entry.ip && isIP(entry.ip) ? entry.ip : null });
 }
 
-export const ipFrom = (request: Request): string | null => request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? null;
+export { ipFrom } from "./http/ip";

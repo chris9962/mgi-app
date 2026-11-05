@@ -1,5 +1,8 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { eq } from "drizzle-orm";
 import { TEST_NAME, cleanTestUsers, makeActor } from "./helpers";
+import { db } from "../../src/server/db/client";
+import { customers } from "../../src/server/db/schema";
 import { createSchool } from "../../src/server/schools";
 import { createCustomer } from "../../src/server/customers";
 import { CustomerForm } from "../../src/lib/customerForm";
@@ -56,5 +59,14 @@ describe("route ghi của học sinh", () => {
   test("token đúng, cùng trang thì qua được bước xác thực", async () => {
     const res = await meRoute(new Request(`${SITE}/api/customers/me`, { headers: { Authorization: `Bearer ${token}` } }));
     expect(res.status).toBe(200);
+  });
+
+  test("hồ sơ mới ghi IP cuối của X-Forwarded-For (địa chỉ Nginx ghi), không ghi địa chỉ học sinh tự khai ở đầu", async () => {
+    const body = { schoolId, fullName: "Học Sinh IP", className: "10A1", phone: "0900000603", parentName: "B", parentPhone: "0910000603", existingBankIds: [] };
+    const request = req("/api/customers", { body });
+    request.headers.set("X-Forwarded-For", "6.6.6.6, 203.0.113.9");
+    expect((await createRoute(request)).status).toBeLessThan(300);
+    const [row] = await db.select({ ip: customers.createdIp }).from(customers).where(eq(customers.phone, "0900000603"));
+    expect(row.ip).toBe("203.0.113.9");
   });
 });
