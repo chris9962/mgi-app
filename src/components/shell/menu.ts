@@ -25,6 +25,7 @@ const MENU: { key: string; label: string; items: MenuEntry[] }[] = [
     items: [
       { href: "/sms", label: "Tin SMS lỗi", allow: (u) => can(u, "customers") },
       { href: "/settings", label: "Cài đặt", allow: (u) => can(u, "system") },
+      { href: "/ops", label: "Vận hành hệ thống", allow: (u) => can(u, "system") },
     ],
   },
 ];

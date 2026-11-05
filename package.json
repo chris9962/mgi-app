@@ -18,7 +18,8 @@
     "test:s3": "bun --env-file=.env.local test tests/s3",
     "sms:worker": "bun --env-file=.env.local scripts/sms-worker.ts",
     "compress:worker": "bun --env-file=.env.local scripts/compress-worker.ts",
-    "photo-check:worker": "bun --env-file=.env.local scripts/photo-check-worker.ts"
+    "photo-check:worker": "bun --env-file=.env.local scripts/photo-check-worker.ts",
+    "ops:watch": "bun --env-file=.env.local scripts/ops-watch.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1104.0",
