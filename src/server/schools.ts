@@ -61,6 +61,11 @@ export async function getSchool(id: string): Promise<SchoolRow | null> {
   return row ?? null;
 }
 
+export async function publicSchool(id: string): Promise<{ id: string; name: string; active: boolean } | null> {
+  const [row] = await db.select({ id: schools.id, name: schools.name, active: schools.active }).from(schools).where(eq(schools.id, id));
+  return row ?? null;
+}
+
 async function wardFails(values: SchoolFormValues): Promise<Fail | null> {
   const [ward] = await db.select({ code: wards.code }).from(wards).where(and(eq(wards.code, values.wardCode), eq(wards.provinceCode, values.provinceCode)));
   return ward ? null : { ok: false, message: "Xã/phường không thuộc tỉnh đã chọn.", field: "wardCode", status: 400 };

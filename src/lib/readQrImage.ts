@@ -99,6 +99,13 @@ export async function readQrImage(file: File): Promise<QrReadResult> {
   return decodeBlob(file);
 }
 
+// Khung hình camera ở màn H0: dò nhanh, không tryHarder, vì mỗi giây dò vài khung.
+export async function readQrPixels(pixels: ImageData): Promise<string> {
+  const readBarcodes = await zxingReader();
+  const [found] = await readBarcodes(pixels, { formats: ["QRCode"], maxNumberOfSymbols: 1 });
+  return found?.text.trim() ?? "";
+}
+
 /**
  * Link http(s) đầu tiên trong chuỗi QR, hoặc `''`.
  *
