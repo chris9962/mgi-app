@@ -2,6 +2,7 @@ import { Landmark, MessageSquareText, ScanText, UserRound } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CustomerEditButton } from "@/components/customers/CustomerEditButton";
+import { NoteButton, ReviewActions } from "@/components/customers/ReviewActions";
 import { bankTag, customerTag } from "@/components/customers/customerView";
 import { TopBar } from "@/components/shell/TopBar";
 import { Card } from "@/components/ui/Card";
@@ -64,6 +65,7 @@ function PhotoCheck({ check }: { check: NonNullable<DetailBank["check"]> }) {
 }
 
 function BankCard({ bank, customer }: { bank: DetailBank; customer: CustomerDetail }) {
+  const actionBank = { id: bank.id, name: bank.name, status: bank.status, note: bank.note, slots: bank.slots.filter((s) => !s.removed).map((s) => ({ id: s.id, name: s.name })) };
   const meta = [`Ngân hàng ${bank.slot}`, bank.referralCode && `Mã giới thiệu ${bank.referralCode}`, bank.managers.length && `Người quản ${bank.managers.join(", ")}`].filter(Boolean).join(" - ");
   return (
     <Card title={bank.name} icon={<Landmark size={17} aria-hidden />} meta={meta} action={bankTag(bank.status, true)} pad={bank.managed}>
@@ -89,7 +91,10 @@ function BankCard({ bank, customer }: { bank: DetailBank; customer: CustomerDeta
           </ul>
           {bank.check && <PhotoCheck check={bank.check} />}
           <section aria-label="Ghi chú nội bộ" className="flex flex-col gap-1.5">
-            <h3 className="text-sm font-semibold">Ghi chú nội bộ</h3>
+            <h3 className="flex items-center gap-1 text-sm font-semibold">
+              Ghi chú nội bộ
+              <NoteButton bank={actionBank} />
+            </h3>
             <p className="rounded-xl bg-panel px-3 py-2.5 text-sm whitespace-pre-line">{bank.note || muted("Chưa có ghi chú")}</p>
           </section>
           {bank.reviewer && bank.reviewedAt && (
@@ -97,6 +102,7 @@ function BankCard({ bank, customer }: { bank: DetailBank; customer: CustomerDeta
               {bank.reviewer} đánh dấu lúc {formatDateTime(bank.reviewedAt)}
             </p>
           )}
+          <ReviewActions bank={actionBank} />
         </div>
       )}
     </Card>

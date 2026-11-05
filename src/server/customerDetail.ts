@@ -20,7 +20,7 @@ const fail = (message: string, status: Fail["status"], field?: string): Fail => 
 const NOT_FOUND = fail("Không tìm thấy hồ sơ.", 404);
 
 export type DetailPhoto = { id: string; slotId: string; uploadedBy: string | null; createdAt: Date };
-export type DetailSlot = { id: string; name: string; photo: DetailPhoto | null };
+export type DetailSlot = { id: string; name: string; removed: boolean; photo: DetailPhoto | null };
 export type DetailBank = {
   id: string;
   slot: number;
@@ -168,7 +168,7 @@ export async function getCustomerDetail(actor: SessionUser, id: string): Promise
         slots: managed
           ? slots
               .filter((s) => s.bankId === r.bankId && (!s.removedAt || current.some((ph) => ph.slotId === s.id)))
-              .map((s) => ({ id: s.id, name: s.name, photo: current.find((ph) => ph.slotId === s.id) ?? null }))
+              .map((s) => ({ id: s.id, name: s.name, removed: Boolean(s.removedAt), photo: current.find((ph) => ph.slotId === s.id) ?? null }))
           : [],
         check: check
           ? { status: check.status, checkedAt: check.checkedAt?.toISOString() ?? null, passed: check.passed, total: check.total, error: check.error, items: checkItems(check.result) }
