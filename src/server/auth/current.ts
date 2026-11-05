@@ -21,6 +21,16 @@ export async function requirePage(action?: Action): Promise<SessionUser> {
   return user;
 }
 
+// Trang mở theo điều kiện riêng, ví dụ người có quyền Quản lý ngân hàng hoặc được giao ít nhất một ngân hàng.
+export async function requirePageWhere(allow: (user: SessionUser) => boolean): Promise<SessionUser> {
+  const user = await requirePage();
+  if (!allow(user)) {
+    const { notFound } = await import("next/navigation");
+    notFound();
+  }
+  return user;
+}
+
 export async function requireApi(
   request: Request,
   action?: Action,

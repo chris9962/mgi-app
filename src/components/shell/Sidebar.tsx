@@ -1,7 +1,7 @@
 "use client";
 
 import { clsx } from "clsx";
-import { Building2, ChevronDown, LogOut, Moon, Settings, UserRound } from "lucide-react";
+import { Building2, ChevronDown, LogOut, Moon, Server, Settings, UserRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
@@ -9,7 +9,7 @@ import { Logo } from "@/components/ui/Logo";
 import { BRAND_NAME } from "@/lib/brand";
 import type { MenuGroup } from "./menu";
 
-const GROUP_ICON: Record<string, React.ReactNode> = { data: <Settings size={18} aria-hidden />, manage: <Building2 size={18} aria-hidden /> };
+const GROUP_ICON: Record<string, React.ReactNode> = { data: <Settings size={18} aria-hidden />, manage: <Building2 size={18} aria-hidden />, system: <Server size={18} aria-hidden /> };
 
 const initials = (name: string) =>
   name
@@ -84,7 +84,7 @@ export function Sidebar({ groups, fullName, title }: { groups: MenuGroup[]; full
               {open && (
                 <ul className="mt-1 flex flex-col gap-1">
                   {g.items.map((item) => {
-                    const active = pathname === item.href || pathname.startsWith(item.href + "/");
+                    const active = pathname === item.href || (!item.exact && pathname.startsWith(item.href + "/"));
                     return (
                       <li key={item.href}>
                         <Link

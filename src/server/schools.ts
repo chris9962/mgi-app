@@ -1,4 +1,4 @@
-import { and, asc, count, eq, ilike, isNotNull, or, sql } from "drizzle-orm";
+import { and, asc, count, eq, ilike, inArray, or, sql } from "drizzle-orm";
 import { db } from "./db/client";
 import { customers, provinces, schools, wards } from "./db/schema";
 import { writeAudit } from "./audit";
@@ -23,6 +23,8 @@ export type SchoolRow = {
 
 type Fail = { ok: false; message: string; field?: string; status: 400 | 404 };
 
+const SCHOOL_ID = sql.raw(`"schools"."id"`);
+
 const columns = {
   id: schools.id,
   name: schools.name,
@@ -34,8 +36,9 @@ const columns = {
   contactPhone: schools.contactPhone,
   active: schools.active,
   // Đếm cho đúng các dòng của trang, mỗi dòng một lượt tra chỉ mục customers(school_id, created_at).
-  customerCount: sql<number>`(select count(*)::int from ${customers} where ${customers.schoolId} = ${schools.id})`,
-  passedCount: sql<number>`(select count(*)::int from ${customers} where ${customers.schoolId} = ${schools.id} and ${isNotNull(customers.firstPassedAt)})`,
+  // Ghi rõ tên bảng trong câu con để cột không trỏ nhầm sang bảng con.
+  customerCount: sql<number>`(select count(*)::int from ${customers} c where c.school_id = ${SCHOOL_ID})`,
+  passedCount: sql<number>`(select count(*)::int from ${customers} c where c.school_id = ${SCHOOL_ID} and c.first_passed_at is not null)`,
 };
 
 const base = () => db.select(columns).from(schools).innerJoin(wards, eq(wards.code, schools.wardCode)).innerJoin(provinces, eq(provinces.code, wards.provinceCode));
@@ -116,7 +119,7 @@ export async function schoolLabels(ids: string[]): Promise<{ id: string; label: 
     .select({ id: schools.id, name: schools.name, ward: wards.name })
     .from(schools)
     .innerJoin(wards, eq(wards.code, schools.wardCode))
-    .where(sql`${schools.id} in ${ids}`);
+    .where(inArray(schools.id, ids));
   return rows.map((r) => ({ id: r.id, label: `${r.name} - ${shortWard(r.ward)}` }));
 }
 

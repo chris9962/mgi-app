@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { and, eq } from "drizzle-orm";
 import { TEST_NAME, cleanTestUsers, makeActor } from "./helpers";
 import { db } from "../../src/server/db/client";
-import { auditLog, schools } from "../../src/server/db/schema";
+import { auditLog, customers, schools } from "../../src/server/db/schema";
 import { createSchool, listSchools, searchSchoolOptions, setSchoolActive, updateSchool } from "../../src/server/schools";
 import { SchoolForm } from "../../src/lib/schoolForm";
 import type { SessionUser } from "../../src/lib/types";
@@ -54,4 +54,17 @@ describe("trường", () => {
     expect(labels).toContain(`${TEST_NAME}THPT Nguyễn Du - Châu Thành`);
     expect(labels.some((l) => l.includes("Đã sửa"))).toBe(false);
   });
+});
+
+test("cột Hồ sơ và Đạt ≥ 1 đếm đúng hồ sơ của trường", async () => {
+  const r = await createSchool(actor, form("Đếm hồ sơ"));
+  if (!r.ok) throw new Error(r.message);
+  const base = { schoolId: r.id, fullName: "A", nameSearch: "a", className: "11A1", phone: "0900000001", parentName: "B", parentPhone: "0900000002" };
+  await db.insert(customers).values([
+    { ...base, tokenHash: "zz-test-1-" + r.id },
+    { ...base, tokenHash: "zz-test-2-" + r.id, firstPassedAt: new Date() },
+  ]);
+  const row = (await listSchools({ q: TEST_NAME + "Đếm hồ sơ", page: 1 })).rows[0];
+  expect(row.customerCount).toBe(2);
+  expect(row.passedCount).toBe(1);
 });

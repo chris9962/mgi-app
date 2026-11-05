@@ -23,7 +23,10 @@ export async function cleanTestUsers() {
     await db.delete(s.referralCodeMonths).where(inArray(s.referralCodeMonths.referralCodeId, codes));
     await db.delete(s.referralCodes).where(inArray(s.referralCodes.id, codes));
   }
-  if (schools.length) await db.delete(s.schools).where(inArray(s.schools.id, schools));
+  if (schools.length) {
+    await db.delete(s.customers).where(inArray(s.customers.schoolId, schools));
+    await db.delete(s.schools).where(inArray(s.schools.id, schools));
+  }
   if (banks.length) {
     await db.delete(s.userManagedBanks).where(inArray(s.userManagedBanks.bankId, banks));
     await db.delete(s.bankPhotoSlots).where(inArray(s.bankPhotoSlots.bankId, banks));
