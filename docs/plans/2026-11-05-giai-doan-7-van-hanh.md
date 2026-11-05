@@ -174,3 +174,26 @@ Việc để lại thêm (Minor của review lần 1, chưa sửa):
 | Mật khẩu DB lộ trong tham số `docker run` của `db.sh` (`docker inspect` đọc được) | Khi siết bảo mật máy chủ |
 | Cờ gõ sai kiểu `--truog=` bị bỏ qua im lặng (chỉ cờ bắt đầu bằng `--truong` bị kiểm) | Khi sửa worker |
 | Ô tên ngân hàng trong bảng Kiểm ảnh nên là `th scope="row"`; nhãn "Vượt 80%" hiện cả khi đúng 80% | Khi sửa Trang 18 |
+
+### Sửa theo review lần 2
+
+Reviewer đọc ở commit 76bc5fc, xác nhận 8 mục của lần sửa 1, thấy 1 lỗi Important thuộc giai đoạn này (lỗi Important về RAM của HEIC thuộc phần tải ảnh). Agent sửa ngày 2026-11-05 ở commit 374f138. Hai agent khác làm cùng lúc trên cùng thư mục và cùng Postgres: test DB chạy trên database tạm `zz_test_phase7` của riêng agent (migrate, seed 34 tỉnh, 3.321 xã, xoá sau khi xong); không chạy e2e; commit chỉ bốn file của mục này.
+
+- I1 (374f138): `db-restore --that` xoá database trước khi kiểm bản dump, và `pg_restore` không dừng ở lỗi nên script thoát 0 cả khi khôi phục hỏng. Nay script kiểm theo thứ tự, sai một điều thì dừng khi chưa xoá gì: tên gõ lại ở `--that=<tên>` phải đúng database trong `DATABASE_URL`; app và worker không chạy; file đọc được bằng `pg_restore --list` và có dữ liệu bốn bảng `users`, `proof_photos`, `host_metrics`, `drizzle.__drizzle_migrations` (`validateDump`, dùng chung với bước kiểm của `db-backup`). Khôi phục chạy `--exit-on-error --single-transaction`; lỗi thì in `KHÔNG ĐẠT`, báo database đang rỗng, dặn không bật app và chạy lại với bản khác, thoát mã 1. `docs/deploy.md` mục 8, 9: cảnh báo đặt trước bước, thêm `unset DATABASE_URL`, dừng `mgi-bank-ops-watch.service` và `mgi-bank-s3-orphans.timer` trước khi khôi phục rồi chạy lại sau, lệnh ghi `--that=mgibank`, ghi chú `BACKUP_ALLOW_SHRINK=1` cho lượt sao lưu đầu sau khi khôi phục bản cũ nhỏ hơn.
+- Kiểm: `tests/db/backup.test.ts` chạy script thật trên database `zz_test_restore_*`. Trước khi sửa cả bốn ca mới fail (script không hiểu `--that=<tên>`, lặng lẽ khôi phục vào `<tên>_thu` và thoát 0; agent đã xoá hai database `_thu` sót lại của lượt RED). Sau khi sửa: bản dump của schema khác (có `users`, `customers` như mgst-app) bị từ chối, database đích còn nguyên; gõ lại sai tên hoặc không gõ thì từ chối; file cắt còn 60% (mất mục lục) bị từ chối trước khi xoá; file cắt còn 90% (còn mục lục, mất dữ liệu) làm script thoát 1, báo database rỗng, database đích không còn bảng nào; ca cũ "object tạo sau bản dump không còn" vẫn đạt với `--that=<tên>`.
+
+Ruling:
+
+- Bốn bảng bắt buộc trong mục lục chọn theo bảng chỉ mgi-bank có (`proof_photos`, `host_metrics`) cộng `users` và bảng migration. Bản dump của mgst-app có `users` nên chỉ `users` là không đủ.
+- Gõ lại tên bằng `--that=<tên>`, không hỏi tương tác: script chạy được trong lệnh chép từ tài liệu, và tên phải gõ đúng mới chạy.
+- File cắt cụt có hai đường: mất mục lục thì `validateDump` chặn trước khi xoá; còn mục lục thì `--single-transaction` lùi hết, database rỗng chứ không dở dang. Database rỗng sau lỗi là chủ ý: script báo rõ và tài liệu dặn không bật app.
+
+Test sau lần sửa: `bun run test` 220 pass, `bun test:db` 217 pass (trên `zz_test_phase7`), `bun test:s3` 29 pass, `bunx tsc --noEmit` sạch, `bun run lint` 0 lỗi (2 cảnh báo `<img>` cũ). Không chạy `bun run e2e` theo lệnh của người điều phối; thay đổi không đụng giao diện. Lượt chạy có thấy database `zz_test_restore_*` do lượt test của agent khác tạo cùng lúc; agent không đụng vào.
+
+Việc để lại thêm (review lần 2, chưa sửa):
+
+| Việc | Khi nào |
+|---|---|
+| `deploy.sh` không thử nối DB trước khi đổi container ở bước 4; một route `select 1` không phụ thuộc schema sẽ bắt lỗi nối DB trước khi bật bảo trì | Khi sửa `deploy.sh` |
+| Câu báo 429 ở web học sinh "Thử lại sau ít phút." (`src/lib/studentApi.ts:15`) trong khi thời gian chờ thật chỉ vài giây | Khi sửa câu chữ web học sinh |
+| `docs/deploy.md` mục 4 nói `COOKIE_SECURE=false` để chạy tạm bằng http; sau khi có HSTS, trình duyệt đã vào https một lần sẽ không mở http nữa nên cách đó không dùng được với trình duyệt đó | Khi sửa tài liệu |
