@@ -62,6 +62,12 @@ function openBanksOf(candidates: Candidate[], exclude: Set<string>): { id: strin
   return [...open.values()].sort((a, b) => a.bankSort - b.bankSort || a.bankName.localeCompare(b.bankName, "vi")).map((c) => ({ id: c.bankId, name: c.bankName }));
 }
 
+// no_bank là điểm dừng: chỉ khi ngân hàng đã có phủ hết ngân hàng của chương trình ở trường (bỏ qua lượt). Hết lượt chỉ là tạm.
+function hasAllBanks(candidates: Candidate[], existing: Set<string>): boolean {
+  const program = new Set(candidates.map((c) => c.bankId));
+  return program.size > 0 && [...program].every((id) => existing.has(id));
+}
+
 export const openBanksAtSchool = async (schoolId: string, month = currentYearMonth()) => openBanksOf(await loadCandidates(db, schoolId, month), new Set());
 
 // Học sinh không có tài khoản: token trên điện thoại là thứ duy nhất chứng minh hồ sơ là của mình.
@@ -94,7 +100,8 @@ export async function createCustomer(values: CustomerFormValues, ip: string | nu
   if (existing.length && (await db.select({ id: banks.id }).from(banks).where(inArray(banks.id, existing))).length !== existing.length) {
     return fail("Ngân hàng không có trong danh sách.", 400, "existingBankIds");
   }
-  const open = openBanksOf(await loadCandidates(db, school.id, month), new Set(existing));
+  const candidates = await loadCandidates(db, school.id, month);
+  const noBank = hasAllBanks(candidates, new Set(existing));
   const { token, tokenHash } = newCustomerToken();
   const id = await db.transaction(async (tx) => {
     const [row] = await tx
@@ -109,7 +116,7 @@ export async function createCustomer(values: CustomerFormValues, ip: string | nu
         parentPhone: values.parentPhone,
         tokenHash,
         createdIp: ip && isIP(ip) ? ip : null,
-        status: open.length ? "new" : "no_bank",
+        status: noBank ? "no_bank" : "new",
       })
       .returning({ id: customers.id });
     if (existing.length) await tx.insert(customerExistingBanks).values(existing.map((bankId) => ({ customerId: row.id, bankId })));
@@ -135,8 +142,10 @@ export async function reserveBanks(customer: Customer, bankIds: string[], month 
     const [current] = await tx.select({ status: customers.status, schoolId: customers.schoolId }).from(customers).where(eq(customers.id, customer.id)).for("update");
     if (current?.status !== "new") return fail("Hồ sơ đã chọn ngân hàng.", 409);
     const candidates = await loadCandidates(tx, current.schoolId, month, true);
-    const open = openBanksOf(candidates, await existingBankIds(tx, customer.id));
+    const existing = await existingBankIds(tx, customer.id);
+    const open = openBanksOf(candidates, existing);
     if (!open.length) {
+      if (!hasAllBanks(candidates, existing)) return fail("Ngân hàng đã hết lượt trong tháng này.", 409);
       await tx.update(customers).set({ status: "no_bank" }).where(eq(customers.id, customer.id));
       return fail("Không còn ngân hàng nào phù hợp.", 409);
     }
@@ -256,9 +265,9 @@ export async function studentState(customer: Customer, month = currentYearMonth(
   let status = customer.status;
   let eligibleBanks: StudentState["eligibleBanks"] = [];
   if (status === "new") {
-    eligibleBanks = openBanksOf(await loadCandidates(db, customer.schoolId, month), existing);
-    // Điểm dừng như lúc khai B1: hết ngân hàng thì hồ sơ ghi "Không có ngân hàng" cho hậu kiểm thấy.
-    if (!eligibleBanks.length) {
+    const candidates = await loadCandidates(db, customer.schoolId, month);
+    eligibleBanks = openBanksOf(candidates, existing);
+    if (!eligibleBanks.length && hasAllBanks(candidates, existing)) {
       await db.update(customers).set({ status: "no_bank" }).where(and(eq(customers.id, customer.id), eq(customers.status, "new")));
       status = "no_bank";
     }

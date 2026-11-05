@@ -3,7 +3,7 @@ import { and, eq } from "drizzle-orm";
 import { TEST_NAME, cleanTestUsers, makeActor } from "./helpers";
 import { db } from "../../src/server/db/client";
 import { customerBanks, customers, referralCodeMonths } from "../../src/server/db/schema";
-import { createBank } from "../../src/server/banks";
+import { createBank, setBankActive } from "../../src/server/banks";
 import { createSchool } from "../../src/server/schools";
 import { createCode } from "../../src/server/referralCodes";
 import { createCustomer, reserveBanks, studentState, type Customer } from "../../src/server/customers";
@@ -54,8 +54,8 @@ const statusOf = async (customerId: string) => (await db.select({ s: customers.s
 beforeAll(async () => {
   await cleanTestUsers();
   manager = await makeActor("b2_manager", "manager");
-  for (const k of ["S", "RACE", "GONE", "MONTH"]) await addSchool(k);
-  for (const [i, k] of ["A", "B", "C", "D", "E", "G", "H"].entries()) await addBank(k, i + 1);
+  for (const k of ["S", "RACE", "GONE", "MONTH", "COVER"]) await addSchool(k);
+  for (const [i, k] of ["A", "B", "C", "D", "E", "G", "H", "P", "Q"].entries()) await addBank(k, i + 1);
   await addCode("A-LOW", "A", "S", 10, 1);
   await addCode("A-HIGH", "A", "S", 10, 5);
   await addCode("B-1", "B", "S", 10);
@@ -66,6 +66,8 @@ beforeAll(async () => {
   await addCode("E-RACE", "E", "RACE", 3);
   await addCode("G-GONE", "G", "GONE", 1);
   await addCode("H-MONTH", "H", "MONTH", 1);
+  await addCode("P-1", "P", "COVER", 10);
+  await addCode("Q-1", "Q", "COVER", 10);
 });
 afterAll(cleanTestUsers);
 
@@ -75,8 +77,21 @@ describe("B2 danh sách đủ điều kiện", () => {
     expect((await studentState(c, MONTH)).eligibleBanks.map((b) => b.id)).toEqual([bank.B, bank.C]);
   });
 
-  test("đã có mọi ngân hàng còn lượt thì hồ sơ là no_bank ngay từ B1", async () => {
-    expect((await student("S", ["A", "B", "C"])).status).toBe("no_bank");
+  test("đã có mọi ngân hàng của chương trình ở trường thì hồ sơ là no_bank ngay từ B1; còn ngân hàng chỉ hết lượt thì vẫn là new", async () => {
+    expect((await student("S", ["A", "B", "C", "D"])).status).toBe("no_bank");
+    const c = await student("S", ["A", "B", "C"]);
+    expect(c.status).toBe("new");
+    expect((await studentState(c, MONTH)).eligibleBanks).toEqual([]);
+  });
+
+  test("ngân hàng chưa có bị tắt sau khi khai, các ngân hàng đã có phủ hết chương trình thì hồ sơ sang no_bank", async () => {
+    const c = await student("COVER", ["P"]);
+    expect(c.status).toBe("new");
+    await setBankActive(manager, bank.Q, false);
+    const state = await studentState(c, MONTH);
+    expect([state.customer.status, state.eligibleBanks]).toEqual(["no_bank", []]);
+    expect(await statusOf(c.id)).toBe("no_bank");
+    await setBankActive(manager, bank.Q, true);
   });
 });
 
@@ -117,14 +132,14 @@ describe("B2 giữ chỗ", () => {
     expect((await rowsOf(c.id)).map((r) => [r.slot, r.bankId])).toEqual([[1, bank.C]]);
   });
 
-  test("mã hết lượt sau khi khai thì hồ sơ sang no_bank, lúc mở web hoặc lúc bấm Tiếp tục", async () => {
+  test("mã hết lượt sau khi khai thì hồ sơ vẫn là new, lúc mở web hoặc lúc bấm Tiếp tục", async () => {
     const [waiting, pressing] = [await student("GONE"), await student("GONE")];
     expect(await reserveBanks(await student("GONE"), [bank.G], MONTH)).toEqual({ ok: true });
     expect(await reserveBanks(pressing, [bank.G], MONTH)).toMatchObject({ ok: false, status: 409 });
-    expect(await statusOf(pressing.id)).toBe("no_bank");
+    expect(await statusOf(pressing.id)).toBe("new");
     const state = await studentState(waiting, MONTH);
-    expect([state.customer.status, state.eligibleBanks]).toEqual(["no_bank", []]);
-    expect(await statusOf(waiting.id)).toBe("no_bank");
+    expect([state.customer.status, state.eligibleBanks]).toEqual(["new", []]);
+    expect(await statusOf(waiting.id)).toBe("new");
   });
 
   test("nhiều học sinh giữ chỗ cùng lúc không vượt quota", async () => {

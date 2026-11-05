@@ -110,11 +110,18 @@ describe("B1 khai thông tin", () => {
     expect(found?.id).toBe(r.id);
   });
 
-  test("đã có mọi ngân hàng mở ở trường thì hồ sơ là no_bank", async () => {
-    const r = await createCustomer(CustomerForm.parse(form({ existingBankIds: [bank.MB, bank.VPB] })), null);
+  test("đã có mọi ngân hàng của chương trình ở trường, kể cả ngân hàng hết lượt, thì hồ sơ là no_bank", async () => {
+    const r = await createCustomer(CustomerForm.parse(form({ existingBankIds: [bank.MB, bank.VPB, bank.FULL] })), null);
     if (!r.ok) throw new Error(r.message);
     const [row] = await db.select({ status: customers.status }).from(customers).where(eq(customers.id, r.id));
     expect(row.status).toBe("no_bank");
+  });
+
+  test("ngân hàng chưa có chỉ đang hết lượt thì hồ sơ vẫn là new", async () => {
+    const r = await createCustomer(CustomerForm.parse(form({ existingBankIds: [bank.MB, bank.VPB] })), null);
+    if (!r.ok) throw new Error(r.message);
+    const [row] = await db.select({ status: customers.status }).from(customers).where(eq(customers.id, r.id));
+    expect(row.status).toBe("new");
   });
 
   test("trường không có hoặc đã đóng thì không tạo hồ sơ", async () => {

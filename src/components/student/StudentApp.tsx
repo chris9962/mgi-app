@@ -6,7 +6,7 @@ import { clearProfile, decideLink, isSchoolId, readDevice, saveSchool } from "@/
 import { studentApi } from "@/lib/studentApi";
 import type { StudentSchool, StudentState } from "@/lib/studentState";
 import { AppHead, Bottom, EndBlock, Steps } from "./parts";
-import { ChooseBanks, NoBank } from "./ChooseBanks";
+import { BanksFull, ChooseBanks, NoBank } from "./ChooseBanks";
 import { InfoForm } from "./InfoForm";
 import { OpenAccount } from "./OpenAccount";
 import { Result } from "./Result";
@@ -152,6 +152,7 @@ export function StudentApp({ linkId }: { linkId?: string }) {
 function Profile({ state, notice, onChange }: { state: StudentState; notice?: string; onChange: (notice?: string) => Promise<void> }) {
   switch (state.customer.status) {
     case "new":
+      if (!state.eligibleBanks.length) return <BanksFull state={state} />;
       return <ChooseBanks key={state.eligibleBanks.map((b) => b.id).join()} state={state} notice={notice} onDone={onChange} />;
     case "no_bank":
       return <NoBank state={state} />;

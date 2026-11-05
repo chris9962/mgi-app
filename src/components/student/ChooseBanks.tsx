@@ -87,3 +87,16 @@ export function NoBank({ state }: { state: StudentState }) {
     </>
   );
 }
+
+export function BanksFull({ state }: { state: StudentState }) {
+  return (
+    <>
+      <AppHead school={state.school.name} title="Chọn ngân hàng" />
+      <Steps current={2} />
+      <EndBlock mark title="Ngân hàng đã hết lượt trong tháng này" />
+      <Bottom>
+        <ZaloBox url={state.zaloUrl} text="Cần hỏi: kết bạn Zalo với nhân viên." />
+      </Bottom>
+    </>
+  );
+}
