@@ -15,7 +15,7 @@ async function main() {
   if (existing) throw new Error(`Tên đăng nhập ${username} đã có. Script không ghi đè tài khoản cũ.`);
 
   const password = generatePassword();
-  await db.insert(users).values({ username, fullName, passwordHash: hashPassword(password), role: "admin", title: "Quản trị" });
+  await db.insert(users).values({ username, fullName, passwordHash: await hashPassword(password), role: "admin", title: "Quản trị" });
   console.log(`Đã tạo Quản trị ${username}. Mật khẩu: ${password}`);
   console.log("Mật khẩu chỉ in một lần. Lưu lại ngay.");
 }

@@ -11,7 +11,7 @@ describe("mật khẩu", () => {
   });
 
   test("băm bcrypt rồi kiểm lại được", async () => {
-    const hash = hashPassword("abc23xyz");
+    const hash = await hashPassword("abc23xyz");
     expect(hash).toStartWith("$2");
     expect(await verifyPassword("abc23xyz", hash)).toBe(true);
     expect(await verifyPassword("abc23xyy", hash)).toBe(false);

@@ -1,6 +1,7 @@
 import { afterAll, describe, expect, test } from "bun:test";
 import { Pool } from "pg";
 
+import "./helpers";
 const pool = new Pool({ connectionString: process.env.DATABASE_URL });
 afterAll(() => pool.end());
 

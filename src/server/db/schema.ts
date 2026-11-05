@@ -91,7 +91,6 @@ export const sessions = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id, { onDelete: "cascade" }),
-    remember: boolean("remember").notNull().default(false),
     expiresAt: at("expires_at").notNull(),
     createdAt: createdAt(),
   },
