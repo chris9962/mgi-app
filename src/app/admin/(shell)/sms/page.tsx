@@ -41,6 +41,7 @@ export default async function SmsPage({ searchParams }: { searchParams: Promise<
                   id: "status",
                   label: "Trạng thái",
                   key: "status",
+                  none: "all",
                   options: [...Object.entries(SMS_STATUS_LABEL).map(([value, label]) => ({ value, label })), { value: "all", label: "Mọi trạng thái" }],
                 },
               ]}

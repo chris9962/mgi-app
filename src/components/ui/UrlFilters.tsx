@@ -1,12 +1,13 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useId } from "react";
+import { useId, useOptimistic, useTransition } from "react";
 import { FilterButton } from "./FilterButton";
 import { inputClass } from "./Field";
 
 export type FilterDef =
-  | { kind: "choice"; id: string; label: string; key: string; options: { value: string; label: string }[] }
+  // none: giá trị nghĩa là không lọc, mặc định chuỗi rỗng; trang mở sẵn một bộ lọc thì khai giá trị khác, ví dụ "all".
+  | { kind: "choice"; id: string; label: string; key: string; options: { value: string; label: string }[]; none?: string }
   | { kind: "dates"; id: string; label: string; fromKey: string; toKey: string };
 
 function Choices({ def, value, onPick }: { def: Extract<FilterDef, { kind: "choice" }>; value: string; onPick: (v: string) => void }) {
@@ -45,19 +46,26 @@ function Dates({ from, to, onChange }: { from: string; to: string; onChange: (fr
 }
 
 // Bộ lọc ghi lên URL rồi để trang máy chủ lọc lại; đổi lọc thì về trang 1.
-export function UrlFilters({ path, params, defs }: { path: string; params: Record<string, string>; defs: FilterDef[] }) {
+export function UrlFilters({ path, params: committed, defs }: { path: string; params: Record<string, string>; defs: FilterDef[] }) {
   const router = useRouter();
+  const [, startTransition] = useTransition();
+  // Ô chọn đổi ngay khi bấm; trang máy chủ lọc xong thì giá trị trên URL thay vào.
+  const [params, setParams] = useOptimistic(committed);
   const go = (patch: Record<string, string>) => {
-    const next = Object.entries({ ...params, ...patch, page: "" }).filter(([, v]) => v !== "");
-    router.push(`${path}${next.length ? `?${new URLSearchParams(next)}` : ""}`);
+    const merged = { ...params, ...patch };
+    const next = Object.entries({ ...merged, page: "" }).filter(([, v]) => v !== "");
+    startTransition(() => {
+      setParams(merged);
+      router.push(`${path}${next.length ? `?${new URLSearchParams(next)}` : ""}`);
+    });
   };
-  const keys = defs.flatMap((d) => (d.kind === "choice" ? [d.key] : [d.fromKey, d.toKey]));
+  const cleared = Object.fromEntries(defs.flatMap((d) => (d.kind === "choice" ? [[d.key, d.none ?? ""]] : [[d.fromKey, ""], [d.toKey, ""]])));
   return (
     <FilterButton
-      onClear={() => go(Object.fromEntries(keys.map((k) => [k, ""])))}
+      onClear={() => go(cleared)}
       sections={defs.map((d) =>
         d.kind === "choice"
-          ? { id: d.id, label: d.label, count: params[d.key] ? 1 : 0, content: <Choices def={d} value={params[d.key] ?? ""} onPick={(v) => go({ [d.key]: v })} /> }
+          ? { id: d.id, label: d.label, count: (params[d.key] ?? "") !== (d.none ?? "") ? 1 : 0, content: <Choices def={d} value={params[d.key] ?? ""} onPick={(v) => go({ [d.key]: v })} /> }
           : {
               id: d.id,
               label: d.label,

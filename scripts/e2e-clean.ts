@@ -42,7 +42,10 @@ export async function cleanE2e() {
     await db.delete(s.smsMessages).where(inArray(s.smsMessages.customerId, customers));
     await db.delete(s.vouchers).where(inArray(s.vouchers.customerId, customers));
   }
-  if (customerBanks.length) await db.delete(s.customerBanks).where(inArray(s.customerBanks.id, customerBanks));
+  if (customerBanks.length) {
+    await db.delete(s.reviewEvents).where(inArray(s.reviewEvents.customerBankId, customerBanks));
+    await db.delete(s.customerBanks).where(inArray(s.customerBanks.id, customerBanks));
+  }
   if (customers.length) await db.delete(s.customers).where(inArray(s.customers.id, customers));
   for (const key of keys) await deleteImage(key).catch((e) => console.error("Không xoá được ảnh e2e trên S3:", key, e instanceof Error ? e.message : e));
   if (codes.length) {
