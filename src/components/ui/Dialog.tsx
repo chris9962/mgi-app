@@ -1,27 +1,46 @@
 "use client";
 
 import { X } from "lucide-react";
-import { useEffect, useId, useRef, type ReactNode } from "react";
+import { useId, useLayoutEffect, useRef, type ReactNode } from "react";
 
 type Props = { open: boolean; title: string; onClose: () => void; footer?: ReactNode; children: ReactNode; width?: number };
 
 export function Dialog({ open, title, onClose, footer, children, width = 480 }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
+  const closingByCode = useRef(false);
   const titleId = useId();
 
   // Đồng bộ với API <dialog> của trình duyệt: showModal giữ focus trong hộp thoại và đóng bằng Esc.
-  useEffect(() => {
+  // Layout effect để phần dọn chạy trước khi React gỡ phần tử: gỡ một <dialog> đang mở thì trình duyệt không trả focus.
+  useLayoutEffect(() => {
     const el = ref.current;
-    if (!el) return;
-    if (open && !el.open) el.showModal();
-    if (!open && el.open) el.close();
+    if (!el || !open) return;
+    const opener = document.activeElement instanceof HTMLElement ? document.activeElement : null;
+    if (!el.open) el.showModal();
+    // showModal tự focus nút Đóng; ô có data-autofocus thì focus ô đó.
+    el.querySelector<HTMLElement>("[data-autofocus]")?.focus();
+    return () => {
+      // close() phát sự kiện close; đánh dấu để onClose bỏ qua, không thì lần dọn của React dev đóng luôn hộp thoại vừa mở.
+      if (el.open) {
+        closingByCode.current = true;
+        el.close();
+      }
+      if (opener?.isConnected) opener.focus();
+    };
   }, [open]);
 
   return (
     <dialog
       ref={ref}
       aria-labelledby={titleId}
-      onClose={onClose}
+      onCancel={(e) => {
+        e.preventDefault();
+        onClose();
+      }}
+      onClose={() => {
+        if (closingByCode.current) closingByCode.current = false;
+        else onClose();
+      }}
       style={{ width }}
       className="m-auto max-w-[calc(100vw-32px)] rounded-2xl border border-line bg-card p-0 text-text shadow-xl backdrop:bg-black/40"
     >

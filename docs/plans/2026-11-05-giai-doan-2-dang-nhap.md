@@ -75,3 +75,32 @@
 - [ ] Sai mật khẩu 5 lần thì màn đăng nhập báo khoá 15 phút.
 - [ ] Nhân viên đăng nhập rồi mở `/users` thì không thấy trang.
 - [ ] Quản trị tạo tài khoản, đặt lại mật khẩu, đăng nhập bằng mật khẩu mới.
+
+## Kết quả review và việc để lại
+
+Agent review cả nhánh ngày 2026-11-05: không có lỗi Critical. Đã sửa các lỗi Important:
+
+| Lỗi | Test |
+|---|---|
+| Thông báo khoá tài khoản cho biết tên đăng nhập nào có thật. Tên không có thật nay cũng bị đếm lượt sai và khoá giả | `tests/db/login.test.ts` "tên không có thật cũng bị báo khoá" |
+| Route ghi chỉ dựa vào SameSite. Nay chặn request có Origin khác tên miền quản lý | `tests/unit/origin.test.ts` |
+| Tài khoản khoá tạm vì sai mật khẩu không hiện, không có nút mở khoá | e2e "Quản trị thấy tài khoản bị khoá tạm và mở khoá được" |
+| Hộp thoại đóng xong mất focus, ô đầu tiên không được focus | e2e "hộp thoại focus ô đầu tiên khi mở" |
+| Menu tài khoản khai `role="menu"` mà không dùng được bằng bàn phím | e2e "menu tài khoản đóng bằng Esc" |
+| Tương phản chưa đạt WCAG AA: chữ phụ sidebar, mục đang chọn, viền ô nhập | `tests/unit/contrast.test.ts` |
+
+Việc để lại:
+
+| Việc | Khi nào |
+|---|---|
+| `/users?page=1.5` gây lỗi 500 khi có hơn 15 tài khoản. Phải làm tròn số trang | Khi sửa trang Tài khoản |
+| Hai người tạo cùng tên đăng nhập cùng lúc thì người sau nhận lỗi 500 thay vì báo trùng | Khi sửa trang Tài khoản |
+| Đổi mật khẩu không giới hạn số lần nhập sai mật khẩu hiện tại | Giai đoạn 7 |
+| Quản trị tự đặt lại mật khẩu của mình thì bị đăng xuất ngay. Nên ẩn nút này với chính mình | Khi sửa trang Tài khoản |
+| Hộp thoại ở trang Cá nhân giữ lỗi cũ khi mở lại | Khi sửa trang Cá nhân |
+| Bấm Esc lúc đang tạo tài khoản thì mất mật khẩu một lần | Khi sửa trang Tài khoản |
+| Nút Chép mật khẩu không báo gì khi trình duyệt chặn clipboard trên http | Giai đoạn 7 |
+| `guardAdmin` trả 400, đúng ra là 403 | Khi sửa trang Tài khoản |
+| Ô tìm chưa thoát ký tự `%` `_`. `ipFrom` tin mọi `X-Forwarded-For`. Cookie chưa có tiền tố `__Host-`. Phiên hết hạn chưa bị xoá | Giai đoạn 7 |
+| Nút Bộ lọc của Trang 13 chưa làm | Khi user cần |
+| Chưa có test DB cho khoá đăng nhập khi nhiều request cùng lúc, chưa có test API Nhân viên nhận 403 | Giai đoạn 5 |

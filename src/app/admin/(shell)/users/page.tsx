@@ -37,7 +37,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
                 name="q"
                 defaultValue={q}
                 placeholder="Tìm tên, tên đăng nhập…"
-                className="h-9 w-64 rounded-[10px] border border-line bg-card pr-3 pl-9 text-sm placeholder:text-text-3"
+                className="h-9 w-64 rounded-[10px] border border-field-border bg-card pr-3 pl-9 text-sm placeholder:text-text-3"
               />
             </form>
             <AddUserButton canGrantAdmin={canGrantAdmin} />

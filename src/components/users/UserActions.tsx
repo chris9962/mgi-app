@@ -9,7 +9,7 @@ import { ConfirmDialog } from "./ConfirmDialog";
 import { PasswordDialog } from "./PasswordDialog";
 import { UserFormDialog, type UserFormDefaults } from "./UserFormDialog";
 
-type Props = { user: UserFormDefaults & { id: string; active: boolean }; canManage: boolean; isSelf: boolean; canGrantAdmin: boolean; variant: "row" | "detail" };
+type Props = { user: UserFormDefaults & { id: string; active: boolean; loginLocked: boolean }; canManage: boolean; isSelf: boolean; canGrantAdmin: boolean; variant: "row" | "detail" };
 
 const iconButton = "grid size-9 place-items-center rounded-lg border border-line bg-card text-text-2 hover:bg-surface hover:text-text";
 
@@ -19,7 +19,9 @@ export function UserActions({ user, canManage, isSelf, canGrantAdmin, variant }:
   const [password, setPassword] = useState("");
   if (!canManage) return null;
   const close = () => setDialog(null);
-  const lockLabel = user.active ? "Khoá tài khoản" : "Mở khoá tài khoản";
+  // Tài khoản bị khoá tạm vì sai mật khẩu cũng mở bằng nút Mở khoá: máy chủ xoá luôn bộ đếm sai.
+  const unlock = !user.active || user.loginLocked;
+  const lockLabel = unlock ? "Mở khoá tài khoản" : "Khoá tài khoản";
 
   return (
     <>
@@ -30,7 +32,7 @@ export function UserActions({ user, canManage, isSelf, canGrantAdmin, variant }:
           </button>
           {!isSelf && (
             <button type="button" className={iconButton} aria-label={`${lockLabel} ${user.fullName}`} title={lockLabel} onClick={() => setDialog("lock")}>
-              {user.active ? <Lock size={16} aria-hidden /> : <LockOpen size={16} aria-hidden />}
+              {unlock ? <LockOpen size={16} aria-hidden /> : <Lock size={16} aria-hidden />}
             </button>
           )}
         </span>
@@ -45,8 +47,8 @@ export function UserActions({ user, canManage, isSelf, canGrantAdmin, variant }:
             Đặt lại mật khẩu
           </Button>
           {!isSelf && (
-            <Button variant={user.active ? "danger" : "secondary"} onClick={() => setDialog("lock")}>
-              {user.active ? <Lock size={16} aria-hidden /> : <LockOpen size={16} aria-hidden />}
+            <Button variant={unlock ? "secondary" : "danger"} onClick={() => setDialog("lock")}>
+              {unlock ? <LockOpen size={16} aria-hidden /> : <Lock size={16} aria-hidden />}
               {lockLabel}
             </Button>
           )}
@@ -57,12 +59,12 @@ export function UserActions({ user, canManage, isSelf, canGrantAdmin, variant }:
         <ConfirmDialog
           open
           title={lockLabel}
-          text={user.active ? `Khoá tài khoản ${user.fullName}? Tài khoản bị đăng xuất khỏi mọi máy.` : `Mở khoá tài khoản ${user.fullName}?`}
-          confirmLabel={user.active ? "Khoá" : "Mở khoá"}
-          danger={user.active}
+          text={unlock ? `Mở khoá tài khoản ${user.fullName}?` : `Khoá tài khoản ${user.fullName}? Tài khoản bị đăng xuất khỏi mọi máy.`}
+          confirmLabel={unlock ? "Mở khoá" : "Khoá"}
+          danger={!unlock}
           onClose={close}
           onConfirm={async () => {
-            const r = await apiSend("POST", `/api/admin/users/${user.id}/lock`, { active: !user.active });
+            const r = await apiSend("POST", `/api/admin/users/${user.id}/lock`, { active: unlock });
             if (!r.ok) return r.message;
             close();
             router.refresh();

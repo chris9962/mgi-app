@@ -79,3 +79,23 @@ describe("phiên", () => {
     expect(await userFromToken(second)).toBeNull();
   });
 });
+
+describe("không lộ tên đăng nhập", () => {
+  test("tên không có thật cũng bị báo khoá sau 5 lần, giống tên có thật", async () => {
+    const name = TEST_PREFIX + "khong_ton_tai_" + Date.now();
+    const results = [];
+    for (let i = 0; i < 6; i++) results.push((await attemptLogin(name, "sai")).code);
+    expect(results).toEqual(["bad_credentials", "bad_credentials", "bad_credentials", "bad_credentials", "locked", "locked"]);
+  });
+
+  test("Quản trị mở khoá thì tài khoản bị khoá tạm đăng nhập lại được", async () => {
+    const { setActive } = await import("../../src/server/users");
+    const { loadSessionUser } = await import("../../src/server/auth/session");
+    const id = await makeUser("unlock");
+    const [adminRow] = await db.insert(users).values({ username: TEST_PREFIX + "unlock_admin", fullName: "A", passwordHash: "x", role: "admin" }).returning({ id: users.id });
+    for (let i = 0; i < 5; i++) await attemptLogin(TEST_PREFIX + "unlock", "sai");
+    expect((await attemptLogin(TEST_PREFIX + "unlock", PASSWORD)).code).toBe("locked");
+    expect((await setActive((await loadSessionUser(adminRow.id))!, id, true)).ok).toBe(true);
+    expect((await attemptLogin(TEST_PREFIX + "unlock", PASSWORD)).ok).toBe(true);
+  });
+});

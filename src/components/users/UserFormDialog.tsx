@@ -91,7 +91,7 @@ export function UserFormDialog({ open, onClose, initial, canGrantAdmin }: { open
       }
     >
       <form id="user-form" onSubmit={submit} noValidate className="flex flex-col gap-4">
-        <TextField name="fullName" label="Họ tên" defaultValue={start.fullName} error={errors.fullName} autoFocus />
+        <TextField name="fullName" label="Họ tên" defaultValue={start.fullName} error={errors.fullName} data-autofocus />
         <div className="grid gap-4 sm:grid-cols-2">
           <TextField name="staffCode" label="Mã tài khoản" placeholder="Không bắt buộc" defaultValue={start.staffCode} error={errors.staffCode} />
           <TextField name="phone" label="Số điện thoại" inputMode="numeric" defaultValue={start.phone} error={errors.phone} />

@@ -1,6 +1,7 @@
 import { cookies } from "next/headers";
 import { redirect } from "next/navigation";
 import { SESSION_COOKIE, tokenFromRequest, userFromToken } from "./session";
+import { configuredHosts, sameOrigin } from "@/lib/hosts";
 import { can, type Action } from "@/lib/permissions";
 import { forbidden, unauthorized } from "../http/responses";
 import type { SessionUser } from "@/lib/types";
@@ -24,6 +25,7 @@ export async function requireApi(
   request: Request,
   action?: Action,
 ): Promise<{ ok: true; user: SessionUser } | { ok: false; response: Response }> {
+  if (!sameOrigin(request, configuredHosts().admin)) return { ok: false, response: forbidden() };
   const user = await userFromToken(tokenFromRequest(request));
   if (!user) return { ok: false, response: unauthorized() };
   if (action && !can(user, action)) return { ok: false, response: forbidden() };

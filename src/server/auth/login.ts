@@ -15,16 +15,33 @@ const LOCKED: LoginResult = {
   message: `Sai ${LOGIN_MAX_ATTEMPTS} lần liên tiếp, tài khoản bị khoá ${LOGIN_LOCK_MINUTES} phút. Liên hệ quản trị để mở lại.`,
 };
 
-// Băm giả để tên không có thật cũng tốn thời gian như sai mật khẩu, không đo giờ mà dò ra tên.
+// Băm giả để tên không có thật cũng tốn thời gian như sai mật khẩu, không đo thời gian mà dò ra tên.
 const DUMMY_HASH = "$2b$10$CwTycUXWue0Thq9StjUM0uJ8.0OzmMrrBG9.PeVpqEJcR0n.5vHWa";
+
+// Tên không có thật cũng đếm lượt sai và bị "khoá" như tên có thật, để thông báo khoá không cho biết tên nào tồn tại.
+// Lưu trong bộ nhớ vì app chạy một tiến trình; khởi động lại thì mất số đếm, chỉ làm yếu đi phần giả lập.
+const phantom = new Map<string, { attempts: number; lockedUntil: number }>();
+const LOCK_MS = LOGIN_LOCK_MINUTES * 60 * 1000;
+
+async function phantomAttempt(username: string, password: string): Promise<LoginResult> {
+  const now = Date.now();
+  const entry = phantom.get(username);
+  if (entry && entry.lockedUntil > now) return LOCKED;
+  await verifyPassword(password, DUMMY_HASH);
+  const attempts = (entry && entry.lockedUntil === 0 ? entry.attempts : 0) + 1;
+  if (phantom.size > 10_000) for (const [k, v] of phantom) if (v.lockedUntil !== 0 && v.lockedUntil <= now) phantom.delete(k);
+  if (attempts >= LOGIN_MAX_ATTEMPTS) {
+    phantom.set(username, { attempts: 0, lockedUntil: now + LOCK_MS });
+    return LOCKED;
+  }
+  phantom.set(username, { attempts, lockedUntil: 0 });
+  return BAD;
+}
 
 export async function attemptLogin(rawUsername: string, password: string): Promise<LoginResult> {
   const username = rawUsername.trim().toLowerCase();
   const [account] = await db.select().from(users).where(eq(users.username, username));
-  if (!account || !account.active) {
-    await verifyPassword(password, DUMMY_HASH);
-    return BAD;
-  }
+  if (!account || !account.active) return phantomAttempt(username, password);
 
   // Nhận lượt thử bằng một câu update nguyên tử trước khi băm. Gửi nhiều request cùng lúc thì mỗi request nhận một số thứ tự riêng.
   const stillOpen = or(isNull(users.lockedUntil), lte(users.lockedUntil, sql`now()`));

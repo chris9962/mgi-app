@@ -63,7 +63,7 @@ export function EditInfoRow({ fullName, phone }: { fullName: string; phone: stri
           }
         >
           <form id="info-form" onSubmit={submit} noValidate className="flex flex-col gap-4">
-            <TextField name="fullName" label="Họ tên" defaultValue={fullName} error={s.errors.fullName} autoFocus />
+            <TextField name="fullName" label="Họ tên" defaultValue={fullName} error={s.errors.fullName} data-autofocus />
             <TextField name="phone" label="Số điện thoại" inputMode="numeric" defaultValue={phone} error={s.errors.phone} />
             {s.formError && (
               <p role="alert" className="text-sm text-danger">

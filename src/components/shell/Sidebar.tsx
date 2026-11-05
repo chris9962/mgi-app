@@ -4,7 +4,7 @@ import { clsx } from "clsx";
 import { Building2, ChevronDown, LogOut, Moon, UserRound } from "lucide-react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { Logo } from "@/components/ui/Logo";
 import { BRAND_NAME } from "@/lib/brand";
 import type { MenuGroup } from "./menu";
@@ -25,6 +25,28 @@ export function Sidebar({ groups, fullName, title }: { groups: MenuGroup[]; full
   const router = useRouter();
   const [closed, setClosed] = useState<string[]>([]);
   const [menuOpen, setMenuOpen] = useState(false);
+  const trigger = useRef<HTMLButtonElement>(null);
+  const panel = useRef<HTMLDivElement>(null);
+
+  // Nghe phím Esc và bấm ra ngoài trên document khi menu mở; bỏ nghe khi menu đóng.
+  useEffect(() => {
+    if (!menuOpen) return;
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key !== "Escape") return;
+      setMenuOpen(false);
+      trigger.current?.focus();
+    };
+    const onPointer = (e: PointerEvent) => {
+      const target = e.target as Node;
+      if (!panel.current?.contains(target) && !trigger.current?.contains(target)) setMenuOpen(false);
+    };
+    document.addEventListener("keydown", onKey);
+    document.addEventListener("pointerdown", onPointer);
+    return () => {
+      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("pointerdown", onPointer);
+    };
+  }, [menuOpen]);
 
   function toggleTheme() {
     const dark = document.documentElement.dataset.theme !== "dark";
@@ -86,17 +108,17 @@ export function Sidebar({ groups, fullName, title }: { groups: MenuGroup[]; full
       </ul>
       <div className="relative border-t border-line p-3">
         {menuOpen && (
-          <div role="menu" aria-label="Tài khoản của tôi" className="absolute right-3 bottom-[72px] left-3 flex flex-col rounded-xl border border-line bg-card p-1.5 shadow-lg">
-            <Link role="menuitem" href="/profile" onClick={() => setMenuOpen(false)} className="flex h-10 items-center gap-2.5 rounded-lg px-3 text-sm hover:bg-surface">
+          <div ref={panel} id="account-menu" className="absolute right-3 bottom-[72px] left-3 flex flex-col rounded-xl border border-line bg-card p-1.5 shadow-lg">
+            <Link href="/profile" onClick={() => setMenuOpen(false)} className="flex h-10 items-center gap-2.5 rounded-lg px-3 text-sm hover:bg-surface">
               <UserRound size={16} aria-hidden />
               Thông tin cá nhân
             </Link>
-            <button role="menuitem" type="button" onClick={toggleTheme} className="flex h-10 items-center gap-2.5 rounded-lg px-3 text-sm hover:bg-surface">
+            <button type="button" onClick={toggleTheme} className="flex h-10 items-center gap-2.5 rounded-lg px-3 text-sm hover:bg-surface">
               <Moon size={16} aria-hidden />
               Đổi giao diện sáng, tối
             </button>
             <hr className="my-1 border-line" />
-            <button role="menuitem" type="button" onClick={logout} className="flex h-10 items-center gap-2.5 rounded-lg px-3 text-sm text-danger hover:bg-danger-soft">
+            <button type="button" onClick={logout} className="flex h-10 items-center gap-2.5 rounded-lg px-3 text-sm text-danger hover:bg-danger-soft">
               <LogOut size={16} aria-hidden />
               Đăng xuất
             </button>
@@ -104,8 +126,9 @@ export function Sidebar({ groups, fullName, title }: { groups: MenuGroup[]; full
         )}
         <button
           type="button"
-          aria-haspopup="menu"
+          ref={trigger}
           aria-expanded={menuOpen}
+          aria-controls="account-menu"
           onClick={() => setMenuOpen((v) => !v)}
           className="flex w-full items-center gap-3 rounded-[10px] p-2 text-left hover:bg-sidebar-hover"
         >

@@ -22,3 +22,17 @@ export function routeFor(host: string | null, path: string, hosts: Hosts): Route
 
   return { kind: "rewrite", path: path === "/" ? `/${side}` : `/${side}${path}` };
 }
+
+// Chặn request ghi gửi từ trang khác. Web học sinh cùng site với trang quản lý nên SameSite=Lax không đủ chặn.
+export function sameOrigin(request: Request, adminHost: string): boolean {
+  if (request.method === "GET" || request.method === "HEAD") return true;
+  const origin = request.headers.get("origin");
+  if (origin) {
+    try {
+      return new URL(origin).hostname.toLowerCase() === adminHost;
+    } catch {
+      return false;
+    }
+  }
+  return request.headers.get("sec-fetch-site") === "same-origin";
+}

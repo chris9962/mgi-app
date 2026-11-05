@@ -8,7 +8,17 @@ export const permissionText = (u: UserRow) =>
 export const bankText = (u: UserRow) =>
   u.role !== "staff" ? <span className="text-text-3">Mọi ngân hàng</span> : u.managedBanks.length ? u.managedBanks.join(", ") : <span className="text-text-3">Chưa giao</span>;
 
-export const statusTag = (u: UserRow) => (u.active ? <StatusTag tone="ok">Đang hoạt động</StatusTag> : <StatusTag tone="neutral">Đã khoá</StatusTag>);
+// Sai mật khẩu 5 lần thì khoá 15 phút; Quản trị mở khoá sớm bằng nút Mở khoá.
+export const loginLocked = (u: UserRow) => u.lockedUntil !== null && u.lockedUntil.getTime() > Date.now();
+
+export const statusTag = (u: UserRow) =>
+  !u.active ? (
+    <StatusTag tone="neutral">Đã khoá</StatusTag>
+  ) : loginLocked(u) ? (
+    <StatusTag tone="progress">Khoá tạm</StatusTag>
+  ) : (
+    <StatusTag tone="ok">Đang hoạt động</StatusTag>
+  );
 
 export const formDefaults = (u: UserRow & { staffCode?: string | null; phone?: string | null }) => ({
   id: u.id,
@@ -20,4 +30,5 @@ export const formDefaults = (u: UserRow & { staffCode?: string | null; phone?: s
   title: u.title,
   permissions: u.permissions,
   active: u.active,
+  loginLocked: loginLocked(u),
 });

@@ -8,6 +8,8 @@
   --panel: #fbf9f6;
   --line: #ebe5dc;
   --line-strong: #c0b6a5;
+  /* Viền ô nhập cần 3:1 với nền thẻ theo WCAG 1.4.11; --line chỉ đạt 1,25:1. */
+  --field-border: #9c9283;
   --text: #201e1d;
   --text-2: #645c50;
   --text-3: #776f61;
@@ -17,9 +19,9 @@
   --accent-soft: #fce6dd;
   --on-accent: #ffffff;
   --sidebar: #ffffff;
-  --sidebar-active: #d95328;
+  --sidebar-active: #ca4d25;
   --sidebar-ink: #201e1d;
-  --sidebar-ink-2: #82796a;
+  --sidebar-ink-2: #776f61;
   --sidebar-hover: rgb(32 30 29 / 6%);
   --ok: #10b981;
   --ok-soft: #e6f7f1;
@@ -38,6 +40,7 @@
   --panel: #1b273a;
   --line: #26344a;
   --line-strong: #3a4a63;
+  --field-border: #5b6d89;
   --text: #eef2f8;
   --text-2: #a9b6c9;
   --text-3: #7e8da3;
@@ -69,6 +72,7 @@
   --color-panel: var(--panel);
   --color-line: var(--line);
   --color-line-strong: var(--line-strong);
+  --color-field-border: var(--field-border);
   --color-text: var(--text);
   --color-text-2: var(--text-2);
   --color-text-3: var(--text-3);

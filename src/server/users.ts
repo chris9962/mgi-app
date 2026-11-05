@@ -15,11 +15,12 @@ export type UserRow = {
   role: Role;
   title: string;
   active: boolean;
+  lockedUntil: Date | null;
   permissions: Permission[];
   managedBanks: string[];
 };
 
-export type UserDetail = UserRow & { staffCode: string | null; phone: string | null; lockedUntil: Date | null };
+export type UserDetail = UserRow & { staffCode: string | null; phone: string | null };
 
 type Fail = { ok: false; message: string; field?: keyof UserFormValues; status: 400 | 404 | 409 };
 const fail = (message: string, status: Fail["status"] = 400, field?: Fail["field"]): Fail => ({ ok: false, message, status, field });
