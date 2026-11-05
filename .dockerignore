@@ -1,0 +1,32 @@
+node_modules
+.next
+.git
+.gitignore
+.superpowers
+.claude
+
+# Biến môi trường không vào image: máy chủ truyền lúc chạy bằng --env-file. Nướng vào layer thì ai kéo được image cũng đọc được khoá S3.
+.env
+.env.*
+
+# Không tham gia bản dựng.
+e2e
+tests
+test-results
+playwright-report
+playwright.config.ts
+docs
+drizzle
+drizzle.config.ts
+deploy
+scripts
+# Trừ các file tầng worker chép vào: Docker lọc context trước khi đọc Dockerfile, loại cả thư mục thì COPY báo not found.
+!scripts/sms-worker.ts
+!scripts/photo-check-worker.ts
+!scripts/ocr-server.py
+
+*.tsbuildinfo
+.DS_Store
+Dockerfile
+.dockerignore
+docker-compose.yml
