@@ -7,6 +7,7 @@ export type MenuGroup = { key: string; label: string; items: MenuItem[] };
 
 // Chỉ liệt kê trang đã có. Thêm trang ở giai đoạn sau thì thêm dòng vào đây.
 const MENU: { key: string; label: string; items: MenuEntry[] }[] = [
+  { key: "work", label: "Nghiệp vụ", items: [{ href: "/customers", label: "Hồ sơ học sinh", allow: (u) => can(u, "customers") }] },
   {
     key: "data",
     label: "Cấu hình dữ liệu",

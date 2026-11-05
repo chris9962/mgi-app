@@ -5,3 +5,16 @@ export function formatDateTime(value: Date | string): string {
   const parts = Object.fromEntries(FORMAT.formatToParts(new Date(value)).map((p) => [p.type, p.value]));
   return `${parts.day}/${parts.month}/${parts.year} ${parts.hour}:${parts.minute}`;
 }
+
+const parts = (value: Date | string) => Object.fromEntries(FORMAT.formatToParts(new Date(value)).map((p) => [p.type, p.value]));
+
+// Bảng danh sách hiện ngày tháng và giờ, bỏ năm cho gọn cột.
+export function formatShortDateTime(value: Date | string): string {
+  const p = parts(value);
+  return `${p.day}/${p.month} ${p.hour}:${p.minute}`;
+}
+
+export function formatDate(value: Date | string): string {
+  const p = parts(value);
+  return `${p.day}/${p.month}/${p.year}`;
+}

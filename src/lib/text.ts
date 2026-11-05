@@ -8,3 +8,5 @@ export const plain = (s: string) =>
     .toLowerCase();
 
 export const maskPhone = (phone: string) => `${phone.slice(0, 4)} •••• ${phone.slice(-3)}`;
+
+export const formatPhone = (phone: string) => (/^\d{10}$/.test(phone) ? `${phone.slice(0, 4)} ${phone.slice(4, 7)} ${phone.slice(7)}` : phone);

@@ -24,3 +24,9 @@ export function customerScope(user: SessionUser): CustomerScope {
 export const canManageBank = (user: SessionUser, bankId: string): boolean => can(user, "manage_banks") || user.managedBankIds.includes(bankId);
 
 export const canManageAnyBank = (user: SessionUser): boolean => can(user, "manage_banks") || user.managedBankIds.length > 0;
+
+// Hậu kiểm theo phạm vi hồ sơ: quyền Quản lý ngân hàng chỉ để cấu hình, không mở ảnh và kết quả của học sinh.
+export const reviewsBank = (user: SessionUser, bankId: string): boolean => {
+  const scope = customerScope(user);
+  return scope.all || scope.bankIds.includes(bankId);
+};

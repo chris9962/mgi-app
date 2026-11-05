@@ -20,6 +20,8 @@ export async function cleanTestUsers() {
   const schools = (await db.select({ id: s.schools.id }).from(s.schools).where(like(s.schools.name, `${TEST_NAME}%`))).map((r) => r.id);
   const testCustomers = schools.length ? (await db.select({ id: s.customers.id }).from(s.customers).where(inArray(s.customers.schoolId, schools))).map((r) => r.id) : [];
   if (testCustomers.length) {
+    const rows = (await db.select({ id: s.customerBanks.id }).from(s.customerBanks).where(inArray(s.customerBanks.customerId, testCustomers))).map((r) => r.id);
+    if (rows.length) await db.delete(s.reviewEvents).where(inArray(s.reviewEvents.customerBankId, rows));
     await db.delete(s.customerExistingBanks).where(inArray(s.customerExistingBanks.customerId, testCustomers));
     await db.delete(s.smsMessages).where(inArray(s.smsMessages.customerId, testCustomers));
     await db.delete(s.vouchers).where(inArray(s.vouchers.customerId, testCustomers));
@@ -48,12 +50,13 @@ export async function cleanTestUsers() {
   }
 }
 
-export async function makeActor(name: string, role: "admin" | "manager" | "staff", permissions: string[] = []) {
+export async function makeActor(name: string, role: "admin" | "manager" | "staff", permissions: string[] = [], bankIds: string[] = []) {
   const { db } = await import("../../src/server/db/client");
-  const { users, userPermissions } = await import("../../src/server/db/schema");
+  const { users, userManagedBanks, userPermissions } = await import("../../src/server/db/schema");
   const { loadSessionUser } = await import("../../src/server/auth/session");
   const [row] = await db.insert(users).values({ username: TEST_PREFIX + name, fullName: "Test " + name, passwordHash: "x", role }).returning({ id: users.id });
   if (permissions.length) await db.insert(userPermissions).values(permissions.map((p) => ({ userId: row.id, permission: p as "schools" })));
+  if (bankIds.length) await db.insert(userManagedBanks).values(bankIds.map((bankId) => ({ userId: row.id, bankId })));
   return (await loadSessionUser(row.id))!;
 }
 

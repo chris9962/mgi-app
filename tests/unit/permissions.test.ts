@@ -59,3 +59,14 @@ describe("quyền theo ngân hàng", () => {
     expect(canManageAnyBank(base)).toBe(false);
   });
 });
+
+describe("hậu kiểm theo ngân hàng", () => {
+  test("Quản trị, Quản lý hậu kiểm mọi ngân hàng; Nhân viên chỉ ngân hàng được giao, quyền Quản lý ngân hàng không mở hồ sơ", async () => {
+    const { reviewsBank } = await import("../../src/lib/permissions");
+    expect(reviewsBank(admin, "bx")).toBe(true);
+    expect(reviewsBank(manager, "bx")).toBe(true);
+    expect(reviewsBank(staff, "b1")).toBe(true);
+    expect(reviewsBank(staff, "b9")).toBe(false);
+    expect(reviewsBank({ ...base, permissions: ["manage_banks" as const] }, "bx")).toBe(false);
+  });
+});

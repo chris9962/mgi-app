@@ -1,5 +1,5 @@
 import { clsx } from "clsx";
-import type { ButtonHTMLAttributes } from "react";
+import type { ComponentProps } from "react";
 
 type Variant = "primary" | "secondary" | "ghost" | "danger";
 
@@ -10,7 +10,7 @@ const VARIANT: Record<Variant, string> = {
   danger: "bg-card text-danger border-danger hover:bg-danger-soft",
 };
 
-type Props = ButtonHTMLAttributes<HTMLButtonElement> & { variant?: Variant; large?: boolean; block?: boolean };
+type Props = ComponentProps<"button"> & { variant?: Variant; large?: boolean; block?: boolean };
 
 export function Button({ variant = "primary", large, block, className, type = "button", ...rest }: Props) {
   return (

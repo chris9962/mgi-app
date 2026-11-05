@@ -14,3 +14,15 @@ describe("ngày giờ theo giờ Việt Nam", () => {
 describe("che SĐT phụ huynh", () => {
   test("giữ 4 số đầu, 3 số cuối", () => expect(maskPhone("0987654321")).toBe("0987 •••• 321"));
 });
+
+describe("định dạng trên bảng", () => {
+  test("ngày giờ ngắn dạng 03/11 09:48, ngày dạng 03/11/2026", async () => {
+    const { formatShortDateTime, formatDate } = await import("../../src/lib/dates");
+    expect(formatShortDateTime("2026-11-03T02:48:00Z")).toBe("03/11 09:48");
+    expect(formatDate("2026-11-03T17:30:00Z")).toBe("04/11/2026");
+  });
+  test("SĐT tách 4-3-3", async () => {
+    const { formatPhone } = await import("../../src/lib/text");
+    expect(formatPhone("0987654321")).toBe("0987 654 321");
+  });
+});
