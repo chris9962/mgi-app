@@ -136,3 +136,11 @@ Việc để lại thêm:
 | `scripts/ocr-server.py` còn docstring chép từ mgst-app, AGENTS cấm docstring | Khi sửa file này |
 | Lượt chờ bị worker xoá vì ngân hàng tắt hết khung kiểm thì Trang 4 hiện lượt cũ hơn, có thể tính theo họ tên cũ | Khi user cần |
 | `heic-convert` giải mã HEIC trong JavaScript, không giới hạn được số điểm ảnh; ảnh 48 MP tốn khoảng 1,2 GB RAM | Giai đoạn 7 khi đặt RAM cho container |
+
+### Review lần 2
+
+Reviewer đọc đoạn aaef2d1..c2b21ac ngày 2026-11-05. Kết luận: sẵn sàng merge, không có lỗi Critical hay Important. Reviewer chạy lại `bun run test` 144 pass, `bun test:db` 177 pass, `bun test:s3` 29 pass, `tsc` sạch, `lint` 0 lỗi.
+
+Reviewer lần theo mọi ca va chạm giữa worker nén và chụp lại, Quay lại, Tải ảnh thay thế. Không ca nào làm DB trỏ tới object đã xoá hay làm mất ảnh. Hết giờ OCR không để lại promise treo, thư mục tạm hay tiến trình mồ côi khi tiến trình đã mở xong.
+
+Sáu mục nhỏ chuyển sang giai đoạn 7, ghi ở mục "Việc để lại từ giai đoạn trước" của `2026-11-05-giai-doan-7-van-hanh.md`.

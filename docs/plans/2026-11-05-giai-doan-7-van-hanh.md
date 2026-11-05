@@ -21,6 +21,14 @@
 - Đổi mật khẩu không giới hạn số lần nhập sai mật khẩu hiện tại.
 - Nút Chép mật khẩu không báo gì khi clipboard bị chặn trên http.
 - `ipFrom` tin mọi `X-Forwarded-For` (chỉ tin khi sau Nginx, đọc IP cuối do Nginx ghi). Cookie chưa có tiền tố `__Host-`. Phiên hết hạn chưa bị xoá (thêm vào ops-watch hoặc job riêng).
+- Từ review lần 2 giai đoạn 6, mỗi mục một test:
+  - `src/server/ocr/reader.ts:74-78`, `:101-105`: lượt hết giờ lúc tiến trình Python đang mở thì `.catch` đặt `server = null` sau khi lượt kế đã mở tiến trình mới, nên một tiến trình 1 đến 2 GB bị bỏ sót. Chỉ đặt `null` khi `server` còn là đúng promise đó.
+  - `src/server/photoCheckWorker.ts:53`: worker kiểm ảnh tải S3 không có hạn giờ; S3 treo thì hàng chờ kiểm ảnh dừng và SIGTERM không thoát được. Nên đặt hạn giờ cho mọi lệnh S3 ở `src/server/storage.ts`.
+  - `src/server/photoCheckWorker.ts:54`: đổi HEIC không có trần RAM; worker chết thì lượt được nhận lại mỗi 5 phút mãi. Lượt kiểm phải có số lần nhận tối đa rồi ghi `failed`, và container đặt RAM đủ cho HEIC 48 MP (khoảng 1,2 GB).
+  - `src/server/compress.ts:69-73`, `:111`: nhánh giữ file của `removeIfUnused` chưa có test (ca câu ghi kết quả ném lỗi sau khi webp ghi đè đúng khoá cũ).
+  - `src/server/compress.ts:13`: comment ghi trần 100 MP chặn được ảnh 48 MP, nhưng `heic-convert` giải mã đủ ảnh trước khi sharp kiểm trần.
+  - `src/server/workerScope.ts:14-19`: cờ `--truong <id>` có dấu cách hoặc gõ sai tên cờ bị bỏ qua, worker xử lý toàn bộ DB. Tham số bắt đầu bằng `--truong` mà không đọc được thì dừng với lỗi.
+- Các mục "Giai đoạn 7" trong bảng "Việc để lại" của kế hoạch giai đoạn 4, 5, 6 (CORS và lifecycle `uploads/`, object mồ côi, `created_ip`, `VOUCHER_SECRET`, `unaccent`, container worker SMS, audit xem ảnh, container OCR và stop grace).
 
 ## Task
 
