@@ -17,10 +17,11 @@ export function AppShell({ groups, fullName, title, children }: { groups: MenuGr
   }, []);
 
   // svh chứ không dvh: dvh đổi theo thanh địa chỉ lúc cuộn, khung co giãn lệch nhịp với thanh đáy cố định.
+  // Lề nội dung 16 px như mgst-app và như thanh tiêu đề, đặt một chỗ thay cho p-6 của từng trang.
   return (
     <div className="flex min-h-dvh mobile:min-h-[100svh] mobile:flex-col">
       <Sidebar groups={groups} fullName={fullName} title={title} mobileOpen={menuOpen} onMobileClose={closeMenu} />
-      <div className="flex min-w-0 flex-1 flex-col mobile:pb-[calc(52px+env(safe-area-inset-bottom,0px))]">{children}</div>
+      <div className="flex min-w-0 flex-1 flex-col mobile:pb-[calc(52px+env(safe-area-inset-bottom,0px))] mobile:[&>main]:p-4">{children}</div>
       <BottomNav items={bottomNavItems(groups)} menuOpen={menuOpen} onOpenMenu={() => setMenuOpen(true)} moreRef={more} />
     </div>
   );

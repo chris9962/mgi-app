@@ -75,7 +75,7 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
       <main className="p-6">
         <FilterChips chips={chipsOf(f)} />
         <Card title="Hồ sơ học sinh" icon={<Users size={17} aria-hidden />} meta={`${total} hồ sơ`} pad={false}>
-          <div className="overflow-x-auto">
+          <div className="table-scroll">
             <table className="w-full text-left text-sm">
               <thead className="text-xs font-semibold tracking-wide text-text-2 uppercase">
                 <tr className="border-b border-line">
@@ -106,7 +106,7 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
                 ))}
                 {!rows.length && (
                   <tr>
-                    <td colSpan={7} className="px-4 py-10 text-center text-text-3">
+                    <td colSpan={7} className="px-4 py-10 text-center text-text-3 mobile:text-left">
                       {q || Object.keys(params).length ? "Không có hồ sơ khớp bộ lọc." : "Chưa có hồ sơ nào."}
                     </td>
                   </tr>

@@ -52,7 +52,7 @@ export default async function SmsPage({ searchParams }: { searchParams: Promise<
       <main className="p-6">
         <FilterChips chips={f.status === "all" ? [] : [{ label: `Trạng thái: ${SMS_STATUS_LABEL[f.status]}`, href: `/sms?${smsFilterQuery({ ...f, status: "all" })}` }]} />
         <Card title="Tin SMS" icon={<MessageSquareWarning size={17} aria-hidden />} meta={`${total} tin`} pad={false}>
-          <div className="overflow-x-auto">
+          <div className="table-scroll">
             <table className="w-full text-left text-sm">
               <thead className="text-xs font-semibold tracking-wide text-text-2 uppercase">
                 <tr className="border-b border-line">
@@ -86,7 +86,7 @@ export default async function SmsPage({ searchParams }: { searchParams: Promise<
                 ))}
                 {!rows.length && (
                   <tr>
-                    <td colSpan={8} className="px-4 py-10 text-center text-text-3">
+                    <td colSpan={8} className="px-4 py-10 text-center text-text-3 mobile:text-left">
                       {f.q ? "Không có tin khớp bộ lọc." : f.status === "failed" ? "Không có tin lỗi." : "Chưa có tin nào."}
                     </td>
                   </tr>

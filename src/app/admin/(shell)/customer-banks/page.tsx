@@ -81,7 +81,7 @@ export default async function CustomerBanksPage({ searchParams }: { searchParams
       <main className="p-6">
         <FilterChips chips={chipsOf(f, new Map(banks.map((b) => [b.id, b.name])), schools)} />
         <Card title="Ngân hàng" icon={<Landmark size={17} aria-hidden />} meta={`${total} dòng`} pad={false}>
-          <div className="overflow-x-auto">
+          <div className="table-scroll">
             <table className="w-full text-left text-sm">
               <thead className="text-xs font-semibold tracking-wide text-text-2 uppercase">
                 <tr className="border-b border-line">
@@ -124,7 +124,7 @@ export default async function CustomerBanksPage({ searchParams }: { searchParams
                 ))}
                 {!rows.length && (
                   <tr>
-                    <td colSpan={8} className="px-4 py-10 text-center text-text-3">
+                    <td colSpan={8} className="px-4 py-10 text-center text-text-3 mobile:text-left">
                       {filtering ? "Không có dòng nào khớp bộ lọc." : "Chưa có học sinh chọn ngân hàng."}
                     </td>
                   </tr>

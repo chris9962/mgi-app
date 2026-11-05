@@ -27,7 +27,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
         title="Tài khoản"
         actions={
           <>
-            <form role="search" action="/users" className="relative">
+            <form role="search" action="/users" className="relative narrow:w-full">
               <Search size={16} aria-hidden className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-text-3" />
               <label htmlFor="user-search" className="sr-only">
                 Tìm tài khoản
@@ -37,7 +37,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
                 name="q"
                 defaultValue={q}
                 placeholder="Tìm tên, tên đăng nhập…"
-                className="h-9 w-64 rounded-[10px] border border-field-border bg-card pr-3 pl-9 text-sm placeholder:text-text-3"
+                className="h-9 w-64 rounded-[10px] border border-field-border bg-card pr-3 pl-9 text-sm placeholder:text-text-3 narrow:w-full"
               />
             </form>
             <AddUserButton canGrantAdmin={canGrantAdmin} />
@@ -46,7 +46,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
       />
       <main className="p-6">
         <Card title="Tài khoản" icon={<UserRoundCheck size={17} aria-hidden />} meta={`${total} tài khoản`} pad={false}>
-          <div className="overflow-x-auto">
+          <div className="table-scroll">
             <table className="w-full text-left text-sm">
               <thead className="text-xs font-semibold tracking-wide text-text-2 uppercase">
                 <tr className="border-b border-line">
@@ -84,7 +84,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
                 ))}
                 {!rows.length && (
                   <tr>
-                    <td colSpan={7} className="px-4 py-10 text-center text-text-3">
+                    <td colSpan={7} className="px-4 py-10 text-center text-text-3 mobile:text-left">
                       Không có tài khoản khớp từ khoá.
                     </td>
                   </tr>

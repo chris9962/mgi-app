@@ -1,4 +1,4 @@
-import { expect, test, type Browser, type Page } from "@playwright/test";
+import { expect, test, type Browser, type Locator, type Page } from "@playwright/test";
 
 const PASSWORD = "e2e23test";
 const PHONE = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true };
@@ -63,6 +63,77 @@ test("điện thoại: Nhân viên không có quyền trang nghiệp vụ nào t
   const page = await loginAs(browser, "zz_e2e_staff", PHONE);
   await expect(bottomNav(page).getByRole("link")).toHaveCount(0);
   await expect(bottomNav(page).getByRole("button", { name: "Thêm" })).toBeVisible();
+});
+
+test("điện thoại: không trang quản lý nào cuộn ngang cả trang", async ({ browser }) => {
+  test.setTimeout(120_000);
+  const page = await loginAs(browser, "zz_e2e_admin", PHONE);
+  const menu = await page.locator("#main-nav a").evaluateAll((links) => links.map((a) => a.getAttribute("href")!));
+  await page.goto("/users?q=zz_e2e_staff");
+  const user = await page.getByRole("link", { name: "E2E Nhân viên" }).getAttribute("href");
+  await page.goto("/customers");
+  const customer = await page.locator('main a[href^="/customers/"]').first().getAttribute("href", { timeout: 2_000 }).catch(() => null);
+  const paths = [...new Set([...menu, "/profile", user!, ...(customer ? [customer] : [])])];
+  expect(paths.length).toBeGreaterThan(10);
+
+  const wide: string[] = [];
+  for (const path of paths) {
+    await page.goto(path);
+    await page.waitForLoadState("networkidle");
+    const { scroll, client } = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, client: document.documentElement.clientWidth }));
+    if (scroll !== client) wide.push(`${path}: ${scroll} > ${client}`);
+  }
+  expect(wide).toEqual([]);
+});
+
+const box = (locator: Locator) => locator.evaluate((el) => el.getBoundingClientRect().toJSON() as { left: number; right: number; top: number; width: number });
+
+test("điện thoại: ô tìm rộng hết thanh tiêu đề, bảng Bộ lọc nằm trọn trong màn hình, mục lọc thành một hàng ở trên", async ({ browser }) => {
+  const page = await loginAs(browser, "zz_e2e_admin", PHONE);
+  await page.goto("/customers");
+  await page.waitForLoadState("networkidle");
+  const search = await box(page.getByRole("search"));
+  expect([search.left, search.right]).toEqual([16, 374]);
+
+  await page.getByRole("button", { name: "Bộ lọc" }).click();
+  const nav = page.getByRole("navigation", { name: "Mục lọc" });
+  const panel = await box(nav.locator("xpath=../.."));
+  expect(panel.left).toBeGreaterThanOrEqual(16);
+  expect(panel.right).toBeLessThanOrEqual(374);
+  const [first, second] = [await box(nav.getByRole("button").nth(0)), await box(nav.getByRole("button").nth(1))];
+  expect(second.top).toBe(first.top);
+  expect(second.left).toBeGreaterThan(first.left);
+  await expect(page.getByRole("button", { name: "Xong" })).toBeInViewport();
+});
+
+test("điện thoại: nội dung lề 16 px như thanh tiêu đề, bảng rỗng hiện trọn câu báo trong khung", async ({ browser }) => {
+  const page = await loginAs(browser, "zz_e2e_admin", PHONE);
+  await page.goto("/users?q=zz-e2e-khong-co-ai");
+  await page.waitForLoadState("networkidle");
+  expect((await box(page.getByRole("search"))).right).toBe(374);
+  const card = await box(page.getByRole("region", { name: "Tài khoản" }));
+  expect([card.left, card.right]).toEqual([16, 374]);
+  const text = await page.getByText("Không có tài khoản").evaluate((td) => {
+    const range = document.createRange();
+    range.selectNodeContents(td);
+    return range.getBoundingClientRect().toJSON() as { left: number; right: number };
+  });
+  expect(text.left).toBeGreaterThanOrEqual(card.left);
+  expect(text.right).toBeLessThanOrEqual(card.right);
+});
+
+test("điện thoại: hộp thoại nằm trọn bề ngang màn hình, nút gửi cuộn tới được", async ({ browser }) => {
+  const page = await loginAs(browser, "zz_e2e_admin", PHONE);
+  await page.goto("/schools");
+  await page.waitForLoadState("networkidle");
+  await page.getByRole("button", { name: "Thêm trường" }).click();
+  const dialog = page.getByRole("dialog", { name: "Thêm trường" });
+  const d = await box(dialog);
+  expect(d.left).toBeGreaterThanOrEqual(16);
+  expect(d.right).toBeLessThanOrEqual(374);
+  const submit = dialog.getByRole("button", { name: "Tạo trường" });
+  await submit.scrollIntoViewIfNeeded();
+  await expect(submit).toBeInViewport();
 });
 
 test("máy tính 1366x768: không có thanh đáy, sidebar hiện sẵn", async ({ browser }) => {

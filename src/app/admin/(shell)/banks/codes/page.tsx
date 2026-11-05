@@ -63,7 +63,7 @@ export default async function CodesPage({ searchParams }: { searchParams: Promis
         <BankTabs current="codes" />
         <Card title="Kho mã giới thiệu" icon={<Ticket size={17} aria-hidden />} meta={`${total} mã`} pad={false}>
           <CodeFilters month={month} q={q} bankId={bankId} hideStopped={hideStopped} banks={banks.map((b) => ({ id: b.id, name: b.name }))} />
-          <div className="overflow-x-auto">
+          <div className="table-scroll">
             <table className="w-full text-left text-sm">
               <thead className="text-xs font-semibold tracking-wide text-text-2 uppercase">
                 <tr className="border-b border-line">
@@ -113,7 +113,7 @@ export default async function CodesPage({ searchParams }: { searchParams: Promis
                 ))}
                 {!rows.length && (
                   <tr>
-                    <td colSpan={11} className="px-4 py-10 text-center text-text-3">
+                    <td colSpan={11} className="px-4 py-10 text-center text-text-3 mobile:text-left">
                       {q || bankId ? "Không có mã khớp bộ lọc." : "Chưa có mã giới thiệu nào."}
                     </td>
                   </tr>

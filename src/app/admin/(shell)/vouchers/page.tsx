@@ -41,7 +41,7 @@ export default async function VouchersPage({ searchParams }: { searchParams: Pro
       <main className="p-6">
         <FilterChips chips={dateChip ? [{ label: dateChip, href: `/vouchers?${voucherFilterQuery({ ...f, from: "", to: "" })}` }] : []} />
         <Card title="Mã voucher" icon={<TicketCheck size={17} aria-hidden />} meta={`${total} mã`} pad={false}>
-          <div className="overflow-x-auto">
+          <div className="table-scroll">
             <table className="w-full text-left text-sm">
               <thead className="text-xs font-semibold tracking-wide text-text-2 uppercase">
                 <tr className="border-b border-line">
@@ -73,7 +73,7 @@ export default async function VouchersPage({ searchParams }: { searchParams: Pro
                 ))}
                 {!rows.length && (
                   <tr>
-                    <td colSpan={6} className="px-4 py-10 text-center text-text-3">
+                    <td colSpan={6} className="px-4 py-10 text-center text-text-3 mobile:text-left">
                       {f.q || f.from || f.to ? "Không có mã khớp bộ lọc." : "Chưa cấp mã voucher nào."}
                     </td>
                   </tr>

@@ -35,7 +35,7 @@ export default async function SchoolsPage({ searchParams }: { searchParams: Prom
       />
       <main className="p-6">
         <Card title="Trường" icon={<School size={17} aria-hidden />} meta={`${total} trường`} pad={false}>
-          <div className="overflow-x-auto">
+          <div className="table-scroll">
             <table className="w-full text-left text-sm">
               <thead className="text-xs font-semibold tracking-wide text-text-2 uppercase">
                 <tr className="border-b border-line">
@@ -72,7 +72,7 @@ export default async function SchoolsPage({ searchParams }: { searchParams: Prom
                 ))}
                 {!rows.length && (
                   <tr>
-                    <td colSpan={7} className="px-4 py-10 text-center text-text-3">
+                    <td colSpan={7} className="px-4 py-10 text-center text-text-3 mobile:text-left">
                       {q ? "Không có trường khớp từ khoá." : "Chưa có trường nào."}
                     </td>
                   </tr>

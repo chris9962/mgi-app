@@ -38,7 +38,7 @@ export function FilterButton({ sections, onClear }: { sections: FilterSection[];
   }, [open]);
 
   return (
-    <div className="relative">
+    <div className="relative narrow:static">
       <Button
         ref={trigger}
         variant="secondary"
@@ -57,9 +57,10 @@ export function FilterButton({ sections, onClear }: { sections: FilterSection[];
         )}
       </Button>
       {open && (
-        <div ref={panel} className="absolute top-full right-0 z-20 mt-2 flex w-[min(520px,calc(100vw-32px))] flex-col overflow-hidden rounded-2xl border border-line bg-card shadow-lg">
-          <div className="grid min-h-[220px] grid-cols-[160px_1fr]">
-            <nav aria-label="Mục lọc" className="flex flex-col gap-0.5 border-r border-line bg-panel p-2">
+        <div ref={panel} className="absolute top-full right-0 z-20 mt-2 flex w-[min(520px,calc(100vw-32px))] flex-col overflow-hidden rounded-2xl border border-line bg-card shadow-lg narrow:right-4 narrow:left-4 narrow:w-auto">
+          {/* Màn hẹp như mgst-app: một cột, các mục lọc thành hàng cuộn ngang ở trên. */}
+          <div className="grid min-h-[220px] grid-cols-[160px_1fr] narrow:grid-cols-1 narrow:grid-rows-[auto_minmax(0,1fr)]">
+            <nav aria-label="Mục lọc" className="flex flex-col gap-0.5 border-r border-line bg-panel p-2 narrow:flex-row narrow:items-center narrow:overflow-x-auto narrow:border-r-0 narrow:border-b">
               {sections.map((s) => (
                 <button
                   key={s.id}
@@ -68,7 +69,7 @@ export function FilterButton({ sections, onClear }: { sections: FilterSection[];
                   aria-controls={paneId}
                   onClick={() => setPicked(s.id)}
                   className={clsx(
-                    "flex min-h-11 items-center justify-between gap-2 rounded-lg px-2.5 text-left text-[13px]",
+                    "flex min-h-11 items-center justify-between gap-2 rounded-lg px-2.5 text-left text-[13px] narrow:flex-none narrow:whitespace-nowrap",
                     s.id === selected?.id ? "bg-accent-soft font-semibold text-accent-ink" : "hover:bg-surface",
                   )}
                 >

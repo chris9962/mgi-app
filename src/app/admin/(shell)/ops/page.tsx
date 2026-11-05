@@ -40,7 +40,7 @@ export default async function OpsPage() {
     <>
       <AutoRefresh seconds={60} />
       <TopBar title="Vận hành hệ thống" />
-      <main className="grid gap-5 p-6">
+      <main className="grid grid-cols-1 gap-5 p-6">
         <Card title="Máy chủ" icon={<Cpu size={17} aria-hidden />} meta={host ? `Đo lúc ${formatDateTime(host.at)}` : "Chưa có số đo"}>
           {host ? <HostCells host={host} /> : <p className="text-sm text-text-3">Chưa có số đo.</p>}
         </Card>
@@ -56,7 +56,7 @@ export default async function OpsPage() {
               <span className="text-[13px] text-text-2">Lượt đợi lâu nhất</span>
             </div>
           </div>
-          <div className="overflow-x-auto">
+          <div className="table-scroll">
             <table className="w-full text-left text-sm">
               <caption className="sr-only">Kết quả kiểm ảnh theo ngân hàng trong {OPS_PHOTO_CHECK_DAYS} ngày</caption>
               <thead className="text-xs font-semibold tracking-wide text-text-2 uppercase">
@@ -81,7 +81,7 @@ export default async function OpsPage() {
                 ))}
                 {!photoCheck.banks.length && (
                   <tr>
-                    <td colSpan={5} className="px-4 py-10 text-center text-text-3">
+                    <td colSpan={5} className="px-4 py-10 text-center text-text-3 mobile:text-left">
                       Chưa có lượt kiểm nào trong {OPS_PHOTO_CHECK_DAYS} ngày.
                     </td>
                   </tr>

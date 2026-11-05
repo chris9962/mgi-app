@@ -107,6 +107,15 @@
 @custom-variant mobile (@media (max-width: 900px));
 @custom-variant narrow (@media (max-width: 600px));
 
+/* Bảng rộng cuộn ngang trong khung của nó, cả trang không trượt ngang (chép .table-scroll của mgst-app). */
+@utility table-scroll {
+  /* Phần tử absolute trong bảng (sr-only, thông báo đã chép) neo vào khung cuộn; không có thì nó neo vào tài liệu và kéo trang rộng ra. */
+  position: relative;
+  overflow-x: auto;
+  /* Chỉ khai overflow-x thì chiều dọc thành auto: bảng dư nửa pixel là hiện thêm thanh cuộn dọc. */
+  overflow-y: hidden;
+}
+
 body {
   background: var(--bg);
   color: var(--text);

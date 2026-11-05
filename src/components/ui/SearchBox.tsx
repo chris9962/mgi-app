@@ -3,7 +3,7 @@ import { Search } from "lucide-react";
 // Ô tìm gửi bằng form GET: kết quả lọc ở máy chủ, giữ được trên URL.
 export function SearchBox({ action, placeholder, defaultValue, hidden = {} }: { action: string; placeholder: string; defaultValue: string; hidden?: Record<string, string> }) {
   return (
-    <form role="search" action={action} className="relative">
+    <form role="search" action={action} className="relative narrow:w-full">
       {Object.entries(hidden).map(([k, v]) => (
         <input key={k} type="hidden" name={k} value={v} />
       ))}
@@ -16,7 +16,7 @@ export function SearchBox({ action, placeholder, defaultValue, hidden = {} }: { 
         name="q"
         defaultValue={defaultValue}
         placeholder={placeholder}
-        className="h-9 w-64 rounded-[10px] border border-field-border bg-card pr-3 pl-9 text-sm placeholder:text-text-3"
+        className="h-9 w-64 rounded-[10px] border border-field-border bg-card pr-3 pl-9 text-sm placeholder:text-text-3 narrow:w-full"
       />
     </form>
   );
