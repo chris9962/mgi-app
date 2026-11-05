@@ -26,3 +26,13 @@ describe("định dạng trên bảng", () => {
     expect(formatPhone("0987654321")).toBe("0987 654 321");
   });
 });
+
+describe("bỏ dấu", () => {
+  test("chữ Đ tiếng Việt (U+0110) và Ð gõ nhầm từ bàn phím khác (U+00D0) đều thành D", async () => {
+    const { removeDiacritics, plain } = await import("../../src/lib/text");
+    const { nameInitials } = await import("../../src/server/voucher");
+    expect(removeDiacritics("Đặng đức Ðạt ðình")).toBe("Dang duc Dat dinh");
+    expect(plain("Ðặng Văn Lâm")).toBe("dang van lam");
+    expect(nameInitials("Ðặng Văn Lâm")).toBe("DVL");
+  });
+});
