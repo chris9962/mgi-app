@@ -64,3 +64,34 @@
 
 - [ ] Quản trị tạo trường, tạo ngân hàng có 2 khung ảnh, tạo mã gắn cho trường. Tab Kho mã hiện mã Còn chỗ 0/200.
 - [ ] Nhân viên được giao một ngân hàng chỉ thấy ngân hàng đó.
+
+## Kết quả review và việc để lại
+
+Agent review cả nhánh ngày 2026-11-05: không có lỗi Critical, không có lỗ hổng phân quyền. Đã sửa:
+
+| Lỗi | Test |
+|---|---|
+| MultiSelect: bấm Enter lúc chưa có kết quả thì form gửi đi; kết quả về muộn mở lại danh sách sau khi rời ô | e2e "bấm Enter trong ô tìm trường lúc chưa có kết quả thì không gửi form" |
+| Hộp xác nhận có câu giải thích; thông báo lỗi xưng "Bạn" | `tests/unit/copy.test.ts` |
+| Kiểm dung lượng ảnh sau khi đã đọc hết request | `tests/unit/upload.test.ts` |
+| Khoá ảnh lưu vào DB chưa kiểm dạng và thư mục; `qrKey` rỗng qua được | `tests/unit/forms.test.ts` |
+| Ảnh mẫu và ảnh QR nhận HEIC, Chrome và Android không hiện được | `tests/unit/forms.test.ts` "không nhận HEIC" |
+| `QrPreview` dùng effect cho giá trị suy ra được; nay vẽ SVG lúc render | e2e "Cài đặt vẽ QR ngay khi gõ link Zalo" |
+
+Không sửa: agent đề nghị bỏ chữ "học sinh" trên trang quản lý. Chủ dự án chốt 2026-11-04 chữ trên màn hình vẫn ghi học sinh.
+
+Việc để lại:
+
+| Việc | Khi nào |
+|---|---|
+| Combobox: focus vào ô làm mất tên xã đang hiện; mục đang chọn không cuộn vào tầm nhìn; lỗi chưa gắn `aria-describedby`. MultiSelect chưa có chỗ báo lỗi | Khi sửa form |
+| Hộp thoại mã: sửa mã của ngân hàng đã tắt hiện sai tên ngân hàng; đọc QR mới lỗi thì giữ link cũ; wasm lỗi thì ô ảnh đứng mãi ở "Đang tải ảnh"; chưa có nút bỏ ảnh QR | Khi sửa Kho mã |
+| Tìm kiếm phân biệt dấu ("nguyen du" không ra "Nguyễn Du"); chưa thoát `%` `_` | Giai đoạn 5 cùng ô tìm hồ sơ |
+| `listCodes` sắp xếp chưa có `id` cuối, phân trang có thể lặp hoặc sót dòng | Khi sửa Kho mã |
+| Trùng `banks.code` hoặc tên hiển thị cùng lúc trả 500; `schoolIds`, `bankId` không tồn tại trả 500; nhận cả trường đã đóng | Khi sửa form |
+| Ba hàm `set*Active` ghi `audit_log` ngoài transaction | Khi sửa các hàm này |
+| Matcher của proxy bỏ qua mọi đường dẫn có đuôi ảnh, kể cả `/admin/...x.png` | Giai đoạn 4 khi thêm route học sinh |
+| Route đọc ảnh mở cho mọi người đăng nhập; giai đoạn 4 thêm thư mục ảnh học sinh thì phải kiểm quyền theo ngân hàng | Giai đoạn 4 |
+| Comment chép từ mgst-app trong `readQrImage.ts` còn nhắc CCCD, spec §4.4b | Khi sửa file này |
+| Mẫu SMS nhận cả biến không có thật như `{HOTEN}` | Giai đoạn 5 |
+| Danh sách người quản giữ cả người đã khoá, sửa ngân hàng báo lỗi tới khi bỏ người đó | Khi sửa Ngân hàng |

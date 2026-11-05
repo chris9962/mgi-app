@@ -8,6 +8,7 @@ import { Dialog } from "@/components/ui/Dialog";
 import { inputClass } from "@/components/ui/Field";
 import { apiSend } from "@/lib/api";
 import { GuideForm } from "@/lib/bankForm";
+import { MAX_IMAGE_BYTES } from "@/lib/imageKey";
 
 type Slot = { key: string; id?: string; name: string; sampleKey: string | null; checkName: boolean; checkCode: boolean };
 
@@ -44,6 +45,7 @@ export function GuideDialog({ bankId, bankName, onClose }: { bankId: string; ban
   async function upload(file: File) {
     const key = uploadFor.current;
     if (!key) return;
+    if (file.size > MAX_IMAGE_BYTES) return setError("Ảnh lớn hơn 10 MB.");
     setUploading(key);
     const body = new FormData();
     body.set("file", file);

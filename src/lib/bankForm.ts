@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { isImageKey } from "./imageKey";
 
 export const BankForm = z.object({
   code: z
@@ -15,7 +16,7 @@ export type BankFormValues = z.output<typeof BankForm>;
 export const GuideSlot = z.object({
   id: z.uuid().optional(),
   name: z.string().trim().min(1, "Nhập tên ảnh"),
-  sampleKey: z.string().nullable(),
+  sampleKey: z.string().refine((k) => isImageKey(k, "samples"), "Ảnh mẫu không hợp lệ").nullable(),
   checkName: z.boolean(),
   checkCode: z.boolean(),
 });

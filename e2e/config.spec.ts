@@ -78,3 +78,34 @@ test("Nhân viên được giao một ngân hàng chỉ thấy ngân hàng đó"
   await expect(page.getByRole("button", { name: "Thêm ngân hàng" })).toHaveCount(0);
   await expect(page.getByRole("link", { name: "Trường" })).toHaveCount(0);
 });
+
+test("bấm Enter trong ô tìm trường lúc chưa có kết quả thì không gửi form", async ({ page }) => {
+  await loginAs(page, "zz_e2e_admin");
+  await page.evaluate(() =>
+    fetch("/api/admin/banks", { method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ code: "ZZE2EC", name: "ZZE2E Ngân hàng Enter", sortOrder: "1", managerIds: [] }) }),
+  );
+  await page.goto("/banks/codes");
+  await page.waitForLoadState("networkidle");
+  await page.getByRole("button", { name: "Thêm mã" }).click();
+  const code = page.getByRole("dialog", { name: "Thêm mã giới thiệu" });
+  await code.getByLabel("Ngân hàng").selectOption({ label: "ZZE2E Ngân hàng Enter" });
+  await code.getByLabel("Tên hiển thị").fill("ZZE2E Mã Enter");
+  await code.getByLabel("Mã text (Mã giới thiệu)").fill("ND-ENTER");
+  const box = code.getByRole("combobox", { name: "Trường dùng mã này" });
+  await box.fill("zze2e");
+  await box.press("Enter");
+  // Form gửi đi thì hộp thoại đóng sau một lượt gọi API, nên đợi rồi mới kiểm.
+  await page.waitForTimeout(1000);
+  await expect(code).toBeVisible();
+  await page.getByLabel("Tên hiển thị").focus();
+  await page.waitForTimeout(600);
+  await expect(page.getByRole("listbox")).toHaveCount(0);
+});
+
+test("Cài đặt vẽ QR ngay khi gõ link Zalo", async ({ page }) => {
+  await loginAs(page, "zz_e2e_admin");
+  await page.goto("/settings");
+  await page.waitForLoadState("networkidle");
+  await page.getByLabel("Link Zalo").fill("https://zalo.me/0900000000");
+  await expect(page.getByRole("img", { name: "QR kết bạn Zalo" })).toBeVisible();
+});

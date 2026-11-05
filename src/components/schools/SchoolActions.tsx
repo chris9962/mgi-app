@@ -43,7 +43,7 @@ export function SchoolActions({ school, active, provinces }: { school: Required<
         <ConfirmDialog
           open
           title={active ? "Đóng trường" : "Mở lại trường"}
-          text={active ? `Đóng ${school.name}? Học sinh quét QR của trường này sẽ thấy trường đã đóng.` : `Mở lại ${school.name}?`}
+          text={active ? `Đóng ${school.name}?` : `Mở lại ${school.name}?`}
           confirmLabel={active ? "Đóng" : "Mở lại"}
           danger={active}
           onClose={() => setDialog(null)}

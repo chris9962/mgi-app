@@ -2,10 +2,9 @@ import { randomUUID } from "node:crypto";
 import { DeleteObjectCommand, GetObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
-export const FOLDERS = ["samples", "qr"] as const;
-export type Folder = (typeof FOLDERS)[number];
+import { allowedExt, FOLDERS, isImageKey, MAX_IMAGE_BYTES, type Folder } from "@/lib/imageKey";
 
-export const MAX_IMAGE_BYTES = 10 * 1024 * 1024;
+export { FOLDERS, MAX_IMAGE_BYTES, type Folder };
 
 type Config = { endpoint: string; region: string; bucket: string; accessKeyId: string; secretAccessKey: string };
 
@@ -44,16 +43,14 @@ const MIME = new Map(SIGNATURES.map((s) => [s.ext, s.mime]));
 
 export const imageExtOf = (bytes: Uint8Array): string | null => SIGNATURES.find((s) => s.test(bytes))?.ext ?? null;
 
-// Khoá đi thẳng vào Key của S3 và vào URL đọc ảnh; nhận chuỗi tự do là mở đường đọc file ngoài ý muốn.
-const KEY = new RegExp(`^(${FOLDERS.join("|")})/\\d{4}-\\d{2}-\\d{2}/[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}\\.(jpg|png|webp|heic)$`);
-export const isValidKey = (key: string): boolean => KEY.test(key);
+export const isValidKey = (key: string): boolean => isImageKey(key);
 
 export const newKey = (folder: Folder, ext: string): string => `${folder}/${new Date().toISOString().slice(0, 10)}/${randomUUID()}.${ext}`;
 
 export async function putImage(bytes: Uint8Array, folder: Folder): Promise<{ ok: true; key: string } | { ok: false; message: string }> {
   if (bytes.length > MAX_IMAGE_BYTES) return { ok: false, message: "Ảnh lớn hơn 10 MB." };
   const ext = imageExtOf(bytes);
-  if (!ext) return { ok: false, message: "File không phải ảnh jpg, png, webp hay heic." };
+  if (!ext || !allowedExt(folder, ext)) return { ok: false, message: "Chỉ nhận ảnh jpg, png hoặc webp." };
   const c = readConfig();
   const key = newKey(folder, ext);
   await client(c).send(new PutObjectCommand({ Bucket: c.bucket, Key: key, Body: bytes, ContentType: MIME.get(ext) }));

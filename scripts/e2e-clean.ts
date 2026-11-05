@@ -1,4 +1,4 @@
-import { inArray, like } from "drizzle-orm";
+import { inArray, like, or } from "drizzle-orm";
 import { db, pool } from "../src/server/db/client";
 import * as s from "../src/server/db/schema";
 
@@ -9,7 +9,20 @@ export const E2E_PASSWORD = "e2e23test";
 // Dọn theo thứ tự khoá ngoại: mã, ngân hàng, trường do e2e tạo rồi mới tới tài khoản e2e.
 export async function cleanE2e() {
   const banks = (await db.select({ id: s.banks.id }).from(s.banks).where(like(s.banks.name, `${E2E_NAME}%`))).map((r) => r.id);
-  const codes = banks.length ? (await db.select({ id: s.referralCodes.id }).from(s.referralCodes).where(inArray(s.referralCodes.bankId, banks))).map((r) => r.id) : [];
+  const users = (await db.select({ id: s.users.id }).from(s.users).where(like(s.users.username, `${E2E_PREFIX}%`))).map((r) => r.id);
+  // Mã do e2e tạo có thể nằm ở ngân hàng không phải của e2e, nên dọn cả theo tên và theo người tạo.
+  const codes = (
+    await db
+      .select({ id: s.referralCodes.id })
+      .from(s.referralCodes)
+      .where(
+        or(
+          like(s.referralCodes.displayName, `${E2E_NAME}%`),
+          banks.length ? inArray(s.referralCodes.bankId, banks) : undefined,
+          users.length ? inArray(s.referralCodes.createdBy, users) : undefined,
+        ),
+      )
+  ).map((r) => r.id);
   if (codes.length) {
     await db.delete(s.referralCodeSchools).where(inArray(s.referralCodeSchools.referralCodeId, codes));
     await db.delete(s.referralCodeMonths).where(inArray(s.referralCodeMonths.referralCodeId, codes));
@@ -21,10 +34,9 @@ export async function cleanE2e() {
     await db.delete(s.banks).where(inArray(s.banks.id, banks));
   }
   await db.delete(s.schools).where(like(s.schools.name, `${E2E_NAME}%`));
-  const ids = (await db.select({ id: s.users.id }).from(s.users).where(like(s.users.username, `${E2E_PREFIX}%`))).map((r) => r.id);
-  if (!ids.length) return;
-  await db.delete(s.auditLog).where(inArray(s.auditLog.userId, ids));
-  await db.delete(s.users).where(inArray(s.users.id, ids));
+  if (!users.length) return;
+  await db.delete(s.auditLog).where(inArray(s.auditLog.userId, users));
+  await db.delete(s.users).where(inArray(s.users.id, users));
 }
 
 if (import.meta.main) {

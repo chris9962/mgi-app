@@ -73,7 +73,7 @@ async function validManagers(ids: string[]): Promise<boolean> {
 }
 
 export async function createBank(actor: SessionUser, values: BankFormValues, ip?: string | null): Promise<{ ok: true; id: string } | Fail> {
-  if (!can(actor, "manage_banks")) return fail("Bạn không có quyền tạo ngân hàng.", 403);
+  if (!can(actor, "manage_banks")) return fail("Không có quyền tạo ngân hàng.", 403);
   if (await codeTaken(values.code)) return fail("Mã ngân hàng đã có.", 409, "code");
   if (!(await validManagers(values.managerIds))) return fail("Người quản phải là Nhân viên đang hoạt động.", 400, "managerIds");
   const id = await db.transaction(async (tx) => {

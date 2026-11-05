@@ -54,7 +54,7 @@ export function BankActions({ bank, active, canAssign }: { bank: Required<BankDe
         <ConfirmDialog
           open
           title={active ? "Tắt ngân hàng" : "Bật lại ngân hàng"}
-          text={active ? `Tắt ${bank.name}? Học sinh mới không chọn được ngân hàng này.` : `Bật lại ${bank.name}?`}
+          text={active ? `Tắt ${bank.name}?` : `Bật lại ${bank.name}?`}
           confirmLabel={active ? "Tắt" : "Bật lại"}
           danger={active}
           onClose={close}

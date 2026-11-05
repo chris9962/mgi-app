@@ -11,6 +11,7 @@ import { TextField } from "@/components/ui/TextField";
 import { apiSend } from "@/lib/api";
 import { CodeForm } from "@/lib/codeForm";
 import { httpLinkIn, readQrImage } from "@/lib/readQrImage";
+import { MAX_IMAGE_BYTES } from "@/lib/imageKey";
 
 export type CodeDefaults = {
   id?: string;
@@ -44,13 +45,15 @@ export function CodeFormDialog({ banks, initial, onClose }: { banks: { id: strin
 
   // Đọc link trong QR ngay trên trình duyệt như mgst-app, để người nhập thấy link và sửa được trước khi lưu.
   async function pickQr(file: File) {
+    if (file.size > MAX_IMAGE_BYTES) return setFormError("Ảnh lớn hơn 10 MB.");
+    setFormError("");
     setUploading(true);
     setQrNote("");
     const read = await readQrImage(file);
     if (read.ok) {
       const link = httpLinkIn(read.text);
       setOpenUrl(link);
-      if (!link) setQrNote("QR không chứa link mở tài khoản. Nút Quét QR code sẽ ẩn với mã này.");
+      if (!link) setQrNote("QR không chứa link mở tài khoản.");
     } else setQrNote(read.message);
     const body = new FormData();
     body.set("file", file);

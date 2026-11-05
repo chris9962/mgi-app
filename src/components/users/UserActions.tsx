@@ -59,7 +59,7 @@ export function UserActions({ user, canManage, isSelf, canGrantAdmin, variant }:
         <ConfirmDialog
           open
           title={lockLabel}
-          text={unlock ? `Mở khoá tài khoản ${user.fullName}?` : `Khoá tài khoản ${user.fullName}? Tài khoản bị đăng xuất khỏi mọi máy.`}
+          text={unlock ? `Mở khoá tài khoản ${user.fullName}?` : `Khoá tài khoản ${user.fullName}?`}
           confirmLabel={unlock ? "Mở khoá" : "Khoá"}
           danger={!unlock}
           onClose={close}
@@ -76,7 +76,7 @@ export function UserActions({ user, canManage, isSelf, canGrantAdmin, variant }:
         <ConfirmDialog
           open
           title="Đặt lại mật khẩu"
-          text={`Đặt lại mật khẩu cho ${user.fullName}? Tài khoản bị đăng xuất khỏi mọi máy.`}
+          text={`Đặt lại mật khẩu cho ${user.fullName}?`}
           confirmLabel="Đặt lại"
           onClose={close}
           onConfirm={async () => {

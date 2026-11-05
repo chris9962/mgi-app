@@ -1,5 +1,5 @@
 export const unauthorized = () => Response.json({ message: "Chưa đăng nhập hoặc phiên đã hết hạn." }, { status: 401 });
-export const forbidden = () => Response.json({ message: "Bạn không có quyền thực hiện thao tác này." }, { status: 403 });
+export const forbidden = () => Response.json({ message: "Không có quyền thực hiện thao tác này." }, { status: 403 });
 export const badRequest = (message = "Dữ liệu không hợp lệ.") => Response.json({ message }, { status: 400 });
 // Bản ghi ngoài phạm vi trả 404 giống bản ghi không tồn tại, để không dò được id nào có thật.
 export const notFound = () => Response.json({ message: "Không tìm thấy." }, { status: 404 });

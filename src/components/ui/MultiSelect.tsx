@@ -2,7 +2,7 @@
 
 import { clsx } from "clsx";
 import { Search, X } from "lucide-react";
-import { useId, useRef, useState, type KeyboardEvent } from "react";
+import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { inputClass } from "./Field";
 
 export type Option = { id: string; label: string };
@@ -22,13 +22,17 @@ export function MultiSelect({ label, value, onChange, search, placeholder = "Gõ
   const [active, setActive] = useState(0);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const latest = useRef("");
+  const focused = useRef(false);
+
+  useEffect(() => () => clearTimeout(timer.current), []);
 
   function load(q: string) {
     latest.current = q;
     clearTimeout(timer.current);
     timer.current = setTimeout(async () => {
       const rows = await search(q).catch(() => []);
-      if (latest.current === q) {
+      // Kết quả về sau khi ô đã mất focus thì bỏ, không mở lại danh sách đè lên hộp thoại.
+      if (latest.current === q && focused.current) {
         setOptions(rows);
         setActive(0);
       }
@@ -40,6 +44,8 @@ export function MultiSelect({ label, value, onChange, search, placeholder = "Gõ
   }
 
   function onKey(e: KeyboardEvent<HTMLInputElement>) {
+    // Enter trong ô tìm không bao giờ gửi form, kể cả khi kết quả chưa về.
+    if (e.key === "Enter") e.preventDefault();
     if (!options) return;
     if (e.key === "ArrowDown") {
       e.preventDefault();
@@ -48,7 +54,6 @@ export function MultiSelect({ label, value, onChange, search, placeholder = "Gõ
       e.preventDefault();
       setActive((a) => Math.max(a - 1, 0));
     } else if (e.key === "Enter" && options[active]) {
-      e.preventDefault();
       toggle(options[active]);
     } else if (e.key === "Escape") {
       e.preventDefault();
@@ -85,12 +90,18 @@ export function MultiSelect({ label, value, onChange, search, placeholder = "Gõ
           autoComplete="off"
           placeholder={placeholder}
           value={query}
-          onFocus={() => load(query)}
+          onFocus={() => {
+            focused.current = true;
+            load(query);
+          }}
           onChange={(e) => {
             setQuery(e.target.value);
             load(e.target.value);
           }}
-          onBlur={() => setOptions(null)}
+          onBlur={() => {
+            focused.current = false;
+            setOptions(null);
+          }}
           onKeyDown={onKey}
           className={clsx(inputClass, "pl-9")}
         />

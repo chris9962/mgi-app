@@ -45,7 +45,7 @@ export function CodeActions({ code, active, banks }: { code: Required<CodeDefaul
         <ConfirmDialog
           open
           title={active ? "Ngừng mã" : "Dùng lại mã"}
-          text={active ? `Ngừng mã ${code.displayName}? Học sinh mới không nhận mã này nữa.` : `Dùng lại mã ${code.displayName}?`}
+          text={active ? `Ngừng mã ${code.displayName}?` : `Dùng lại mã ${code.displayName}?`}
           confirmLabel={active ? "Ngừng" : "Dùng lại"}
           danger={active}
           onClose={() => setDialog(null)}
