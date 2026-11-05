@@ -136,3 +136,21 @@ Agent sửa ngày 2026-11-05, commit 697fae1 tới commit ghi mục này. Mỗi 
 
 Test sau lần sửa: `bun run test` 120 pass, `bun test:db` 163 pass, `bun test:s3` 6 pass, `bun run e2e` 14 pass, `bunx tsc --noEmit` sạch, `bun run lint` 0 lỗi (2 cảnh báo `<img>` cũ).
 
+
+### Review lần 2
+
+Reviewer đọc đoạn 1c00e2f..462f72a ngày 2026-11-05. Kết luận: sẵn sàng merge, không có lỗi Critical hay Important. Reviewer chạy lại `bun run test` 120 pass, `bun test:db` 163 pass, `tsc` sạch, `lint` 0 lỗi.
+
+Reviewer xác nhận savepoint của I4 cô lập lỗi unique: lệnh chèn SMS và audit sau lượt trùng vẫn chạy trong cùng transaction. Chỉ lỗi `23505` của `vouchers_code_unique` được sinh lại, lỗi khác vẫn ném ra.
+
+Ruling: Trang 12 và file xuất voucher hiện mọi voucher cho người có quyền `vouchers`. File xuất đúng những dòng người xuất xem được, nên vẫn khớp luật "xuất trong phạm vi người xuất".
+
+Việc để lại thêm:
+
+| Việc | Khi nào |
+|---|---|
+| ASCII in được chưa phải GSM-7: `` ` `` không có trong bảng GSM-7; `[ ] { } ~ \| \ ^` tính 2 ký tự nhưng `smsParts` tính 1 | Khi nối nhà cung cấp |
+| Chữ toàn chiều rộng (`１１Ａ３`) bị xoá hết ở SMS và ở phần lớp của mã voucher; nên dùng `NFKD` hoặc chặn ở form | Khi sửa form học sinh |
+| Test I1 dùng regex `/phone\|0987\|0912/i` quét cả JSON có UUID, có thể fail ngẫu nhiên khoảng 0,2% | Khi sửa test route |
+| Chưa có test cho trần 5 lượt sinh lại mã, lỗi unique khác vẫn ném ra, và nội dung `sms_messages.body` thuần ASCII ở tầng DB | Khi sửa voucher |
+| SMS mẫu mặc định với họ tên, lớp, trường dài vượt 160 ký tự thành 2 hoặc 3 tin; tên trường chưa có trần độ dài | Khi nối nhà cung cấp |
