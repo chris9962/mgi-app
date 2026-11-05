@@ -47,4 +47,19 @@ describe("dọn object mồ côi trong proofs/", () => {
     expect(await readImage(orphan)).toBeNull();
     expect(await readImage(used)).not.toBeNull();
   });
+
+  test("hàng loạt ảnh không dòng nào trỏ tới (DB rỗng hoặc khôi phục sai) thì dừng, không xoá; chỉ xoá khi người vận hành chạy với force", async () => {
+    const folder = "proofs/2099-01-02/";
+    const many = Array.from({ length: 25 }, () => `${folder}${randomUUID()}.webp`);
+    try {
+      for (const key of many) await writeImage(key, new Uint8Array([1]));
+      const olderThan = new Date(Date.now() + 60_000);
+      await expect(sweepOrphanProofs({ prefix: folder, olderThan })).rejects.toThrow("25 trên 25");
+      for (const key of many) expect(await readImage(key)).not.toBeNull();
+      expect((await sweepOrphanProofs({ prefix: folder, olderThan, dryRun: true })).blocked).toContain("25 trên 25");
+      expect((await sweepOrphanProofs({ prefix: folder, olderThan, force: true })).removed).toHaveLength(25);
+    } finally {
+      for (const key of many) await deleteImage(key).catch(() => undefined);
+    }
+  }, 120_000);
 });

@@ -373,6 +373,8 @@ journalctl -u mgi-bank-ops-watch.service -n 50 --no-pager
 
 Ảnh ghi lên S3 xong mà transaction ghi dòng `proof_photos` lỗi thì nằm lại, không dòng nào trỏ tới. `mgi-bank-s3-orphans.timer` chạy `scripts/s3-orphans.ts` lúc 03:30 mỗi ngày. Script xoá object trong `proofs/` cũ hơn 24 giờ mà không dòng `proof_photos` nào trỏ tới. Object mới hơn 24 giờ thì giữ, vì transaction có thể chưa commit.
 
+Script có chốt chặn. DB không có dòng `proof_photos` nào mà bucket còn ảnh cũ, hoặc hơn 20 ảnh và hơn 10% ảnh cũ không dòng nào trỏ tới, thì script dừng, không xoá ảnh nào, thoát mã 1. Unit hỏng nên `mgi-bank-alert@` ghi dòng báo động vào journal. Tình huống đó thường là DB sai: tạo lại rỗng, khôi phục nhầm bản, nối nhầm DB. Người vận hành xem danh sách bằng `--dry-run`. Chắc chắn số ảnh đó là rác thì chạy một lần với `--bo-chan`.
+
 Chạy khô trước khi tin script, lệnh chỉ liệt kê:
 
 ```bash
