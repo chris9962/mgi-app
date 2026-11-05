@@ -7,6 +7,7 @@ import { bankPhotoSlots, customerBanks, photoChecks, proofPhotos } from "../../s
 import { queuePhotoChecks } from "../../src/server/photoChecks";
 import { BATCH, pendingPhotoCheckIds, runPhotoCheck, type PhotoCheckDeps } from "../../src/server/photoCheckWorker";
 import { newKey } from "../../src/server/storage";
+import { heicFixture } from "../support/heic";
 
 // S3 và OCR là hệ ngoài: ảnh giả là chữ UTF-8, OCR giả trả từng dòng của chữ đó. Test OCR thật nằm ở tests/s3/photoCheckOcr.test.ts.
 let p: Program;
@@ -215,6 +216,19 @@ describe("worker kiểm ảnh", () => {
     expect(await pendingPhotoCheckIds(BATCH, [p.schoolId])).not.toContain(checkId);
     expect(await runPhotoCheck(checkId, fake())).toBe("skipped");
   });
+
+  test("ảnh HEIC vượt trần điểm ảnh (app giữ bản gốc) thì ghi failed ngay, không giải mã, không gọi OCR, không thử lại", async () => {
+    const { checkId, cb } = await submitted([{ name: "Ảnh 1", checkName: true, photo: "TRAN MINH ANH" }]);
+    const [photo] = await db.select().from(proofPhotos).where(eq(proofPhotos.customerBankId, cb));
+    images.set(photo.s3Key, heicFixture("heic-8192x8192-phang.heic"));
+    const calls = ocrCalls.length;
+    const started = Date.now();
+    expect(await runPhotoCheck(checkId, fake())).toBe("failed");
+    expect(Date.now() - started).toBeLessThan(1000);
+    expect(ocrCalls.length).toBe(calls);
+    expect((await checkRow(checkId)).error).toBe("Ảnh Ảnh 1 quá lớn, máy không đọc được.");
+    expect(await pendingPhotoCheckIds(BATCH, [p.schoolId])).not.toContain(checkId);
+  }, 60_000);
 
   test("ảnh không còn trên S3 thì ghi failed", async () => {
     const { checkId } = await submitted([{ name: "Ảnh 1", checkName: true, photo: "TRAN MINH ANH" }]);

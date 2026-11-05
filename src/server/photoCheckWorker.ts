@@ -1,7 +1,7 @@
 import { and, asc, eq, isNull, lt, or, sql } from "drizzle-orm";
 import { db } from "./db/client";
 import { bankPhotoSlots, customerBanks, customers, photoChecks, proofPhotos } from "./db/schema";
-import { heicToJpeg } from "./heic";
+import { heicFits, heicToJpeg } from "./heic";
 import { judgeSlot, partsOf, type CheckValues } from "./ocr/judge";
 import { ocrLines } from "./ocr/reader";
 import { imageExtOf, readImage } from "./storage";
@@ -45,11 +45,14 @@ async function claim(id: string): Promise<{ customerBankId: string; claims: numb
 }
 
 // Ảnh máy chủ không đổi được sang WebP lúc nhận thì giữ HEIC gốc; OCR không đọc được HEIC nên đổi sang JPEG.
+// HEIC app giữ vì vượt trần điểm ảnh thì không giải mã: ảnh đó làm container kiểm ảnh hết RAM, lượt bị nhận lại 3 lần trong khi lượt khác chờ.
 async function photoBytes(photoId: string, slotName: string, read: PhotoCheckDeps["read"]): Promise<Uint8Array> {
   const [row] = await db.select({ key: proofPhotos.s3Key }).from(proofPhotos).where(eq(proofPhotos.id, photoId));
   const bytes = row ? await read(row.key) : null;
   if (!bytes) throw new Error(`Không tải được ảnh ${slotName}.`);
-  return imageExtOf(bytes) === "heic" ? heicToJpeg(bytes) : bytes;
+  if (imageExtOf(bytes) !== "heic") return bytes;
+  if (!heicFits(bytes)) throw new Error(`Ảnh ${slotName} quá lớn, máy không đọc được.`);
+  return heicToJpeg(bytes);
 }
 
 // Mỗi khung chỉ so với ảnh đang dùng của chính khung đó, không đoán ảnh là màn nào, không tìm sang ảnh khác.
