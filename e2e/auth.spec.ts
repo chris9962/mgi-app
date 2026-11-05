@@ -95,3 +95,18 @@ test("Quản trị tạo tài khoản, đặt lại mật khẩu, tài khoản m
   await expect(page).toHaveURL(/\/profile$/);
   await expect(page.getByText("Trường và QR")).toHaveCount(0);
 });
+
+test("trình duyệt chặn clipboard thì nút Chép báo không chép được và chọn sẵn mật khẩu", async ({ page }) => {
+  await page.addInitScript(() => Object.defineProperty(navigator, "clipboard", { value: undefined, configurable: true }));
+  await loginAs(page, "zz_e2e_admin");
+  await page.getByRole("button", { name: "Thêm tài khoản" }).click();
+  const form = page.getByRole("dialog", { name: "Thêm tài khoản" });
+  await form.getByLabel("Họ tên").fill("E2E Chép");
+  await form.getByLabel("Tên đăng nhập").fill("zz_e2e_copy");
+  await form.getByRole("button", { name: "Tạo tài khoản" }).click();
+  const dialog = page.getByRole("dialog", { name: "Mật khẩu mới" });
+  await dialog.getByRole("button", { name: "Chép" }).click();
+  await expect(dialog.getByRole("status")).toHaveText("Không chép được.");
+  const password = (await dialog.locator("code").textContent())!.trim();
+  expect(await page.evaluate(() => window.getSelection()?.toString().trim())).toBe(password);
+});
