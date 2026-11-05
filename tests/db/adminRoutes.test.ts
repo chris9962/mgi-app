@@ -3,7 +3,7 @@ import { randomUUID } from "node:crypto";
 import { cleanTestUsers, makeActor } from "./helpers";
 import { insertCustomer, setupProgram, type Program } from "./fixtures";
 import { db } from "../../src/server/db/client";
-import { proofPhotos } from "../../src/server/db/schema";
+import { proofPhotos, vouchers } from "../../src/server/db/schema";
 import { SESSION_COOKIE, createSession } from "../../src/server/auth/session";
 import { POST as createUserRoute } from "../../src/app/api/admin/users/route";
 import { PATCH as settingsRoute } from "../../src/app/api/admin/settings/route";
@@ -35,7 +35,8 @@ beforeAll(async () => {
   const exporter = await makeActor("route_exporter", "staff", ["export_excel"], [p.bank.A]);
   const lonely = await makeActor("route_lonely", "staff", ["export_excel"], []);
   for (const [k, u] of Object.entries({ staff, exporter, lonely, manager: p.manager })) cookie[k] = (await createSession(u.id)).token;
-  const c = await insertCustomer(p, { fullName: "Routeds Trần Minh Anh", status: "pending_review", submittedAt: new Date(), banks: [{ key: "A", status: "pending" }, { key: "B", status: "pending" }] });
+  const c = await insertCustomer(p, { fullName: "Routeds Trần Minh Anh", phone: "0912345678", parentPhone: "0987654321", status: "pending_review", submittedAt: new Date(), banks: [{ key: "A", status: "pending" }, { key: "B", status: "pending" }] });
+  await db.insert(vouchers).values({ customerId: c.id, code: "ZZROUTE-TMA-11A3-AAAA" });
   rowA = c.rows.A;
   const [ph] = await db.insert(proofPhotos).values({ customerBankId: c.rows.B, slotId: p.slot.B, s3Key: `proofs/2026-11-05/${randomUUID()}.webp` }).returning({ id: proofPhotos.id });
   photoB = ph.id;
@@ -60,6 +61,15 @@ describe("route quản lý theo quyền", () => {
   test("ảnh của ngân hàng khác trả 404 cho Nhân viên, Quản lý xem được", async () => {
     expect((await photoRoute(req(`/api/admin/photos/${photoB}`, "staff"), params(photoB))).status).toBe(404);
     expect((await photoRoute(req(`/api/admin/photos/${photoB}`, "manager"), params(photoB))).status).toBe(302);
+  });
+
+  test("danh sách voucher không trả SĐT của học sinh hay phụ huynh", async () => {
+    const res = await vouchersRoute(req("/api/admin/vouchers?q=routeds", "manager"));
+    expect(res.status).toBe(200);
+    const body = await res.json();
+    expect(body.rows.length).toBe(1);
+    expect(Object.keys(body.rows[0]).sort()).toEqual(["className", "code", "customerId", "fullName", "id", "issuedAt", "parentName", "schoolName"]);
+    expect(JSON.stringify(body)).not.toMatch(/phone|0987|0912/i);
   });
 
   test("người có quyền Xuất Excel tải được file", async () => {

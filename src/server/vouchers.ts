@@ -10,7 +10,7 @@ import type { SessionUser } from "@/lib/types";
 
 export const PAGE_SIZE = 15;
 
-export type VoucherRow = { id: string; code: string; customerId: string; fullName: string; className: string; schoolName: string; parentName: string; parentPhone: string; issuedAt: Date };
+export type VoucherRow = { id: string; code: string; customerId: string; fullName: string; className: string; schoolName: string; parentName: string; issuedAt: Date };
 
 export function voucherWhere(f: VoucherFilters): SQL | undefined {
   const { start, end } = dayRange(f.from, f.to);
@@ -29,7 +29,6 @@ export const voucherColumns = {
   className: customers.className,
   schoolName: schools.name,
   parentName: customers.parentName,
-  parentPhone: customers.parentPhone,
   issuedAt: vouchers.issuedAt,
 };
 
