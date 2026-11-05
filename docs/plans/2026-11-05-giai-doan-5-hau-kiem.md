@@ -81,11 +81,11 @@ Agent làm xong 7 task ngày 2026-11-05, commit 858dd70 tới commit ghi mục n
 - `queuePhotoChecks` dùng chung cho Gửi kiểm tra, thay ảnh và sửa họ tên.
 - Request đánh dấu gửi kèm trạng thái người kiểm thấy (`expected`). Trạng thái đã khác thì báo "đã có người đánh dấu", để người thứ hai không âm thầm đè lên kết quả vừa ghi.
 - Thiếu `VOUCHER_SECRET` thì từ chối cả lượt Đạt cần cấp voucher (lỗi 500), không ghi Đạt mà thiếu voucher. Đạt khi đã có voucher và Không đạt vẫn ghi được.
-- `{HO_TEN}` viết hoa bỏ dấu; `{TRUONG}`, `{NGAN_HANG}` bỏ dấu, giữ hoa thường; `{NGAN_HANG}` là ngân hàng của lượt Đạt cấp voucher.
+- Mọi giá trị điền vào SMS là ASCII in được (đổi ở lần sửa theo review 1). `{HO_TEN}` viết hoa; `{TRUONG}`, `{NGAN_HANG}` giữ hoa thường; `{NGAN_HANG}` là ngân hàng của lượt Đạt cấp voucher.
 - Tải ảnh thay thế qua `POST /api/admin/customer-banks/:id/photos` thay vì `/api/admin/photos/:id/replace` của thiết kế, vì khung có thể chưa có ảnh. Chỉ thay ảnh khung đang dùng của dòng pending hoặc failed. Thay ảnh không đổi trạng thái dòng.
 - Ghi chú nội bộ sửa riêng bằng nút bút chì, mọi trạng thái dòng. Nút Đạt, Không đạt chỉ hỏi một câu xác nhận.
-- Va chạm mã voucher (trùng 3 phần chữ và trùng 4 ký tự kiểm, xác suất 1/923.521) để unique của `vouchers.code` báo lỗi, không thử lại.
-- Viết tắt giữ cả từ khi từ viết hoa toàn bộ (THPT, ZZE2E); từ khác lấy chữ đầu sau khi bỏ dấu; chỉ giữ A-Z, 0-9. Lớp bỏ mọi ký tự khác chữ và số.
+- Va chạm mã voucher: sinh lại với số lượt trong thông điệp HMAC, tối đa 5 lượt. (Đổi ở lần sửa theo review 1.)
+- Viết tắt tên trường giữ cả từ khi từ viết hoa toàn bộ (THPT, ZZE2E); từ khác lấy chữ đầu sau khi bỏ dấu. Họ tên học sinh luôn lấy chữ đầu mỗi từ (đổi ở lần sửa theo review 1). Chỉ giữ A-Z, 0-9. Lớp bỏ mọi ký tự khác chữ và số.
 - 4 ký tự kiểm lấy 8 byte đầu của HMAC-SHA256 đổi sang hệ 31. Thông điệp HMAC là id học sinh, mã tỉnh, mã xã, tên phụ huynh và 3 phần chữ, nối bằng xuống dòng.
 - Trang 12 hiện mọi voucher cho người có quyền `vouchers`, không giới hạn theo ngân hàng. Tên học sinh chỉ thành link khi người xem thấy mọi hồ sơ.
 - Worker gửi mỗi tin một lần mỗi vòng, tin lỗi chờ vòng sau, không giãn cách. Mất kết nối LISTEN thì worker thoát để trình quản lý tiến trình chạy lại.
@@ -109,11 +109,30 @@ Agent làm xong 7 task ngày 2026-11-05, commit 858dd70 tới commit ghi mục n
 | Worker SMS chưa có container hoặc systemd; chưa nối nhà cung cấp SMS, `send.ts` chỉ ghi log | Giai đoạn 7 |
 | Worker SMS thử lại không giãn cách; tin lỗi gửi lại ở vòng kế tiếp hoặc khi có thông báo khác | Khi nối nhà cung cấp |
 | Giai đoạn 6 phải ghi `photo_checks.result` đúng dạng `src/lib/photoCheck.ts` | Giai đoạn 6 |
-| Hai học sinh trùng 3 phần chữ và trùng 4 ký tự kiểm thì lượt Đạt của người sau lỗi mãi | Khi có ca thật |
 | Mỗi lần mở Trang 4 ghi một dòng audit cho mỗi ảnh; bảng `audit_log` lớn nhanh | Giai đoạn 7 |
 | `putImage` báo "Chỉ nhận ảnh jpg, png hoặc webp." cho ảnh thay thế dù nhận cả HEIC | Khi sửa storage |
 | Ô tìm cũ dùng `unaccent` không có chỉ mục, quét cả bảng | Khi bảng lớn |
 | Bộ lọc Xác thực ảnh chưa có giá trị "Chưa kiểm" | Khi user cần |
 | Trang chủ sau đăng nhập vẫn là Tài khoản hoặc Cá nhân, chưa về Hồ sơ học sinh | Khi user cần |
 | Đổi SĐT ở Gửi lại không đổi SĐT phụ huynh của hồ sơ | Khi user cần |
+| Worker SMS gửi ít nhất một lần: nhà cung cấp nhận tin rồi transaction lỗi thì tin gửi lại; chưa giới hạn lượng tồn; tắt worker giữa lúc gửi chưa chờ lượt đang chạy xong | Khi nối nhà cung cấp |
+| Câu báo quá trần số dòng của Xuất Excel trường và voucher ghi 20.001 dòng thay vì số dòng thật | Khi sửa Xuất Excel |
+| Ô ngày của Bộ lọc đẩy URL mỗi lần ô đổi giá trị, kể cả khi đang gõ năm | Khi sửa Bộ lọc |
+| Dòng ngân hàng bị xoá giữa lúc đánh dấu thì máy chủ trả 500 thay vì 404 | Khi sửa đánh dấu |
+| Tìm `%...%` quét cả bảng hồ sơ, voucher, SMS; sắp xếp bằng CASE không dùng được chỉ mục | Khi bảng lớn |
+| Link mở ảnh ở tab mới chưa báo cho trình đọc màn hình là mở tab mới | Khi sửa Trang 4 |
+
+### Sửa theo review lần 1
+
+Agent sửa ngày 2026-11-05, commit 697fae1 tới commit ghi mục này. Mỗi mục có test viết trước, thấy fail đúng lý do rồi mới sửa.
+
+- I1: `GET /api/admin/vouchers` không trả `parentPhone` nữa. Test route kiểm khoá của từng dòng và không có SĐT nào trong JSON.
+- I2: mã voucher lấy chữ cái đầu mỗi từ của họ tên học sinh kể cả khi gõ viết hoa toàn bộ (`TRẦN MINH ANH` ra `TMA`). Luật giữ từ viết hoa chỉ áp cho tên trường. Test unit cho tên viết hoa và tên lẫn hoa thường.
+- I3: Xuất Excel hồ sơ ghép dòng ngân hàng và voucher theo Map (`src/server/exportRows.ts`). Test unit 20.000 hồ sơ: code cũ mất 3,7 giây, code mới dưới 500 ms.
+- I4: mã voucher trùng thì sinh lại với số lượt thêm vào thông điệp HMAC, ghi trong savepoint, tối đa 5 lượt. Lượt 0 giữ nguyên công thức cũ. Test DB chèn sẵn đúng mã học sinh sẽ nhận: lượt Đạt vẫn ghi được, voucher là mã của lượt 1, SMS mang mã đó.
+- I5: mọi giá trị điền vào SMS là ASCII in được (`smsValues`, `asciiSms` ở `src/lib/sms.ts`): lớp cũng bỏ dấu, gạch ngang đổi thành `-`, ngoặc kép kiểu chữ đổi thành `"`, ngoặc đơn thành `'`, ký tự khác bỏ đi. Test unit.
+- I6: `removeDiacritics` đổi cả `Ð`, `ð` (U+00D0, U+00F0) thành `D`, `d`. Test unit cho `removeDiacritics`, `plain` và chữ đầu của họ tên.
+- Test còn thiếu: chi tiết hồ sơ không trả ghi chú nội bộ và kết quả xác thực ảnh của ngân hàng người xem không quản. Code đã đúng nên test pass ngay; agent kiểm đột biến (trả ghi chú của mọi ngân hàng) thấy test fail rồi trả code về.
+
+Test sau lần sửa: `bun run test` 120 pass, `bun test:db` 163 pass, `bun test:s3` 6 pass, `bun run e2e` 14 pass, `bunx tsc --noEmit` sạch, `bun run lint` 0 lỗi (2 cảnh báo `<img>` cũ).
 
