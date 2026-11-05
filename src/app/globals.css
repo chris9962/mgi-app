@@ -103,6 +103,10 @@
   --font-sans: "Google Sans", system-ui, sans-serif;
 }
 
+/* Ngưỡng chép _breakpoints.scss của mgst-app: tới 900 px là bố cục điện thoại, tới 600 px là màn hẹp. Khai narrow sau để thắng mobile. */
+@custom-variant mobile (@media (max-width: 900px));
+@custom-variant narrow (@media (max-width: 600px));
+
 body {
   background: var(--bg);
   color: var(--text);

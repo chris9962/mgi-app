@@ -3,15 +3,14 @@ import { failedSmsCount } from "@/server/sms/queue";
 import { can } from "@/lib/permissions";
 import { ROLE_LABEL } from "@/lib/types";
 import { menuFor } from "@/components/shell/menu";
-import { Sidebar } from "@/components/shell/Sidebar";
+import { AppShell } from "@/components/shell/AppShell";
 
 export default async function ShellLayout({ children }: { children: React.ReactNode }) {
   const user = await requirePage();
   const groups = menuFor(user, can(user, "customers") ? { "/sms": await failedSmsCount(user) } : {});
   return (
-    <div className="flex min-h-dvh">
-      <Sidebar groups={groups} fullName={user.fullName} title={user.title || ROLE_LABEL[user.role]} />
-      <div className="flex min-w-0 flex-1 flex-col">{children}</div>
-    </div>
+    <AppShell groups={groups} fullName={user.fullName} title={user.title || ROLE_LABEL[user.role]}>
+      {children}
+    </AppShell>
   );
 }
