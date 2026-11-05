@@ -49,13 +49,13 @@ describe("phạm vi", () => {
   });
 
   test("ô ngân hàng có trạng thái; xác thực ảnh chỉ hiện ở ngân hàng người xem quản", async () => {
-    const [row] = (await listCustomers(staffA, filters({ q: "locds kim ngan" }), 1)).rows;
+    const [row] = (await listCustomers(staffA, filters({ q: "locds vo thi kim ngan" }), 1)).rows;
     expect(row.banks.map((b) => [b.slot, b.status, b.managed, b.check])).toEqual([
       [1, "passed", true, { passed: 2, total: 2 }],
       [2, "passed", false, null],
     ]);
     expect(row.reviewers).toEqual([p.manager.fullName]);
-    const [mine] = (await listCustomers(p.manager, filters({ q: "locds kim ngan" }), 1)).rows;
+    const [mine] = (await listCustomers(p.manager, filters({ q: "locds vo thi kim ngan" }), 1)).rows;
     expect(mine.banks.map((b) => b.check)).toEqual([
       { passed: 2, total: 2 },
       { passed: 0, total: 2 },
