@@ -154,6 +154,19 @@ describe("ghi ảnh", () => {
     expect(fake.objects.size).toBe(0);
   });
 
+  test("học sinh A không xin link và không ghi ảnh được vào dòng ngân hàng, khung của học sinh B", async () => {
+    const [a, b] = [await student(), await student()];
+    const fake = fakeStore();
+    const cbB = await rowOf(b, "A");
+    expect(await photoUploadUrl(a, { customerBankId: cbB.id, slotId: slot.A1, contentType: "image/webp", size: 1000 }, fake.store)).toMatchObject({ ok: false, status: 404 });
+    const own = await photoUploadUrl(a, { customerBankId: (await rowOf(a, "A")).id, slotId: slot.A1, contentType: "image/webp", size: 1000 }, fake.store);
+    if (!own.ok) throw new Error(own.message);
+    fake.objects.set(own.key, 1000);
+    expect(await recordPhoto(a, { customerBankId: cbB.id, slotId: slot.A1, key: own.key }, fake.store)).toMatchObject({ ok: false, status: 404 });
+    expect(await db.select().from(proofPhotos).where(eq(proofPhotos.customerBankId, cbB.id))).toEqual([]);
+    expect(fake.objects.size).toBe(0);
+  });
+
   test("chụp lại khung đó thì xoá dòng và object cũ, giữ một ảnh cho khung", async () => {
     const c = await student();
     const fake = fakeStore();

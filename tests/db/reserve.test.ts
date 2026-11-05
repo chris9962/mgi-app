@@ -54,8 +54,8 @@ const statusOf = async (customerId: string) => (await db.select({ s: customers.s
 beforeAll(async () => {
   await cleanTestUsers();
   manager = await makeActor("b2_manager", "manager");
-  for (const k of ["S", "RACE", "GONE", "MONTH", "COVER"]) await addSchool(k);
-  for (const [i, k] of ["A", "B", "C", "D", "E", "G", "H", "P", "Q"].entries()) await addBank(k, i + 1);
+  for (const k of ["S", "RACE", "GONE", "MONTH", "COVER", "R1", "R2", "R3"]) await addSchool(k);
+  for (const [i, k] of ["A", "B", "C", "D", "E", "G", "H", "P", "Q", "X", "Y"].entries()) await addBank(k, i + 1);
   await addCode("A-LOW", "A", "S", 10, 1);
   await addCode("A-HIGH", "A", "S", 10, 5);
   await addCode("B-1", "B", "S", 10);
@@ -68,6 +68,11 @@ beforeAll(async () => {
   await addCode("H-MONTH", "H", "MONTH", 1);
   await addCode("P-1", "P", "COVER", 10);
   await addCode("Q-1", "Q", "COVER", 10);
+  for (const k of ["X", "Y"]) {
+    const r = await createCode(manager, CodeForm.parse({ bankId: bank[k], displayName: TEST_NAME + "B2 " + k + "-SHARED", code: k + "-SHARED", qrKey: null, openUrl: "", monthlyQuota: "3", priority: "0", schoolIds: [school.R1, school.R2, school.R3] }));
+    if (!r.ok) throw new Error(r.message);
+    code[k + "-SHARED"] = r.id;
+  }
 });
 afterAll(cleanTestUsers);
 
@@ -147,6 +152,14 @@ describe("B2 giữ chỗ", () => {
     const results = await Promise.all(list.map((c) => reserveBanks(c, [bank.E], MONTH)));
     expect(results.filter((r) => r.ok).length).toBe(3);
     expect((await db.select().from(customerBanks).where(eq(customerBanks.referralCodeId, code["E-RACE"]))).length).toBe(3);
+  });
+
+  test("giữ chỗ song song ở 3 trường dùng chung mã của 2 ngân hàng: không vượt quota, không deadlock", async () => {
+    const list = await Promise.all(["R1", "R2", "R3"].flatMap((k) => Array.from({ length: 4 }, () => student(k))));
+    const results = await Promise.all(list.map((c, i) => reserveBanks(c, i % 2 ? [bank.X, bank.Y] : [bank.Y, bank.X], MONTH)));
+    expect(results.filter((r) => r.ok).length).toBe(3);
+    expect(results.filter((r) => !r.ok).every((r) => !r.ok && r.status === 409)).toBe(true);
+    for (const k of ["X-SHARED", "Y-SHARED"]) expect((await db.select().from(customerBanks).where(eq(customerBanks.referralCodeId, code[k]))).length).toBe(3);
   });
 
   test("giữ chỗ tháng 10, đánh dấu ở tháng 11 vẫn tính lượt tháng 10", async () => {
