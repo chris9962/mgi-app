@@ -1,4 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
+import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { closeOcr, ocrLines } from "../../src/server/ocr/reader";
 
@@ -31,5 +33,35 @@ describe("reader OCR", () => {
 
   test("chữ rác dính trước JSON trên cùng dòng vẫn đọc được", async () => {
     expect(await ocrLines(image("RAC"))).toEqual(["RAC"]);
+  });
+
+  test("lượt hết giờ lúc tiến trình đang mở: các lượt sau dùng đúng một tiến trình mới, không bỏ sót tiến trình nào", async () => {
+    await closeOcr();
+    const dir = mkdtempSync(join(tmpdir(), "mgi-fake-ocr-"));
+    const pidsFile = join(dir, "pids");
+    writeFileSync(join(dir, "hang"), "");
+    Object.assign(process.env, { FAKE_OCR_HANG_START: join(dir, "hang"), FAKE_OCR_PIDS: pidsFile });
+    try {
+      await expect(ocrLines(image("A"))).rejects.toThrow("Đọc ảnh quá 1 giây.");
+      expect(await ocrLines(image("B"))).toEqual(["B"]);
+      expect(await ocrLines(image("C"))).toEqual(["C"]);
+      const pids = readFileSync(pidsFile, "utf8").split("\n").filter(Boolean).map(Number);
+      expect(pids).toHaveLength(2);
+      await closeOcr();
+      const alive = (pid: number) => {
+        try {
+          process.kill(pid, 0);
+          return true;
+        } catch {
+          return false;
+        }
+      };
+      for (let i = 0; i < 40 && pids.some(alive); i++) await new Promise((r) => setTimeout(r, 50));
+      expect(pids.filter(alive)).toEqual([]);
+    } finally {
+      delete process.env.FAKE_OCR_HANG_START;
+      delete process.env.FAKE_OCR_PIDS;
+      rmSync(dir, { recursive: true, force: true });
+    }
   });
 });

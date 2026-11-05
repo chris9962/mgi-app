@@ -71,11 +71,14 @@ function start(): Promise<Server> {
 }
 
 async function ask(image: Uint8Array, code: string | undefined): Promise<string[]> {
-  if (!server)
-    server = start().catch((e) => {
-      server = null;
+  if (!server) {
+    // Tiến trình bị giết vì quá giờ lúc đang mở báo lỗi sau khi lượt kế đã mở tiến trình mới: chỉ xoá khi server còn là đúng lượt mở này.
+    const starting: Promise<Server> = start().catch((e) => {
+      if (server === starting) server = null;
       throw e;
     });
+    server = starting;
+  }
   const s = await server;
   if (s.died) throw s.died;
   const dir = await mkdtemp(path.join(tmpdir(), "mgi-ocr-"));
