@@ -1,9 +1,10 @@
 import type { Metadata } from "next";
+import { BRAND_NAME } from "@/lib/brand";
 import "@/fonts/google-sans.css";
 import "./globals.css";
 
 export const metadata: Metadata = {
-  title: "Minh Group ST",
+  title: { default: BRAND_NAME, template: `%s - ${BRAND_NAME}` },
   icons: { icon: "/brand/logo.png" },
 };
 

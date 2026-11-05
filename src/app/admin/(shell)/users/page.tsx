@@ -9,7 +9,7 @@ import { ROLE_LABEL } from "@/lib/types";
 import { requirePage } from "@/server/auth/current";
 import { listUsers, PAGE_SIZE } from "@/server/users";
 
-export const metadata = { title: "Tài khoản - Minh Group ST" };
+export const metadata = { title: "Tài khoản" };
 
 export default async function UsersPage({ searchParams }: { searchParams: Promise<{ q?: string; page?: string }> }) {
   const actor = await requirePage("users");

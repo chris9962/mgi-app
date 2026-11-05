@@ -3,7 +3,7 @@ import { ChangePasswordRow, EditInfoRow } from "@/components/profile/ProfileActi
 import { ROLE_LABEL } from "@/lib/types";
 import { requirePage } from "@/server/auth/current";
 
-export const metadata = { title: "Cá nhân - Minh Group ST" };
+export const metadata = { title: "Cá nhân" };
 
 function Group({ title, children }: { title: string; children: React.ReactNode }) {
   return (

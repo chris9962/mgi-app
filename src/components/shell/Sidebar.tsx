@@ -6,6 +6,7 @@ import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
 import { useState } from "react";
 import { Logo } from "@/components/ui/Logo";
+import { BRAND_NAME } from "@/lib/brand";
 import type { MenuGroup } from "./menu";
 
 const GROUP_ICON: Record<string, React.ReactNode> = { manage: <Building2 size={18} aria-hidden /> };
@@ -41,7 +42,7 @@ export function Sidebar({ groups, fullName, title }: { groups: MenuGroup[]; full
     <nav aria-label="Điều hướng chính" className="flex w-[248px] flex-none flex-col border-r border-line bg-sidebar text-sidebar-ink">
       <div className="flex items-center gap-2.5 px-5 py-5">
         <Logo size={30} />
-        <span className="text-base font-semibold">Minh Group ST</span>
+        <span className="text-base leading-tight font-semibold">{BRAND_NAME}</span>
       </div>
       <ul className="flex flex-1 flex-col gap-1 px-3">
         {groups.map((g) => {

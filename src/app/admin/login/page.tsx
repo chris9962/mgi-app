@@ -4,7 +4,7 @@ import { BrandPanel } from "@/components/brand/BrandPanel";
 import { Logo } from "@/components/ui/Logo";
 import { LoginForm } from "./LoginForm";
 
-export const metadata = { title: "Đăng nhập - Minh Group ST" };
+export const metadata = { title: "Đăng nhập" };
 
 export default async function LoginPage() {
   if (await currentUser()) redirect("/");
