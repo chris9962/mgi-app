@@ -13,15 +13,22 @@ describe("Nginx", () => {
     expect(proxy).toContain("proxy_set_header X-Forwarded-Proto $scheme;");
   });
 
-  test("giới hạn request theo IP ngưỡng cao; đường gửi ảnh có vùng riêng; trả 429", () => {
+  test("giới hạn request theo IP ngưỡng cao; đường gửi ảnh và đường tạo hồ sơ có vùng riêng; trả 429", () => {
     const zones = read("deploy/nginx/limits.conf");
     const rate = (zone: string) => Number(zones.match(new RegExp(`zone=${zone}:\\S+ rate=(\\d+)r/s`))?.[1]);
     expect(rate("mgi_bank_ip")).toBeGreaterThanOrEqual(20);
-    expect(rate("mgi_bank_photo")).toBeGreaterThanOrEqual(1);
     expect(zones).toContain("limit_req_status 429;");
     const app = read("deploy/nginx/app.conf");
-    expect(app).toMatch(/limit_req zone=mgi_bank_ip burst=(\d{3,}) nodelay;/);
-    expect(app).toMatch(/location \^~ \/api\/customers\/me\/photos[\s\S]*?limit_req zone=mgi_bank_photo/);
+    const burst = (location: string, zone: string) => Number(app.match(new RegExp(`location ${location} \\{[^}]*?limit_req zone=${zone} burst=(\\d+) nodelay;`))?.[1]);
+    expect(burst("/", "mgi_bank_ip")).toBeGreaterThanOrEqual(100);
+    // Mỗi ảnh một request: 300 học sinh chung một IP Wi-Fi, mỗi em 3 tới 6 ảnh trong 10 phút là tới 1.800 request, một lớp 40 em gửi cùng lúc là 240.
+    expect(rate("mgi_bank_photo") * 600 + burst("\\^~ /api/customers/me/photos", "mgi_bank_photo")).toBeGreaterThanOrEqual(1800 * 2);
+    expect(burst("\\^~ /api/customers/me/photos", "mgi_bank_photo")).toBeGreaterThanOrEqual(240);
+    // B1 tạo hồ sơ: 300 em trong 10 phút, một lớp cùng lúc; vùng riêng chặt hơn vùng chung để một máy không đổ hồ sơ rác.
+    expect(rate("mgi_bank_create")).toBeGreaterThanOrEqual(1);
+    expect(rate("mgi_bank_create")).toBeLessThan(rate("mgi_bank_ip"));
+    expect(rate("mgi_bank_create") * 600 + burst("= /api/customers", "mgi_bank_create")).toBeGreaterThanOrEqual(300 * 2);
+    expect(burst("= /api/customers", "mgi_bank_create")).toBeGreaterThanOrEqual(40);
   });
 
   test("ảnh tải qua app: trần body ít nhất 20 MB ở cả hai tên miền", () => {

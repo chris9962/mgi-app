@@ -99,7 +99,7 @@ Người điều phối báo ngày 2026-11-05: ngay sau giai đoạn 7, cơ ch�
 - Thiếu `OCR_PYTHON` không sửa code: image đặt biến, script deploy thử OCR trước khi thay container.
 - Cổng 3200, 3201, 5436 cho production, 3210, 5437 cho bản test, tránh cổng của mgst-app.
 - App và worker gọi DB bằng tên container trong mạng Docker riêng, không dùng `host.docker.internal`.
-- Nginx ghi đè `X-Forwarded-For`; 30 request mỗi giây dồn 600 theo IP; đường gửi ảnh 2 mỗi giây dồn 200; file tĩnh không giới hạn; trần body 22 MB.
+- Nginx ghi đè `X-Forwarded-For`; 30 request mỗi giây dồn 600 theo IP; đường gửi ảnh 10 request mỗi giây dồn 300 (sửa theo review lần 1, bản đầu ghi 2 mỗi giây dồn 200); đường tạo hồ sơ thêm vùng 2 mỗi giây dồn 100; file tĩnh không giới hạn; trần body 22 MB.
 - `worker-sms.sh` đòi cờ `--chap-nhan-chi-ghi-log` khi chưa nối nhà cung cấp SMS.
 - Bản test chỉ chạy app và DB, bucket riêng, app trần 1 GB.
 - Trang bảo trì bỏ đếm ngược, tự tải lại mỗi 30 giây.

@@ -214,13 +214,15 @@ Cấu hình làm năm việc:
 
 - Chuyển đúng header `Host`. `src/proxy.ts` chọn trang quản lý hay web học sinh theo Host, thiếu header thì mọi trang trả 404.
 - Ghi đè `X-Forwarded-For` bằng địa chỉ thật của kết nối. App lấy địa chỉ cuối của header này cho `audit_log.ip` và `customers.created_ip` (`src/server/http/ip.ts`). Học sinh tự khai header thì bị Nginx ghi đè.
-- Giới hạn request theo IP với ngưỡng cao, vì cả trường dùng chung một IP Wi-Fi: 30 request mỗi giây, dồn được 600. Đường gửi ảnh `/api/customers/me/photos` có vùng riêng: 2 lượt mỗi giây, dồn được 200. File tĩnh `/_next/static/` không tính. Vượt ngưỡng thì trả 429.
+- Giới hạn request theo IP với ngưỡng cao, vì cả trường dùng chung một IP Wi-Fi: 30 request mỗi giây, dồn được 600. File tĩnh `/_next/static/` không tính. Vượt ngưỡng thì trả 429.
+- Đường gửi ảnh `/api/customers/me/photos` có vùng riêng: 10 request mỗi giây, dồn được 300. Mỗi ảnh là một request. Cách tính: 300 học sinh chung một IP, mỗi em 3 tới 6 ảnh trong 10 phút là tới 1.800 request; một lớp 40 em gửi cùng lúc là tới 240.
+- Đường tạo hồ sơ `POST /api/customers` (B1) có thêm vùng riêng: 2 request mỗi giây, dồn được 100. Cách tính: 300 em tạo hồ sơ trong 10 phút, một lớp 40 em cùng lúc. Vùng này chặn một máy đổ hàng nghìn hồ sơ rác.
 - Trần body 22 MB ở cả hai tên miền (`client_max_body_size 22m` trong `deploy/nginx/app.conf`): ảnh tối đa 20 MB cộng phần bao của multipart. Trong app có thêm hai trần. `next.config.ts` đặt `experimental.proxyClientMaxBodySize` là 22 MB, vì `src/proxy.ts` chạy cho mọi đường dẫn và Next chỉ giữ 10 MB body khi có proxy, ảnh lớn hơn bị cắt. `putImage` từ chối file quá 20 MB.
 - Bảo trì: file `deploy/maintenance/on` có thì trang trả 503 với trang bảo trì, API trả 503 với JSON. `deploy/maintenance-on.sh` và `deploy/maintenance-off.sh` bật tắt, không cần reload Nginx.
 
 Đặt thêm proxy khác (Cloudflare, cân bằng tải) trước Nginx thì `$remote_addr` thành địa chỉ của proxy đó. Khi đó phải cấu hình module `real_ip` trước, không thì mọi học sinh chung một IP và chung một ngưỡng.
 
-Đã kiểm ngày 2026-11-05 bằng `nginx:alpine` nạp đúng ba file của repo, phía sau là một máy chủ in lại header:
+Đã kiểm ngày 2026-11-05 bằng `nginx:alpine` nạp đúng ba file của repo, phía sau là một máy chủ in lại header. Bốn dòng về ảnh và hồ sơ đo lại sau khi đổi ngưỡng theo review:
 
 | Ca | Kết quả |
 |---|---|
@@ -232,7 +234,10 @@ Cấu hình làm năm việc:
 | Bảo trì tắt | 200 |
 | 800 request API liền nhau từ một IP | 695 qua, 105 nhận 429 |
 | 800 request file tĩnh | 800 qua |
-| 260 lượt gửi ảnh liền nhau | 203 qua, 57 nhận 429 |
+| 240 ảnh gửi cùng lúc (một lớp) | 240 qua |
+| 4 ảnh mỗi giây trong 60 giây | 240 qua |
+| 40 hồ sơ tạo cùng lúc | 40 qua |
+| 300 hồ sơ liền nhau từ một máy | 103 qua, 197 nhận 429 |
 
 ## 7. Deploy app, worker, job
 
