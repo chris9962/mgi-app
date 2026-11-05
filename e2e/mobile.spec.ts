@@ -59,8 +59,9 @@ test("điện thoại: Esc và bấm lớp phủ đóng sidebar, Esc trả focus
   await expect(sidebar(page)).toBeHidden();
 });
 
+// zz_e2e_lock chứ không zz_e2e_staff: config.spec giao ngân hàng cho zz_e2e_staff, chạy cả bộ thì tài khoản đó có quyền hồ sơ.
 test("điện thoại: Nhân viên không có quyền trang nghiệp vụ nào thì thanh đáy chỉ có nút Thêm", async ({ browser }) => {
-  const page = await loginAs(browser, "zz_e2e_staff", PHONE);
+  const page = await loginAs(browser, "zz_e2e_lock", PHONE);
   await expect(bottomNav(page).getByRole("link")).toHaveCount(0);
   await expect(bottomNav(page).getByRole("button", { name: "Thêm" })).toBeVisible();
 });
