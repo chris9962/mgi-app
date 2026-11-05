@@ -129,3 +129,48 @@ Người điều phối báo ngày 2026-11-05: ngay sau giai đoạn 7, cơ ch�
 | `db-migrate` không so số migration đã chạy với `drizzle/meta/_journal.json`; mgst-app từng gặp drizzle bỏ qua migration trùng `when` mà vẫn báo xong | Khi có hai nhánh cùng sinh migration |
 | Sao lưu chỉ giữ database, không giữ `.env.local`, `.env.backup`, file site Nginx | Chủ dự án giữ bản sao ngoài máy chủ |
 | Image worker SMS 736 MB vì cài đủ gói production | Khi đĩa máy chủ chật |
+
+### Sửa theo review lần 1
+
+Reviewer đọc giai đoạn 7 ở commit e1ba023, không thấy lỗi Critical, thấy 6 lỗi Important; người điều phối nâng 2 lỗi Minor lên vì có thể làm mất dữ liệu. Agent sửa trong một lượt ngày 2026-11-05, commit 18e3fd7 tới commit ghi mục này, sau khi phần tải ảnh chép mgst-app (a04b2ae tới af17493) đã vào `dev`. Xen giữa có commit của người điều phối (18529a8, 22bfbce, f9d05d0, ab068e9, b2c222c, 16e99bd), không thuộc lượt sửa này; bộ test cuối chạy sau tất cả. Mỗi mục một commit. Mục có code thì test viết trước, thấy fail đúng lý do rồi mới sửa. Mục script, Nginx thì kiểm bằng test cấu hình hoặc test shell, cộng một lượt chạy thật ở clone tạm, DB tạm, container tạm; mọi thứ của lượt chạy thử đã xoá.
+
+- I1 (18e3fd7): `deploy.sh` thử đăng nhập sai (đọc bảng `users`) ở bước 7 sau migrate, không ở bước 4. Kiểm: test cấu hình `tests/config/deploy.test.ts` (lời gọi `ma_login` đứng sau `bun run db:migrate`, fail trước khi sửa). Chạy thật ở clone tạm có thêm migration giả cột `users.zz_note`: `deploy.sh` của af17493 dừng ở bước 4 với `đăng nhập sai qua DB trả 500` (`column "zz_note" does not exist`), DB không được migrate; bản đã sửa chạy qua, migrate 1 migration mới, bước 7 trả 401.
+- I2 (e3a2352): `deploy/lib.sh` kiểm `DATABASE_URL` của `.env.local` trỏ đúng `127.0.0.1:<cổng của môi trường>` ngay lúc nạp rồi export biến đó, nên mọi lệnh `bun` trong `deploy.sh`, `db.sh`, `test-env.sh` (migrate, seed) dùng đúng DB dù shell của root còn giữ URL khác. Kiểm: `tests/config/deployShell.test.ts` chạy `lib.sh` thật trong thư mục tạm với `DATABASE_URL` production trong shell (fail trước khi sửa: `bun` nhận URL production). Chạy thật: `test-env.sh update` trong clone tạm `mgi-bank-test`, shell export URL của một Postgres mồi ở cổng 5436; DB bản test (5437) nhận 9 migration, DB mồi không có schema `drizzle`. `deploy.sh` cũng chạy đúng DB khi shell đặt `DATABASE_URL` sai.
+- I3 (bfd0069): `db-restore --that` xoá hẳn database ghi trong `DATABASE_URL` (`drop database ... with (force)`) rồi tạo lại trước khi khôi phục, không dùng `pg_restore --clean`. `dropDatabase` giữ luật chỉ xoá `zz_test_...` và `..._thu`; hàm mới `recreateDatabase` chỉ nhận database của `DATABASE_URL`. Kiểm: `tests/db/backup.test.ts` chạy script thật trên database tạm `zz_test_restore_that_*`, tạo bảng và kiểu sau giờ dump; trước khi sửa cả hai còn nằm lại, sau khi sửa không còn và bảng migration về đúng bản dump. Chạy thật ở clone tạm: lùi theo `docs/deploy.md` mục 9 rồi deploy lại, migration bị lùi được áp lại không lỗi.
+- I4 (0de536d): container app có trần RAM `APP_MEMORY`, production mặc định `3g`, bản test `2g`. Đo trên máy local: đổi một ảnh HEIC 8000x6000 (48 MP) bằng `toWebpOnServer` đạt đỉnh 1,22 GB RSS, 10 giây. Kiểm: test cấu hình (fail trước khi sửa); chạy thật `docker inspect` cho 3 GB ở app production thử và 2 GB ở app bản test.
+- I5 (6a6639f): vùng gửi ảnh 10 request mỗi giây, dồn 300; đường `POST /api/customers` (B1) thêm vùng riêng 2 mỗi giây, dồn 100. Kiểm: test cấu hình tính tải 300 học sinh x 6 ảnh trong 10 phút (fail trước khi sửa: 1.400 so với 3.600 cần). Chạy thật bằng `nginx:alpine`: 240 ảnh cùng lúc qua hết, 4 ảnh mỗi giây trong 60 giây qua hết, 40 hồ sơ cùng lúc qua hết, 300 hồ sơ liền nhau từ một máy chỉ 103 qua. Sửa câu ruling cũ "đường gửi ảnh 2 mỗi giây dồn 200".
+- I6 (4b901a7): Nginx gửi `Strict-Transport-Security: max-age=31536000` qua https ở mọi phản hồi, kể cả hai location bảo trì vốn tự đặt `add_header`; không gửi qua http. Kiểm: test cấu hình (fail trước khi sửa); `nginx:alpine` với chứng chỉ tự ký: https trả header ở trang, API, trang bảo trì 503, JSON bảo trì 503; http không có header.
+- M7 nâng lên (1f68aa8): job dọn ảnh mồ côi dừng, không xoá ảnh nào, thoát mã 1 khi DB không có dòng `proof_photos` mà bucket còn ảnh cũ, hoặc hơn 20 ảnh và hơn 10% ảnh cũ không dòng nào trỏ tới. Cờ `--bo-chan` xoá sau khi người vận hành xem `--dry-run`. Kiểm: `tests/unit/orphanGuard.test.ts`; `tests/s3/orphans.test.ts` ghi 25 ảnh không dòng nào trỏ tới vào thư mục `proofs/2099-01-02/` của bucket dev (trước khi sửa job xoá cả 25; sau khi sửa job dừng, 25 ảnh còn nguyên, `force` mới xoá).
+- M8 nâng lên (63596e4): `db-backup.ts` dừng trước khi đẩy lên S3 và trước khi dọn bản cũ khi bản dump mới nhỏ hơn nửa bản mới nhất trên S3; `BACKUP_ALLOW_SHRINK=1` cho một lượt chạy tay. Sửa comment của `dumpDatabase`: bước đọc mục lục chỉ chứng minh file đọc được và có mục dữ liệu bảng `users`, không chứng minh có dòng. Kiểm: `tests/unit/backup.test.ts` (fail trước khi sửa vì chưa có hàm). Không chạy thật cả script: cần bucket sao lưu khác bucket ảnh, agent chỉ được dùng `mgi-bank-dev`.
+
+Ruling mới:
+
+- Thử đăng nhập sai chỉ ở bước 7, sau migrate. Bước thử image ở cổng phụ không còn đường nào đọc DB; image hỏng đường DB thì lộ ở bước 7 và script tự lùi.
+- `lib.sh` export `DATABASE_URL` của `.env.local` thay vì `unset`, để lệnh `bun` nhận đúng giá trị đã kiểm dù package script đọc `.env.local` hay không.
+- Trần RAM app 3 GB đủ hai ảnh HEIC 48 MP đổi cùng lúc; bản test 2 GB đủ một ảnh. Vượt trần thì Docker dừng app rồi chạy lại, request đang dở lỗi.
+- Ngưỡng ảnh 10 mỗi giây dồn 300 tính cho 300 học sinh chung một IP, mỗi em tới 6 ảnh trong 10 phút, gấp đôi để dư. Ngưỡng tạo hồ sơ 2 mỗi giây dồn 100.
+- HSTS 1 năm, không `includeSubDomains`, không `preload`, đặt trong repo thay vì cờ `--hsts` của certbot.
+- Chốt chặn dọn ảnh: hơn 20 ảnh và hơn 10% ảnh cũ, hoặc DB không có dòng nào.
+- Chốt sao lưu: so dung lượng với bản mới nhất trên S3, ngưỡng một nửa, không so số dòng từng bảng.
+
+Ghi cho chủ dự án: thiết kế ghi "mỗi lần xem ảnh ghi `audit_log`". Bản hiện tại ghi một dòng cho mỗi người, mỗi ảnh, mỗi 10 phút (hạn link xem ảnh). Lý do: Trang 4 tải lại mọi ảnh mỗi lần mở, bảng `audit_log` phình theo số lần tải trang. Chủ dự án muốn ghi đủ mọi lần xem thì bỏ câu kiểm 10 phút ở `photoForView`.
+
+Test sau lần sửa: `bun run test` 211 pass, `bun test:db` 199 pass, `bun test:s3` 29 pass, `bun run e2e` 19 pass, `bunx tsc --noEmit` sạch, `bun run lint` 0 lỗi (2 cảnh báo `<img>` cũ). Dữ liệu của chủ dự án trong DB local giữ nguyên trước và sau mọi lượt chạy: 13 ngân hàng (12 thật và ZZVPB), 61 khung ảnh, trường ZZDEMO, 9 mã `ND-*`, tài khoản `admin`, 3 hồ sơ thử ở ZZDEMO với 2 dòng ngân hàng và 12 ảnh.
+
+Việc để lại thêm (Minor của review lần 1, chưa sửa):
+
+| Việc | Khi nào |
+|---|---|
+| `deploy.sh` để bảo trì bật khi migrate hoặc `docker run` lỗi; cần `trap` tắt bảo trì | Khi sửa `deploy.sh` |
+| `db:restore` từ file trên đĩa vẫn đòi `.env.backup` | Khi sửa `db-restore.ts` |
+| Khôi phục đè không dừng `mgi-bank-ops-watch` và `mgi-bank-s3-orphans` | Khi sửa `db-restore.ts`; tạm thời người vận hành chạy `systemctl stop` hai unit đó |
+| Comment ở `src/server/http/ip.ts:3` và tên test ở `tests/unit/ip.test.ts:7` nói Nginx "nối" `X-Forwarded-For`; Nginx nay ghi đè | Khi sửa file đó |
+| Chưa có khối `default_server` cho cổng 443 khi chung máy với mgst-app: Host lạ có thể rơi vào site của hệ kia | Lúc cài Nginx trên máy chủ |
+| Thiết kế ghi Nginx chặn `/api/admin` trên tên miền học sinh (nay chỉ app chặn) và có `GET /api/admin/ops` (không có route này, Trang 18 đọc thẳng ở máy chủ) | Khi cập nhật thiết kế |
+| `app.conf` ghi cứng đường dẫn `/opt/mgi-bank` cho `proxy.conf`, bản test dùng chung; hai môi trường dùng chung vùng giới hạn request | Khi bản test cần cấu hình riêng |
+| Bản dump trước deploy ở `/root` không bao giờ được dọn | Khi đĩa máy chủ chật |
+| `docs/deploy.md`: vài cảnh báo đặt sau bước (mục 8, mục 12), thiếu bước kiểm `timedatectl` (timer và tên file sao lưu theo giờ máy chủ), vài câu dài ở mục 6 | Khi sửa tài liệu |
+| Ô Ổ đĩa của Trang 18 tính theo tổng phân vùng, không trừ 5% dành cho root | Khi user cần |
+| Mật khẩu DB lộ trong tham số `docker run` của `db.sh` (`docker inspect` đọc được) | Khi siết bảo mật máy chủ |
+| Cờ gõ sai kiểu `--truog=` bị bỏ qua im lặng (chỉ cờ bắt đầu bằng `--truong` bị kiểm) | Khi sửa worker |
+| Ô tên ngân hàng trong bảng Kiểm ảnh nên là `th scope="row"`; nhãn "Vượt 80%" hiện cả khi đúng 80% | Khi sửa Trang 18 |
