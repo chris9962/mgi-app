@@ -104,3 +104,35 @@ Agent làm xong 4 task ngày 2026-11-05, commit 1d278eb tới commit ghi mục n
 | Lượt đọc quá 5 phút thì worker khác nhận lại và đọc trùng; kết quả vẫn chỉ ghi một lần | Khi chạy nhiều worker |
 | Trang Vận hành hệ thống chưa hiện hàng chờ `photo_checks` | Giai đoạn 7 |
 
+
+### Sửa theo review lần 1
+
+Reviewer đọc giai đoạn 6 ngày 2026-11-05, thấy 4 lỗi Important và nâng 2 lỗi Minor lên, không có Critical. Agent sửa trong một lượt, commit 21c4f6a tới commit ghi mục này. Mỗi mục có test viết trước, thấy fail đúng lý do rồi mới sửa.
+
+- I1 và Minor 7: hai worker nhận định dạng ảnh theo nội dung file (`imageExtOf`), không theo đuôi khoá. Worker kiểm ảnh đổi HEIC sang JPEG bằng `heic-convert` trước khi đưa OCR, vì OpenCV không mở được HEIC và ảnh thay thế HEIC được kiểm trước khi worker nén quét tới. Test OCR thật: ảnh HEIC dưới khoá `.heic` và `.jpg` chưa nén cho kết quả `done` (trước đó `failed`). Test S3: HEIC dưới khoá `.jpg` nén ra webp (trước đó `failed`).
+- I2: nhánh "tên nối liền chuyen tien" chỉ đạt khi chữ trước tên khớp `^(NOIDUNG|LOINHAN)?[A-Z]{0,2}$`, phía sau có gì cũng được. Test unit: "NGUYEN TRAN MINH ANH chuyen tien" và "Noi dung: LE VAN TRAN MINH ANH chuyen tien den ban" không đạt cho Trần Minh Anh; "Noi dung: TRAN MINH ANH chuyen tien" và "TRAN MINH ANH chuyen tien" vẫn đạt.
+- I3: `reader.ts` có thời gian chờ mỗi ảnh `OCR_TIMEOUT_MS` (mặc định 120 giây, dưới 5 phút giữ lượt). Quá giờ thì giết tiến trình Python, lượt đó ghi `failed` với lý do "Đọc ảnh quá 120 giây.", lượt sau mở tiến trình mới. Dòng trả lời có chữ rác dính trước JSON vẫn đọc được. Test unit trỏ reader sang OCR giả chạy bằng bun (`tests/support/fakeOcrServer.ts`): treo thì lỗi sau thời gian chờ và lượt sau đọc được, chết thì lượt sau mở lại, chữ rác vẫn đọc được.
+- I4: worker nén nhận ảnh bằng một câu update tăng `compress_attempts` và ghi `compress_tried_at` (migration 0005), commit trước khi tải. Tải, nén, ghi S3 nằm ngoài transaction, không giữ khoá dòng. Kết quả ghi với điều kiện `s3_key` còn là khoá cũ; dòng đã đổi thì xoá ảnh vừa nén nếu không dòng nào trỏ tới. Tải và ghi S3 có thời gian chờ `COMPRESS_TIMEOUT_MS` (mặc định 60 giây), sharp giới hạn 100 MP. Test S3: số lần thử thấy được bằng 1 khi worker còn đang tải (trước đó 0); học sinh chụp lại lúc worker đang nén không bị chặn, dòng giữ ảnh mới, ảnh vừa nén bị xoá (trước đó chờ khoá tới lock timeout).
+- M1: ảnh nén lỗi chờ 5 phút nhân số lần đã thử mới được lấy lại. Vòng có ảnh lỗi không chạy vòng kế ngay (`runAgainNow`). Test S3: sau lần lỗi thứ hai, 6 phút vẫn chưa được thử lại (trước đó được), 11 phút thì được.
+- M8: hàng chờ nén và hàng chờ kiểm ảnh nhận danh sách trường, hai worker nhận cờ `--truong=<id>[,<id>]`; không truyền thì xử lý hết như cũ. Test hàng chờ, test script và e2e đều truyền trường của mình, nên không còn giả định dòng test nằm trong 20 dòng cũ nhất của DB local và không nén ảnh thật. Test: hàng chờ theo trường không có dòng của trường test khác; `--mot-vong --truong` không chạm ảnh, lượt của trường khác.
+
+Ruling:
+
+- Giữ nhánh CHUYENTIEN của `lineHasName` vì chủ dự án bảo làm tương tự mgst-app, nhưng chữ trước tên chỉ được là nhãn NOIDUNG hoặc LOINHAN cộng tối đa 2 chữ cái. Người điều phối chốt ngày 2026-11-05.
+- Lần nén thành công cũng để `compress_attempts` bằng 1, vì lần thử ghi trước khi tải.
+- Hạn thử lại là 5 phút nhân `compress_attempts` (5 phút sau lần 1, 10 phút sau lần 2). Cùng cột dùng làm hạn giữ ảnh đang nén.
+- Phạm vi worker theo trường, không theo id hồ sơ, vì e2e chỉ biết sẵn id trường `E2E_STUDENT_SCHOOL_ID`.
+
+Test sau lần sửa: `bun run test` 144 pass, `bun test:db` 177 pass, `bun test:s3` 29 pass, `bun run e2e` 15 pass, `bunx tsc --noEmit` sạch, `bun run lint` 0 lỗi (2 cảnh báo `<img>` cũ).
+
+Việc để lại thêm:
+
+| Việc | Khi nào |
+|---|---|
+| Lý do lỗi OCR ở Trang 4 còn chứa đường dẫn tạm của máy chủ, ví dụ "OCR lỗi: ValueError: Không mở được ảnh /var/folders/..." | Khi sửa Trang 4 |
+| Gạch nối tính là ranh giới mã: mã `TPB-01` đạt trên dòng có `ND-TPB-01` | Khi có mã dạng này |
+| Lỗi kết nối ngay sau khi câu ghi kết quả nén đã commit ở máy chủ: dòng trỏ ảnh webp mới, ảnh gốc không bị xoá và thành rác | Giai đoạn 7 cùng job dọn object mồ côi |
+| Link xem ảnh của học sinh sống 1 giờ; worker nén xoá ảnh gốc thì link cũ trả 404 tới khi web tải lại hồ sơ | Khi user cần |
+| `scripts/ocr-server.py` còn docstring chép từ mgst-app, AGENTS cấm docstring | Khi sửa file này |
+| Lượt chờ bị worker xoá vì ngân hàng tắt hết khung kiểm thì Trang 4 hiện lượt cũ hơn, có thể tính theo họ tên cũ | Khi user cần |
+| `heic-convert` giải mã HEIC trong JavaScript, không giới hạn được số điểm ảnh; ảnh 48 MP tốn khoảng 1,2 GB RAM | Giai đoạn 7 khi đặt RAM cho container |
