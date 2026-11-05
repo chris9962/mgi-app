@@ -133,3 +133,14 @@ Ruling đổi ở lần sửa này:
 - Báo lại khoá tải lên đã ghi thì trả 400 thay vì ok, vì khoá tải lên bị xoá sau khi ghi.
 
 Test sau lần sửa: `bun run test` 95 pass, `bun test:db` 101 pass, `bun test:s3` 6 pass, `bun run e2e` 12 pass, `bunx tsc --noEmit` sạch, `bun run lint` 0 lỗi (2 cảnh báo `<img>` cũ).
+
+### Review lần 2
+
+Agent review ngày 2026-11-05 kết luận sẵn sàng: không còn lỗi Critical hay Important. Bảy đột biến code đều làm test mới fail. Việc nhỏ ghi thêm:
+
+| Việc | Khi nào |
+|---|---|
+| Object mồ côi trong `proofs/` khi chép xong mà transaction lỗi; lifecycle của `uploads/` không dọn được | Giai đoạn 7 |
+| Báo lại khoá tải lên đã ghi trả 400, học sinh thấy "Chưa tải được ảnh lên" dù ảnh đã lưu | Khi sửa màn nộp ảnh |
+| Chưa có trần tổng dung lượng bucket, xin link tải lên không giới hạn số lần | Giai đoạn 7 (Nginx, lifecycle) |
+| `.filter((k) => k !== stored)` ở `customerPhotos.ts` là code chết | Khi sửa file này |
