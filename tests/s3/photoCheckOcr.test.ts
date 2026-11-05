@@ -17,18 +17,19 @@ if (process.env.S3_BUCKET === "mgst-images") throw new Error("Không chạy test
 const withOcr = process.env.OCR_PYTHON ? describe : describe.skip;
 
 let p: Program;
+let other: Program;
 const keys: string[] = [];
 
 // Một hồ sơ đã gửi kiểm tra ở ngân hàng A, khung duy nhất bật kiểm họ tên và mã, ảnh vẽ đúng chữ trên màn.
-async function queued(system: { name: string; code: string }, onImage: { name: string; code: string }, file?: { bytes: Uint8Array; ext: string }) {
-  const c = await insertCustomer(p, { fullName: system.name, status: "pending_review", submittedAt: new Date(), banks: [{ key: "A", status: "pending" }] });
+async function queued(system: { name: string; code: string }, onImage: { name: string; code: string }, file?: { bytes: Uint8Array; ext: string }, program = p) {
+  const c = await insertCustomer(program, { fullName: system.name, status: "pending_review", submittedAt: new Date(), banks: [{ key: "A", status: "pending" }] });
   const cb = c.rows.A;
   await db.update(customerBanks).set({ referralCode: system.code }).where(eq(customerBanks.id, cb));
   const key = newKey("proofs", file?.ext ?? "webp");
   keys.push(key);
   const bytes = file?.bytes ?? (await bankScreen(onImage));
   await writeImage(key, bytes);
-  await db.insert(proofPhotos).values({ customerBankId: cb, slotId: p.slot.A, s3Key: key, sizeBytes: bytes.length });
+  await db.insert(proofPhotos).values({ customerBankId: cb, slotId: program.slot.A, s3Key: key, sizeBytes: bytes.length });
   await db.transaction((tx) => queuePhotoChecks(tx, [cb]));
   const [check] = await db.select().from(photoChecks).where(and(eq(photoChecks.customerBankId, cb), eq(photoChecks.status, "pending")));
   return check.id;
@@ -39,6 +40,7 @@ const checkRow = async (id: string) => (await db.select().from(photoChecks).wher
 beforeAll(async () => {
   await cleanTestUsers();
   p = await setupProgram("pocr", ["A"]);
+  other = await setupProgram("pocx", ["A"]);
   await db.update(bankPhotoSlots).set({ checkName: true, checkCode: true }).where(eq(bankPhotoSlots.id, p.slot.A));
 });
 afterAll(async () => {
@@ -84,15 +86,19 @@ withOcr("scripts/photo-check-worker.ts", () => {
   const worker = (...args: string[]) => spawn("bun", ["scripts/photo-check-worker.ts", ...args], { env: process.env, stdio: ["ignore", "pipe", "pipe"] });
   const exited = (child: ReturnType<typeof worker>) => new Promise<number | null>((resolve) => child.on("exit", (code) => resolve(code)));
 
-  test("--mot-vong kiểm lượt đang chờ rồi thoát", async () => {
-    const id = await queued({ name: "Đỗ Thị Ánh Tuyết", code: "OI10" }, { name: "ĐỖ THỊ ÁNH TUYẾT", code: "OI10" });
-    expect(await exited(worker("--mot-vong"))).toBe(0);
+  test("--mot-vong --truong kiểm lượt đang chờ của trường đó rồi thoát, không chạm lượt của trường khác", async () => {
+    const screen = { name: "Đỗ Thị Ánh Tuyết", code: "OI10" };
+    const id = await queued(screen, screen);
+    const otherId = await queued(screen, screen, undefined, other);
+    expect(await exited(worker("--mot-vong", `--truong=${p.schoolId}`))).toBe(0);
     const row = await checkRow(id);
     expect([row.status, row.passed, row.total]).toEqual(["done", 1, 1]);
+    const untouched = await checkRow(otherId);
+    expect([untouched.status, untouched.claimedAt]).toEqual(["pending", null]);
   }, 180_000);
 
   test("SIGTERM thì dừng và thoát mã 0", async () => {
-    const child = worker();
+    const child = worker(`--truong=${p.schoolId}`);
     let out = "";
     child.stdout!.on("data", (d) => (out += d));
     const done = exited(child);

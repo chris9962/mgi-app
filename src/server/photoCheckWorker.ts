@@ -5,6 +5,7 @@ import { heicToJpeg } from "./heic";
 import { judgeSlot, partsOf, type CheckValues } from "./ocr/judge";
 import { ocrLines } from "./ocr/reader";
 import { imageExtOf, readImage } from "./storage";
+import { ofSchools } from "./workerScope";
 import type { PhotoCheckItem } from "@/lib/photoCheck";
 
 // Nửa worker của kiểm ảnh. Nửa xếp lượt nằm ở photoChecks.ts, chạy trong app; file này kéo theo tiến trình OCR nên chỉ worker import.
@@ -19,11 +20,11 @@ export type PhotoCheckDeps = {
 };
 export const ocrDeps: PhotoCheckDeps = { read: readImage, ocr: ocrLines };
 
-export async function pendingPhotoCheckIds(limit = BATCH): Promise<string[]> {
+export async function pendingPhotoCheckIds(limit = BATCH, schoolIds?: string[]): Promise<string[]> {
   const rows = await db
     .select({ id: photoChecks.id })
     .from(photoChecks)
-    .where(and(eq(photoChecks.status, "pending"), claimable))
+    .where(and(eq(photoChecks.status, "pending"), claimable, ofSchools(photoChecks.customerBankId, schoolIds)))
     .orderBy(asc(photoChecks.createdAt))
     .limit(limit);
   return rows.map((r) => r.id);
@@ -116,9 +117,9 @@ export async function runPhotoCheck(id: string, deps: PhotoCheckDeps = ocrDeps):
 }
 
 // Một vòng của worker: tối đa BATCH lượt cũ nhất; stopped() đúng thì dừng sau lượt đang đọc.
-export async function runPhotoCheckRound(deps: PhotoCheckDeps = ocrDeps, stopped: () => boolean = () => false): Promise<Record<CheckOutcome, number>> {
+export async function runPhotoCheckRound(deps: PhotoCheckDeps = ocrDeps, stopped: () => boolean = () => false, schoolIds?: string[]): Promise<Record<CheckOutcome, number>> {
   const tally: Record<CheckOutcome, number> = { done: 0, failed: 0, dropped: 0, skipped: 0 };
-  for (const id of await pendingPhotoCheckIds()) {
+  for (const id of await pendingPhotoCheckIds(BATCH, schoolIds)) {
     if (stopped()) break;
     tally[await runPhotoCheck(id, deps)] += 1;
   }

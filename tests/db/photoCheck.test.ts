@@ -5,7 +5,7 @@ import { insertCustomer, setupProgram, type Program } from "./fixtures";
 import { db } from "../../src/server/db/client";
 import { bankPhotoSlots, customerBanks, photoChecks, proofPhotos } from "../../src/server/db/schema";
 import { queuePhotoChecks } from "../../src/server/photoChecks";
-import { pendingPhotoCheckIds, runPhotoCheck, type PhotoCheckDeps } from "../../src/server/photoCheckWorker";
+import { BATCH, pendingPhotoCheckIds, runPhotoCheck, type PhotoCheckDeps } from "../../src/server/photoCheckWorker";
 import { newKey } from "../../src/server/storage";
 
 // S3 và OCR là hệ ngoài: ảnh giả là chữ UTF-8, OCR giả trả từng dòng của chữ đó. Test OCR thật nằm ở tests/s3/photoCheckOcr.test.ts.
@@ -65,6 +65,15 @@ describe("hàng chờ kiểm ảnh", () => {
     await db.insert(photoChecks).values({ customerBankId: cb, status: "done" });
   });
 
+  test("hàng chờ giới hạn theo trường không có lượt của trường khác", async () => {
+    const other = await setupProgram("pchx", ["A"]);
+    const c = await insertCustomer(other, { fullName: "Lê Hoàng Nam", status: "pending_review", submittedAt: new Date(), banks: [{ key: "A", status: "pending" }] });
+    await db.transaction((tx) => queuePhotoChecks(tx, [c.rows.A]));
+    const [check] = await checksOf(c.rows.A);
+    expect(await pendingPhotoCheckIds(BATCH, [p.schoolId])).not.toContain(check.id);
+    expect(await pendingPhotoCheckIds(BATCH, [other.schoolId])).toContain(check.id);
+  });
+
   test("xếp lượt thay lượt pending cũ bằng lượt mới", async () => {
     const { cb, checkId } = await submitted([{ name: "Ảnh 1", checkName: true, photo: "TRAN MINH ANH" }]);
     await db.transaction((tx) => queuePhotoChecks(tx, [cb]));
@@ -83,7 +92,7 @@ describe("worker kiểm ảnh", () => {
       { name: "Ảnh không kiểm", photo: "gì cũng được" },
       { name: "Ảnh khung đã bỏ", checkName: true, removed: true, photo: "TRAN MINH ANH" },
     ]);
-    expect(await pendingPhotoCheckIds()).toContain(checkId);
+    expect(await pendingPhotoCheckIds(BATCH, [p.schoolId])).toContain(checkId);
     expect(await runPhotoCheck(checkId, fake())).toBe("done");
     const row = await checkRow(checkId);
     expect([row.status, row.passed, row.total, row.error, row.checkedAt !== null]).toEqual(["done", 1, 3, "", true]);
@@ -92,7 +101,7 @@ describe("worker kiểm ảnh", () => {
       { slotId: slotIds[1], slotName: "Ảnh chuyển khoản", expected: "Trần Minh Anh", passed: false, reason: "Không tìm thấy họ tên Trần Minh Anh trong ảnh." },
       { slotId: slotIds[2], slotName: "Ảnh mã", expected: "ND-TPB-01", passed: false, reason: "Không tìm thấy mã giới thiệu ND-TPB-01 trong ảnh." },
     ]);
-    expect(await pendingPhotoCheckIds()).not.toContain(checkId);
+    expect(await pendingPhotoCheckIds(BATCH, [p.schoolId])).not.toContain(checkId);
     const [bank] = await db.select({ status: customerBanks.status }).from(customerBanks).where(eq(customerBanks.id, cb));
     expect(bank.status).toBe("pending");
   });
@@ -173,10 +182,10 @@ describe("worker kiểm ảnh", () => {
   test("lượt đang có worker giữ thì vòng khác bỏ qua; giữ quá 5 phút thì lấy lại được", async () => {
     const { checkId } = await submitted([{ name: "Ảnh 1", checkName: true, photo: "TRAN MINH ANH" }]);
     await db.update(photoChecks).set({ claimedAt: sql`now() - interval '4 minutes'` }).where(eq(photoChecks.id, checkId));
-    expect(await pendingPhotoCheckIds()).not.toContain(checkId);
+    expect(await pendingPhotoCheckIds(BATCH, [p.schoolId])).not.toContain(checkId);
     expect(await runPhotoCheck(checkId, fake())).toBe("skipped");
     await db.update(photoChecks).set({ claimedAt: sql`now() - interval '6 minutes'` }).where(eq(photoChecks.id, checkId));
-    expect(await pendingPhotoCheckIds()).toContain(checkId);
+    expect(await pendingPhotoCheckIds(BATCH, [p.schoolId])).toContain(checkId);
     expect(await runPhotoCheck(checkId, fake())).toBe("done");
   });
 
@@ -186,7 +195,7 @@ describe("worker kiểm ảnh", () => {
     expect(await runPhotoCheck(checkId, broken)).toBe("failed");
     const row = await checkRow(checkId);
     expect([row.status, row.error, row.result, row.checkedAt !== null]).toEqual(["failed", "Tiến trình OCR thoát (1).", null, true]);
-    expect(await pendingPhotoCheckIds()).not.toContain(checkId);
+    expect(await pendingPhotoCheckIds(BATCH, [p.schoolId])).not.toContain(checkId);
     expect(await runPhotoCheck(checkId, fake())).toBe("skipped");
   });
 

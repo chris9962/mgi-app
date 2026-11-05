@@ -4,6 +4,7 @@ import { db } from "./db/client";
 import { proofPhotos } from "./db/schema";
 import { heicToJpeg } from "./heic";
 import { deleteImage, imageExtOf, readImage, writeImage } from "./storage";
+import { ofSchools } from "./workerScope";
 
 export const MAX_EDGE = 1600;
 export const MAX_BYTES = 300 * 1024;
@@ -37,11 +38,11 @@ export async function toWebp(bytes: Uint8Array): Promise<Uint8Array> {
 const retryDue = or(isNull(proofPhotos.compressTriedAt), lt(proofPhotos.compressTriedAt, sql`now() - interval '5 minutes' * ${proofPhotos.compressAttempts}`));
 
 // Ảnh nén lỗi 3 lần vẫn nằm trong chỉ mục compressed_at is null, nên phải lọc số lần thử ở đây.
-export async function compressQueue(limit = BATCH): Promise<string[]> {
+export async function compressQueue(limit = BATCH, schoolIds?: string[]): Promise<string[]> {
   const rows = await db
     .select({ id: proofPhotos.id })
     .from(proofPhotos)
-    .where(and(isNull(proofPhotos.compressedAt), lt(proofPhotos.compressAttempts, MAX_ATTEMPTS), retryDue))
+    .where(and(isNull(proofPhotos.compressedAt), lt(proofPhotos.compressAttempts, MAX_ATTEMPTS), retryDue, ofSchools(proofPhotos.customerBankId, schoolIds)))
     .orderBy(asc(proofPhotos.createdAt))
     .limit(limit);
   return rows.map((r) => r.id);
@@ -118,9 +119,9 @@ export async function compressOne(id: string, store: CompressStore = s3CompressS
 export const runAgainNow = (t: Record<CompressOutcome, number>): boolean => t.failed === 0 && t.compressed + t.kept + t.skipped >= BATCH;
 
 // Một vòng của worker; stopped() đúng thì dừng sau ảnh đang nén, không bỏ dở dòng nào.
-export async function runCompressQueue(store: CompressStore = s3CompressStore, stopped: () => boolean = () => false): Promise<Record<CompressOutcome, number>> {
+export async function runCompressQueue(store: CompressStore = s3CompressStore, stopped: () => boolean = () => false, schoolIds?: string[]): Promise<Record<CompressOutcome, number>> {
   const tally: Record<CompressOutcome, number> = { compressed: 0, kept: 0, failed: 0, skipped: 0 };
-  for (const id of await compressQueue()) {
+  for (const id of await compressQueue(BATCH, schoolIds)) {
     if (stopped()) break;
     tally[await compressOne(id, store)] += 1;
   }

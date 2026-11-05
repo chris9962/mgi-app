@@ -10,13 +10,14 @@ import { toHeic } from "../support/heic";
 import { insertCustomer, setupProgram, type Program } from "../db/fixtures";
 import { db } from "../../src/server/db/client";
 import { proofPhotos } from "../../src/server/db/schema";
-import { compressOne, compressQueue, MAX_BYTES, runAgainNow, s3CompressStore, type CompressStore } from "../../src/server/compress";
+import { BATCH, compressOne, compressQueue, MAX_BYTES, runAgainNow, s3CompressStore, type CompressStore } from "../../src/server/compress";
 import { deleteImage, newKey, readImage, writeImage } from "../../src/server/storage";
 
 // Chạy trên bucket dev mgi-bank-dev và DB local; mọi object test tạo ra đều xoá ở afterAll.
 if (process.env.S3_BUCKET === "mgst-images") throw new Error("Không chạy test trên bucket production của mgst-app.");
 
 let p: Program;
+let other: Program;
 const keys: string[] = [];
 
 // Ảnh chụp màn hình giả: nền chuyển màu và 40 dòng chữ, png cỡ 1 MB.
@@ -27,9 +28,9 @@ async function screenshot(width: number, height: number, format: "png" | "webp",
   return new Uint8Array(format === "png" ? await img.png().toBuffer() : await img.webp({ quality }).toBuffer());
 }
 
-async function photoRow(key: string, sizeBytes: number | null): Promise<string> {
-  const c = await insertCustomer(p, { fullName: "Cmpds Trần Minh Anh", status: "pending_review", submittedAt: new Date(), banks: [{ key: "A", status: "pending" }] });
-  const [row] = await db.insert(proofPhotos).values({ customerBankId: c.rows.A, slotId: p.slot.A, s3Key: key, sizeBytes }).returning({ id: proofPhotos.id });
+async function photoRow(key: string, sizeBytes: number | null, program = p): Promise<string> {
+  const c = await insertCustomer(program, { fullName: "Cmpds Trần Minh Anh", status: "pending_review", submittedAt: new Date(), banks: [{ key: "A", status: "pending" }] });
+  const [row] = await db.insert(proofPhotos).values({ customerBankId: c.rows.A, slotId: program.slot.A, s3Key: key, sizeBytes }).returning({ id: proofPhotos.id });
   return row.id;
 }
 
@@ -48,6 +49,7 @@ const rowOf = async (id: string) => (await db.select().from(proofPhotos).where(e
 beforeAll(async () => {
   await cleanTestUsers();
   p = await setupProgram("cmp", ["A"]);
+  other = await setupProgram("cmpx", ["A"]);
 });
 afterAll(async () => {
   for (const key of keys) await deleteImage(key).catch(() => undefined);
@@ -60,7 +62,7 @@ describe("worker nén ảnh", () => {
     expect(png.length).toBeGreaterThan(MAX_BYTES);
     const key = await stored(png, "png");
     const id = await photoRow(key, png.length);
-    expect(await compressQueue()).toContain(id);
+    expect(await compressQueue(BATCH, [p.schoolId])).toContain(id);
 
     expect(await compressOne(id)).toBe("compressed");
     const row = await rowOf(id);
@@ -73,7 +75,7 @@ describe("worker nén ảnh", () => {
     const meta = await sharp(out!).metadata();
     expect([meta.format, Math.max(meta.width!, meta.height!)]).toEqual(["webp", 1600]);
     expect(await readImage(key)).toBeNull();
-    expect(await compressQueue()).not.toContain(id);
+    expect(await compressQueue(BATCH, [p.schoolId])).not.toContain(id);
   }, 60_000);
 
   test("ảnh webp đã dưới 300 KB thì chỉ ghi compressed_at, không tải về, không đổi object", async () => {
@@ -138,6 +140,12 @@ describe("worker nén ảnh", () => {
     expect(await readImage(key)).toBeNull();
   }, 60_000);
 
+  test("hàng chờ giới hạn theo trường không có ảnh của trường khác", async () => {
+    const id = await photoRow(newKey("proofs", "jpg"), 500_000, other);
+    expect(await compressQueue(BATCH, [p.schoolId])).not.toContain(id);
+    expect(await compressQueue(BATCH, [other.schoolId])).toContain(id);
+  });
+
   test("lỗi 3 lần thì dừng: ảnh gốc giữ nguyên khoá, không còn trong hàng chờ", async () => {
     const key = newKey("proofs", "jpg");
     const id = await photoRow(key, 500_000);
@@ -149,22 +157,22 @@ describe("worker nén ảnh", () => {
     expect(await compressOne(id)).toBe("skipped");
     const row = await rowOf(id);
     expect([row.s3Key, row.compressedAt, row.compressAttempts]).toEqual([key, null, 3]);
-    expect(await compressQueue()).not.toContain(id);
+    expect(await compressQueue(BATCH, [p.schoolId])).not.toContain(id);
   }, 30_000);
 
   test("lỗi thì chờ rồi mới thử lại, lần sau chờ lâu hơn: 5 phút sau lần 1, 10 phút sau lần 2", async () => {
     const id = await photoRow(newKey("proofs", "jpg"), 500_000);
     const triedAgo = (minutes: number) => db.update(proofPhotos).set({ compressTriedAt: sql`now() - make_interval(mins => ${minutes})` }).where(eq(proofPhotos.id, id));
     expect(await compressOne(id)).toBe("failed");
-    expect(await compressQueue()).not.toContain(id);
+    expect(await compressQueue(BATCH, [p.schoolId])).not.toContain(id);
     expect(await compressOne(id)).toBe("skipped");
     await triedAgo(4);
-    expect(await compressQueue()).not.toContain(id);
+    expect(await compressQueue(BATCH, [p.schoolId])).not.toContain(id);
     await triedAgo(6);
-    expect(await compressQueue()).toContain(id);
+    expect(await compressQueue(BATCH, [p.schoolId])).toContain(id);
     expect(await compressOne(id)).toBe("failed");
     await triedAgo(6);
-    expect(await compressQueue()).not.toContain(id);
+    expect(await compressQueue(BATCH, [p.schoolId])).not.toContain(id);
     expect(await compressOne(id)).toBe("skipped");
     await triedAgo(11);
     expect(await compressOne(id)).toBe("failed");
@@ -243,17 +251,20 @@ describe("scripts/compress-worker.ts", () => {
   const worker = (...args: string[]) => spawn("bun", ["scripts/compress-worker.ts", ...args], { env: process.env, stdio: ["ignore", "pipe", "pipe"] });
   const exited = (child: ReturnType<typeof worker>) => new Promise<number | null>((resolve) => child.on("exit", (code) => resolve(code)));
 
-  test("--mot-vong nén ảnh trong hàng chờ rồi thoát", async () => {
+  test("--mot-vong --truong nén ảnh trong hàng chờ của trường đó rồi thoát, không chạm ảnh trường khác", async () => {
     const png = await screenshot(1800, 2400, "png");
-    const key = await stored(png, "png");
-    const id = await photoRow(key, png.length);
-    expect(await exited(worker("--mot-vong"))).toBe(0);
+    const id = await photoRow(await stored(png, "png"), png.length);
+    const otherKey = await stored(png, "png");
+    const otherId = await photoRow(otherKey, png.length, other);
+    expect(await exited(worker("--mot-vong", `--truong=${p.schoolId}`))).toBe(0);
     const row = await rowOf(id);
     expect([row.s3Key.endsWith(".webp"), row.compressedAt !== null]).toEqual([true, true]);
+    const untouched = await rowOf(otherId);
+    expect([untouched.s3Key, untouched.compressedAt, untouched.compressAttempts]).toEqual([otherKey, null, 0]);
   }, 60_000);
 
   test("SIGTERM thì dừng và thoát mã 0", async () => {
-    const child = worker();
+    const child = worker(`--truong=${p.schoolId}`);
     let out = "";
     child.stdout!.on("data", (d) => (out += d));
     const done = exited(child);

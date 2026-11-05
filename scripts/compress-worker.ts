@@ -1,15 +1,17 @@
 import { pool } from "../src/server/db/client";
+import { schoolsFlag } from "../src/server/workerScope";
 import { runAgainNow, runCompressQueue } from "../src/server/compress";
 
 // Worker nén ảnh: quét mỗi 30 giây. Ảnh gốc xem được ngay nên không cần nghe LISTEN như worker kiểm ảnh.
-// Cờ --mot-vong: chạy một vòng rồi thoát, dùng cho test và e2e.
+// Cờ --mot-vong: chạy một vòng rồi thoát; --truong=<id>[,<id>]: chỉ xử lý hồ sơ của các trường đó. Test và e2e dùng cả hai.
 const SCAN_MS = 30_000;
 
 let stopping = false;
+const schoolIds = schoolsFlag(process.argv);
 
 async function round(): Promise<boolean> {
   try {
-    const t = await runCompressQueue(undefined, () => stopping);
+    const t = await runCompressQueue(undefined, () => stopping, schoolIds);
     if (t.compressed || t.kept || t.failed) console.log(`[compress-worker] nén ${t.compressed}, giữ ${t.kept}, lỗi ${t.failed}`);
     return runAgainNow(t);
   } catch (e) {

@@ -55,7 +55,7 @@ test("Học sinh nộp ảnh có họ tên và mã, worker kiểm một vòng: T
   test.setTimeout(300_000);
   await submitWithScreens(browser);
 
-  execFileSync("bun", ["--env-file=.env.local", "scripts/photo-check-worker.ts", "--mot-vong"], { stdio: "inherit", timeout: 240_000 });
+  execFileSync("bun", ["--env-file=.env.local", "scripts/photo-check-worker.ts", "--mot-vong", `--truong=${E2E_STUDENT_SCHOOL_ID}`], { stdio: "inherit", timeout: 240_000 });
 
   const admin = await loginAs(browser, "zz_e2e_admin");
   await admin.goto(`/customers?q=${encodeURIComponent("ly thi kiem anh")}`);

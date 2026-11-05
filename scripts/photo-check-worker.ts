@@ -1,17 +1,19 @@
 import { Client } from "pg";
 import { pool } from "../src/server/db/client";
+import { schoolsFlag } from "../src/server/workerScope";
 import { closeOcr } from "../src/server/ocr/reader";
 import { BATCH, PHOTO_CHECK_CHANNEL, runPhotoCheckRound } from "../src/server/photoCheckWorker";
 
 // Worker kiểm ảnh: nghe kênh photo_checks, quét lại mỗi 30 giây để bắt lượt bỏ lỡ lúc worker tắt hoặc lượt của worker đã chết.
-// Chạy tiến trình riêng để lỗi đọc ảnh không kéo theo worker SMS. Cờ --mot-vong: chạy một vòng rồi thoát, dùng cho test và e2e.
+// Chạy tiến trình riêng để lỗi đọc ảnh không kéo theo worker SMS. Cờ --mot-vong: chạy một vòng rồi thoát; --truong=<id>[,<id>]: chỉ xử lý hồ sơ của các trường đó. Test và e2e dùng cả hai.
 const SCAN_MS = 30_000;
 
 let stopping = false;
+const schoolIds = schoolsFlag(process.argv);
 
 async function round(): Promise<boolean> {
   try {
-    const t = await runPhotoCheckRound(undefined, () => stopping);
+    const t = await runPhotoCheckRound(undefined, () => stopping, schoolIds);
     if (t.done || t.failed || t.dropped) console.log(`[photo-check-worker] xong ${t.done}, lỗi ${t.failed}, bỏ ${t.dropped}`);
     return t.done + t.failed + t.dropped + t.skipped >= BATCH;
   } catch (e) {
