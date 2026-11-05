@@ -1,0 +1,31 @@
+import { cookies } from "next/headers";
+import { redirect } from "next/navigation";
+import { SESSION_COOKIE, tokenFromRequest, userFromToken } from "./session";
+import { can, type Action } from "@/lib/permissions";
+import { forbidden, unauthorized } from "../http/responses";
+import type { SessionUser } from "@/lib/types";
+
+export async function currentUser(): Promise<SessionUser | null> {
+  return userFromToken((await cookies()).get(SESSION_COOKIE)?.value ?? null);
+}
+
+// Trang quản lý gọi hàm này đầu tiên: chưa đăng nhập thì về màn đăng nhập, thiếu quyền thì ra 404.
+export async function requirePage(action?: Action): Promise<SessionUser> {
+  const user = await currentUser();
+  if (!user) redirect("/login");
+  if (action && !can(user, action)) {
+    const { notFound } = await import("next/navigation");
+    notFound();
+  }
+  return user;
+}
+
+export async function requireApi(
+  request: Request,
+  action?: Action,
+): Promise<{ ok: true; user: SessionUser } | { ok: false; response: Response }> {
+  const user = await userFromToken(tokenFromRequest(request));
+  if (!user) return { ok: false, response: unauthorized() };
+  if (action && !can(user, action)) return { ok: false, response: forbidden() };
+  return { ok: true, user };
+}
