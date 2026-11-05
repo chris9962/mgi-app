@@ -11,10 +11,10 @@ export async function POST(request: Request) {
   if (!canManageAnyBank(auth.user)) return forbidden();
   const folder = ADMIN_FOLDERS.find((f) => f === new URL(request.url).searchParams.get("folder"));
   if (!folder) return badRequest("Thư mục ảnh không hợp lệ.");
-  if (bodyTooLarge(request)) return badRequest("Ảnh lớn hơn 10 MB.");
+  if (bodyTooLarge(request)) return badRequest("Ảnh lớn hơn 20 MB.");
   const file = (await request.formData().catch(() => null))?.get("file");
   if (!(file instanceof File)) return badRequest("Chưa chọn ảnh.");
-  if (file.size > MAX_IMAGE_BYTES) return badRequest("Ảnh lớn hơn 10 MB.");
+  if (file.size > MAX_IMAGE_BYTES) return badRequest("Ảnh lớn hơn 20 MB.");
   const r = await putImage(new Uint8Array(await file.arrayBuffer()), folder);
   return r.ok ? Response.json({ key: r.key }, { status: 201 }) : badRequest(r.message);
 }

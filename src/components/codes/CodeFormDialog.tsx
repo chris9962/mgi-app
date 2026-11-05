@@ -45,7 +45,7 @@ export function CodeFormDialog({ banks, initial, onClose }: { banks: { id: strin
 
   // Đọc link trong QR ngay trên trình duyệt như mgst-app, để người nhập thấy link và sửa được trước khi lưu.
   async function pickQr(file: File) {
-    if (file.size > MAX_IMAGE_BYTES) return setFormError("Ảnh lớn hơn 10 MB.");
+    if (file.size > MAX_IMAGE_BYTES) return setFormError("Ảnh lớn hơn 20 MB.");
     setFormError("");
     setUploading(true);
     setQrNote("");

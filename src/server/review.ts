@@ -4,7 +4,7 @@ import { bankPhotoSlots, banks, customerBanks, customers, proofPhotos, reviewEve
 import { writeAudit } from "./audit";
 import { queuePhotoChecks } from "./photoChecks";
 import { getSettings } from "./settings";
-import { deleteImage, putImage } from "./storage";
+import { deleteImage, putImage, type PutResult } from "./storage";
 import { voucherCode, voucherSecret } from "./voucher";
 import { reviewsBank } from "@/lib/permissions";
 import { renderSms, SMS_KIND_VOUCHER, smsValues } from "@/lib/sms";
@@ -121,19 +121,13 @@ export async function saveNote(actor: SessionUser, customerBankId: string, note:
 }
 
 export type AdminPhotoStore = {
-  put: (bytes: Uint8Array) => Promise<{ ok: true; key: string; size: number } | { ok: false; message: string }>;
+  put: (bytes: Uint8Array) => Promise<PutResult>;
   remove: (key: string) => Promise<void>;
 };
 
-const s3AdminPhotoStore: AdminPhotoStore = {
-  put: async (bytes) => {
-    const r = await putImage(bytes, "proofs");
-    return r.ok ? { ok: true, key: r.key, size: bytes.length } : r;
-  },
-  remove: deleteImage,
-};
+const s3AdminPhotoStore: AdminPhotoStore = { put: (bytes) => putImage(bytes, "proofs"), remove: deleteImage };
 
-// Ảnh thay thế đi qua máy chủ để kiểm chữ ký file; ảnh cũ giữ lại với replaced_at.
+// Ảnh thay thế đi qua putImage như ảnh học sinh: kiểm chữ ký file, đổi WebP; ảnh cũ giữ lại với replaced_at.
 export async function replacePhoto(
   actor: SessionUser,
   input: { customerBankId: string; slotId: string },

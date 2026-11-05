@@ -45,7 +45,7 @@ export function GuideDialog({ bankId, bankName, onClose }: { bankId: string; ban
   async function upload(file: File) {
     const key = uploadFor.current;
     if (!key) return;
-    if (file.size > MAX_IMAGE_BYTES) return setError("Ảnh lớn hơn 10 MB.");
+    if (file.size > MAX_IMAGE_BYTES) return setError("Ảnh lớn hơn 20 MB.");
     setUploading(key);
     const body = new FormData();
     body.set("file", file);

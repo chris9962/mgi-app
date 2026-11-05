@@ -12,13 +12,13 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!auth.ok) return auth.response;
   const { id } = await params;
   if (!isUuid(id)) return notFound();
-  if (bodyTooLarge(request)) return badRequest("Ảnh lớn hơn 10 MB.");
+  if (bodyTooLarge(request)) return badRequest("Ảnh lớn hơn 20 MB.");
   const form = await request.formData().catch(() => null);
   const slotId = String(form?.get("slotId") ?? "");
   const file = form?.get("file");
   if (!isUuid(slotId)) return Response.json({ message: "Chọn khung ảnh.", field: "slotId" }, { status: 400 });
   if (!(file instanceof File) || !file.size) return Response.json({ message: "Chọn ảnh.", field: "file" }, { status: 400 });
-  if (file.size > MAX_IMAGE_BYTES) return Response.json({ message: "Ảnh lớn hơn 10 MB.", field: "file" }, { status: 400 });
+  if (file.size > MAX_IMAGE_BYTES) return Response.json({ message: "Ảnh lớn hơn 20 MB.", field: "file" }, { status: 400 });
   const r = await replacePhoto(auth.user, { customerBankId: id, slotId }, new Uint8Array(await file.arrayBuffer()), ipFrom(request));
   return r.ok ? new Response(null, { status: 204 }) : failResponse(r);
 }
