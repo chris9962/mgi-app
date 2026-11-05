@@ -4,6 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { cleanTestUsers } from "../db/helpers";
 import { insertCustomer, setupProgram, type Program } from "../db/fixtures";
 import { bankScreen } from "../support/bankScreen";
+import { toHeic } from "../support/heic";
 import { db } from "../../src/server/db/client";
 import { bankPhotoSlots, customerBanks, photoChecks, proofPhotos } from "../../src/server/db/schema";
 import { closeOcr } from "../../src/server/ocr/reader";
@@ -19,13 +20,13 @@ let p: Program;
 const keys: string[] = [];
 
 // Một hồ sơ đã gửi kiểm tra ở ngân hàng A, khung duy nhất bật kiểm họ tên và mã, ảnh vẽ đúng chữ trên màn.
-async function queued(system: { name: string; code: string }, onImage: { name: string; code: string }) {
+async function queued(system: { name: string; code: string }, onImage: { name: string; code: string }, file?: { bytes: Uint8Array; ext: string }) {
   const c = await insertCustomer(p, { fullName: system.name, status: "pending_review", submittedAt: new Date(), banks: [{ key: "A", status: "pending" }] });
   const cb = c.rows.A;
   await db.update(customerBanks).set({ referralCode: system.code }).where(eq(customerBanks.id, cb));
-  const key = newKey("proofs", "webp");
+  const key = newKey("proofs", file?.ext ?? "webp");
   keys.push(key);
-  const bytes = await bankScreen(onImage);
+  const bytes = file?.bytes ?? (await bankScreen(onImage));
   await writeImage(key, bytes);
   await db.insert(proofPhotos).values({ customerBankId: cb, slotId: p.slot.A, s3Key: key, sizeBytes: bytes.length });
   await db.transaction((tx) => queuePhotoChecks(tx, [cb]));
@@ -65,6 +66,18 @@ withOcr("worker kiểm ảnh với OCR thật", () => {
       expect([row.passed, row.total]).toEqual([c.passed ? 1 : 0, 1]);
     }, 180_000);
   }
+
+  test("ảnh HEIC chưa được worker nén vẫn đọc được, nhận định dạng theo nội dung chứ không theo đuôi khoá", async () => {
+    const screen = { name: "Trần Minh Anh", code: "AT107" };
+    const heic = toHeic(await bankScreen(screen, "png"));
+    if (!heic) return;
+    for (const ext of ["heic", "jpg"]) {
+      const id = await queued(screen, screen, { bytes: heic, ext });
+      expect(await runPhotoCheck(id)).toBe("done");
+      const row = await checkRow(id);
+      expect([row.status, row.error, row.passed, row.total]).toEqual(["done", "", 1, 1]);
+    }
+  }, 180_000);
 });
 
 withOcr("scripts/photo-check-worker.ts", () => {

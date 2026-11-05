@@ -1,9 +1,9 @@
-import convert from "heic-convert";
 import sharp from "sharp";
 import { and, asc, eq, isNull, lt } from "drizzle-orm";
 import { db } from "./db/client";
 import { proofPhotos } from "./db/schema";
-import { deleteImage, readImage, writeImage } from "./storage";
+import { heicToJpeg } from "./heic";
+import { deleteImage, imageExtOf, readImage, writeImage } from "./storage";
 
 export const MAX_EDGE = 1600;
 export const MAX_BYTES = 300 * 1024;
@@ -21,9 +21,9 @@ export const s3CompressStore: CompressStore = { read: readImage, write: writeIma
 
 const extOf = (key: string) => key.split(".").pop() ?? "";
 
-// sharp treo khi đọc HEIC mã HEVC (libvips chỉ kèm bộ giải mã AV1), nên HEIC qua heic-convert sang JPEG trước.
-export async function toWebp(bytes: Uint8Array, ext: string): Promise<Uint8Array> {
-  const src = Buffer.from(ext === "heic" ? await convert({ buffer: bytes, format: "JPEG", quality: 0.92 }) : bytes);
+// Định dạng nhận theo nội dung, không theo đuôi khoá: điện thoại khai sai loại thì HEIC vẫn nằm dưới khoá .jpg.
+export async function toWebp(bytes: Uint8Array): Promise<Uint8Array> {
+  const src = Buffer.from(imageExtOf(bytes) === "heic" ? await heicToJpeg(bytes) : bytes);
   let out = Buffer.alloc(0);
   for (const quality of QUALITY_STEPS) {
     // failOn none: JPEG thiếu vài byte cuối vẫn dựng được phần đã có, như mgst-app.
@@ -67,7 +67,7 @@ export async function compressOne(id: string, store: CompressStore = s3CompressS
       try {
         const bytes = await store.read(row.key);
         if (!bytes) throw new Error("Không tải được ảnh từ S3.");
-        const out = await toWebp(bytes, ext);
+        const out = await toWebp(bytes);
         // Giữ thư mục, ngày và uuid, chỉ đổi đuôi: ảnh đã là webp thì ghi đè đúng khoá cũ.
         const key = row.key.replace(/\.[a-z]+$/, ".webp");
         await store.write(key, out);

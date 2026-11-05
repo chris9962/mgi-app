@@ -6,6 +6,7 @@ import { join } from "node:path";
 import { eq } from "drizzle-orm";
 import sharp from "sharp";
 import { cleanTestUsers } from "../db/helpers";
+import { toHeic } from "../support/heic";
 import { insertCustomer, setupProgram, type Program } from "../db/fixtures";
 import { db } from "../../src/server/db/client";
 import { proofPhotos } from "../../src/server/db/schema";
@@ -118,6 +119,20 @@ describe("worker nén ảnh", () => {
     } finally {
       rmSync(dir, { recursive: true, force: true });
     }
+  }, 60_000);
+
+  test("ảnh HEIC nằm dưới khoá .jpg vẫn nén sang webp: định dạng nhận theo nội dung", async () => {
+    const heic = toHeic(await screenshot(1200, 1600, "png"));
+    if (!heic) return;
+    const key = await stored(heic, "jpg");
+    const id = await photoRow(key, heic.length);
+
+    expect(await compressOne(id)).toBe("compressed");
+    const row = await rowOf(id);
+    expect([row.s3Key, row.compressAttempts]).toEqual([key.replace(/\.jpg$/, ".webp"), 0]);
+    const meta = await sharp((await readImage(row.s3Key))!).metadata();
+    expect([meta.format, meta.width, meta.height]).toEqual(["webp", 1200, 1600]);
+    expect(await readImage(key)).toBeNull();
   }, 60_000);
 
   test("lỗi 3 lần thì dừng: ảnh gốc giữ nguyên khoá, không còn trong hàng chờ", async () => {

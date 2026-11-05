@@ -1,9 +1,10 @@
 import { and, asc, eq, isNull, lt, or, sql } from "drizzle-orm";
 import { db } from "./db/client";
 import { bankPhotoSlots, customerBanks, customers, photoChecks, proofPhotos } from "./db/schema";
+import { heicToJpeg } from "./heic";
 import { judgeSlot, partsOf, type CheckValues } from "./ocr/judge";
 import { ocrLines } from "./ocr/reader";
-import { readImage } from "./storage";
+import { imageExtOf, readImage } from "./storage";
 import type { PhotoCheckItem } from "@/lib/photoCheck";
 
 // Nửa worker của kiểm ảnh. Nửa xếp lượt nằm ở photoChecks.ts, chạy trong app; file này kéo theo tiến trình OCR nên chỉ worker import.
@@ -42,13 +43,14 @@ async function claim(id: string): Promise<string | null> {
 }
 
 // Worker nén đổi khoá ảnh rồi xoá object cũ: object không còn thì đọc lại khoá của dòng ảnh một lần.
+// Ảnh HEIC chưa được nén (worker nén quét 30 giây một lần) thì đổi sang JPEG, OCR không đọc được HEIC.
 async function photoBytes(photoId: string, slotName: string, read: PhotoCheckDeps["read"]): Promise<Uint8Array> {
   let tried = "";
   for (let round = 0; round < 2; round += 1) {
     const [row] = await db.select({ key: proofPhotos.s3Key }).from(proofPhotos).where(eq(proofPhotos.id, photoId));
     if (!row || row.key === tried) break;
     const bytes = await read(row.key);
-    if (bytes) return bytes;
+    if (bytes) return imageExtOf(bytes) === "heic" ? heicToJpeg(bytes) : bytes;
     tried = row.key;
   }
   throw new Error(`Không tải được ảnh ${slotName}.`);
