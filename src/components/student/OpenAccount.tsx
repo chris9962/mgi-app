@@ -125,7 +125,7 @@ export function OpenAccount({ state, onChange }: { state: StudentState; onChange
     <>
       <AppHead school={state.school.name} title="Mở tài khoản" />
       <Steps current={3} />
-      <div role="tablist" aria-label="Ngân hàng đã chọn" className="mb-4 flex gap-2 border-b border-line">
+      <div role="tablist" aria-label="Ngân hàng đã chọn" className="sticky top-0 z-10 -mx-4 mb-4 flex gap-2 border-b border-line bg-bg px-4">
         {banks.map((b, i) => (
           <button
             key={b.id}
