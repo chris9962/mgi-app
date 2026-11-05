@@ -49,3 +49,24 @@
 - [ ] Viết test cho `generatePassword(): string` (12 ký tự, không có 0, O, 1, I, l) và `hashPassword`, `verifyPassword`.
 - [ ] Viết script: `bun db:create-admin -- --username admin --full-name "Quản trị"`. Script sinh mật khẩu, lưu băm bcrypt, in mật khẩu một lần. Username đã có thì báo lỗi, không ghi đè.
 - [ ] Chạy test và chạy script. Kết quả mong đợi: PASS, bảng `users` có một dòng `role = admin`.
+
+## Kết quả review và việc để lại
+
+Agent review cả nhánh ngày 2026-11-05: không có lỗi Critical. Đã sửa ở commit `e6b51d9`: chỉ mục `proof_photos(customer_bank_id)`, Postgres local chỉ mở trên `127.0.0.1`.
+
+Việc để lại cho giai đoạn dùng tới:
+
+| Việc | Giai đoạn |
+|---|---|
+| `photo_checks` chưa có unique `(customer_bank_id) where status = 'pending'` | 6 |
+| `sms_messages.kind` là text tự do. `attempts` tối đa 3, nên nút Gửi lại phải đặt lại `attempts` | 5 |
+| Chuỗi rỗng qua được unique của `users.staff_code` và check `code`/`qr_key` của `referral_codes`. Code máy chủ phải đổi `''` thành null | 2, 3 |
+| Check `year_month` nhận `2026-13` | 4 |
+| Ảnh nén lỗi 3 lần vẫn nằm trong chỉ mục hàng chờ nén. Worker phải lọc `compress_attempts < 3` | 6 |
+| Chưa ràng buộc `proof_photos.slot_id` và `customer_banks.referral_code_id` cùng ngân hàng với dòng `customer_banks`. Code máy chủ phải kiểm | 4 |
+| `DATABASE_URL` trong shell đè `.env.local`. `db-migrate` chưa in DB đang nối và số migration đã chạy | 7 |
+| Test DB chưa kiểm `DATABASE_URL` trước khi nối | 2 |
+| `hashSync` chặn event loop. Trong Next phải dùng bản async | 2 |
+| `users.updated_at` không tự cập nhật, code sửa user phải ghi | 2 |
+| Test chưa khoá 4 ràng buộc duy nhất, cascade và check SĐT | 2 |
+| Quay lại từ B3: code phải đọc `s3_key` trước khi xoá dòng, vì cascade xoá dòng ảnh | 4 |
