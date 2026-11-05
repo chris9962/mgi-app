@@ -51,6 +51,12 @@ describe("xuất Excel hồ sơ", () => {
     expect(column(ws, "HỌ TÊN")).toEqual(["XUATDS PHAM THU HA", "XUATDS TRAN MINH ANH"]);
     expect(column(ws, "SĐT PHỤ HUYNH")[1]).toBe("0987654321");
     expect(column(ws, "MÃ VOUCHER")).toEqual(["", "ZZXUAT-TMA-11A3-K7Q2"]);
+    // Cột trạng thái dòng ngân hàng cùng tên với file trang Ngân hàng.
+    const headers = ws.getRow(3).values as unknown[];
+    expect(headers.includes("KẾT QUẢ")).toBe(false);
+    const status = headers.flatMap((h, i) => (h === "TRẠNG THÁI" ? [i] : []));
+    expect(status.length).toBe(3);
+    expect([ws.getRow(5).getCell(status[1]).value, ws.getRow(5).getCell(status[2]).value]).toEqual(["Đạt", "Không đạt"]);
     expect(ws.getRow(1).getCell(1).value).toBe("HỌC SINH");
     expect(ws.getRow(2).getCell(1).value).toBe(2);
     const [a] = await audits(exporterA.id);

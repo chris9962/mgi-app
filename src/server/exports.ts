@@ -13,7 +13,6 @@ import { CUSTOMER_STATUS_LABEL, type CustomerFilters } from "@/lib/customerFilte
 import { formatDateTime } from "@/lib/dates";
 import { studentLink } from "@/lib/links";
 import { can } from "@/lib/permissions";
-import type { CustomerBankStatus } from "@/lib/studentState";
 import type { SessionUser } from "@/lib/types";
 import type { VoucherFilters } from "@/lib/voucherFilters";
 
@@ -26,7 +25,6 @@ export type ExportResult = { ok: true; bytes: Uint8Array; fileName: string } | F
 const DENIED: Fail = { ok: false, message: "Không có quyền xuất Excel.", status: 403 };
 const tooMany = (n: number): Fail => ({ ok: false, message: `Danh sách có ${n} dòng, quá ${EXPORT_LIMIT} dòng một file. Lọc bớt rồi xuất lại.`, status: 400 });
 const today = () => new Date(Date.now() + 7 * 3600 * 1000).toISOString().slice(0, 10);
-const BANK_RESULT: Record<CustomerBankStatus, string> = { selected: "Đang tạo", pending: "Chờ kiểm tra", passed: "Đạt", failed: "Không đạt" };
 
 const STUDENT = { group: "HỌC SINH", groupColor: EXCEL_GROUP_COLORS.customer };
 
@@ -60,7 +58,7 @@ const bankColumns = (slot: 1 | 2): ExcelColumn<CustomerExportRow>[] => {
   return [
     { ...g, header: "NGÂN HÀNG", width: 16, value: (r) => bank(r)?.name ?? "" },
     { ...g, header: "MÃ GIỚI THIỆU", width: 16, type: "text", value: (r) => bank(r)?.referralCode ?? "" },
-    { ...g, header: "KẾT QUẢ", width: 14, value: (r) => (bank(r) ? BANK_RESULT[bank(r)!.status] : ""), total: (rows) => rows.filter((r) => bank(r)?.status === "passed").length },
+    { ...g, header: "TRẠNG THÁI", width: 14, value: (r) => (bank(r) ? CUSTOMER_BANK_STATUS_LABEL[bank(r)!.status] : ""), total: (rows) => rows.filter((r) => bank(r)?.status === "passed").length },
     { ...g, header: "NGƯỜI KIỂM", width: 20, value: (r) => bank(r)?.reviewer ?? "" },
     { ...g, header: "KIỂM LÚC", width: 17, value: (r) => (bank(r)?.reviewedAt ? formatDateTime(bank(r)!.reviewedAt!) : "") },
   ];
