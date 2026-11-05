@@ -1,7 +1,8 @@
-import { and, asc, count, eq, ilike, inArray, or, sql } from "drizzle-orm";
+import { and, asc, count, eq, inArray, or, sql } from "drizzle-orm";
 import { db } from "./db/client";
 import { customers, provinces, schools, wards } from "./db/schema";
 import { writeAudit } from "./audit";
+import { matchesPlain } from "./search";
 import type { SessionUser } from "@/lib/types";
 import type { SchoolFormValues } from "@/lib/schoolForm";
 
@@ -45,7 +46,7 @@ const base = () => db.select(columns).from(schools).innerJoin(wards, eq(wards.co
 
 export async function listSchools({ q, page }: { q: string; page: number }): Promise<{ rows: SchoolRow[]; total: number; page: number }> {
   const term = q.trim();
-  const where = term ? or(ilike(schools.name, `%${term}%`), ilike(wards.name, `%${term}%`)) : undefined;
+  const where = term ? or(matchesPlain(schools.name, term), matchesPlain(wards.name, term)) : undefined;
   const [{ total }] = await db.select({ total: count() }).from(schools).innerJoin(wards, eq(wards.code, schools.wardCode)).where(where);
   const safePage = Math.min(Math.max(1, Math.trunc(page) || 1), Math.max(1, Math.ceil(total / PAGE_SIZE)));
   const rows = await base()
@@ -112,7 +113,7 @@ export async function searchSchoolOptions(q: string): Promise<{ id: string; labe
     .select({ id: schools.id, name: schools.name, ward: wards.name })
     .from(schools)
     .innerJoin(wards, eq(wards.code, schools.wardCode))
-    .where(and(eq(schools.active, true), term ? or(ilike(schools.name, `%${term}%`), ilike(wards.name, `%${term}%`)) : undefined))
+    .where(and(eq(schools.active, true), term ? or(matchesPlain(schools.name, term), matchesPlain(wards.name, term)) : undefined))
     .orderBy(asc(schools.name))
     .limit(20);
   return rows.map((r) => ({ id: r.id, label: `${r.name} - ${shortWard(r.ward)}` }));

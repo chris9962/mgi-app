@@ -1,7 +1,8 @@
-import { and, asc, count, desc, eq, ilike, inArray, ne, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, ne, or, sql } from "drizzle-orm";
 import { db } from "./db/client";
 import { banks, referralCodeMonths, referralCodeSchools, referralCodes, users } from "./db/schema";
 import { writeAudit } from "./audit";
+import { matchesPlain } from "./search";
 import { schoolLabels } from "./schools";
 import { can, canManageBank } from "@/lib/permissions";
 import { currentYearMonth } from "@/lib/month";
@@ -55,7 +56,7 @@ export async function listCodes(
     scopeOf(actor),
     bankId ? eq(referralCodes.bankId, bankId) : undefined,
     hideStopped ? eq(referralCodes.active, true) : undefined,
-    term ? or(ilike(referralCodes.displayName, `%${term}%`), ilike(referralCodes.code, `%${term}%`)) : undefined,
+    term ? or(matchesPlain(referralCodes.displayName, term), matchesPlain(referralCodes.code, term)) : undefined,
   );
   const [{ total }] = await db.select({ total: count() }).from(referralCodes).where(where);
   const safePage = Math.min(Math.max(1, Math.trunc(page) || 1), Math.max(1, Math.ceil(total / PAGE_SIZE)));
