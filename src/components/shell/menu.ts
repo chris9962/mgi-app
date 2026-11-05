@@ -15,6 +15,7 @@ const MENU: { key: string; label: string; items: MenuEntry[] }[] = [
       { href: "/schools", label: "Trường", allow: (u) => can(u, "schools") },
       { href: "/banks", label: "Ngân hàng", exact: true, allow: canManageAnyBank },
       { href: "/banks/codes", label: "Mã giới thiệu", allow: canManageAnyBank },
+      { href: "/vouchers", label: "Mã voucher", allow: (u) => can(u, "vouchers") },
     ],
   },
   { key: "manage", label: "Quản lý", items: [{ href: "/users", label: "Tài khoản", allow: (u) => can(u, "users") }] },
