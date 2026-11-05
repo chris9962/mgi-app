@@ -1,0 +1,21 @@
+# Postgres local cho mgi-bank. Cổng 5434 vì 5433 đã có mgst-db trên máy.
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: mgi-bank-db
+    ports:
+      - "5434:5432"
+    environment:
+      POSTGRES_DB: mgibank
+      POSTGRES_USER: mgibank
+      POSTGRES_PASSWORD: mgibank
+    volumes:
+      - mgi-bank-pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U mgibank -d mgibank"]
+      interval: 2s
+      timeout: 3s
+      retries: 30
+
+volumes:
+  mgi-bank-pgdata:
