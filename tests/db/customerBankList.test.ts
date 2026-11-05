@@ -3,7 +3,9 @@ import { cleanTestUsers, makeActor, TEST_NAME } from "./helpers";
 import { addPhotoCheck, insertCustomer, setupProgram, type Program } from "./fixtures";
 import { db } from "../../src/server/db/client";
 import { photoChecks } from "../../src/server/db/schema";
-import { createSchool } from "../../src/server/schools";
+import { createSchool, setSchoolActive } from "../../src/server/schools";
+import { SESSION_COOKIE, createSession } from "../../src/server/auth/session";
+import { GET as schoolOptionsRoute } from "../../src/app/api/admin/customer-banks/schools/route";
 import { listCustomerBanks, PAGE_SIZE, scopedBanks } from "../../src/server/customerBankList";
 import { parseCustomerBankFilters, type CustomerBankFilters } from "../../src/lib/customerBankFilters";
 import { SchoolForm } from "../../src/lib/schoolForm";
@@ -141,5 +143,19 @@ describe("phân trang và thứ tự", () => {
     const order = ["Nhds Nguyễn Gia Bảo A", "Nhds Nguyễn Gia Bảo C", "Nhds Trần Minh Anh A", "Nhds Trần Minh Anh B", "Nhds Lê Hoàng Nam B", "Nhds Lê Hoàng Nam C", "Nhds Võ Thị Kim Ngân A", "Nhds Võ Thị Kim Ngân B", "Nhds Phạm Thu Hà A"];
     expect(await lines(p.manager, { q: "nhds" })).toEqual(order);
     expect(await lines(p.manager, { q: "nhds", dir: "asc" })).toEqual(["Nhds Phạm Thu Hà A", "Nhds Võ Thị Kim Ngân A", "Nhds Võ Thị Kim Ngân B", "Nhds Lê Hoàng Nam B", "Nhds Lê Hoàng Nam C", "Nhds Trần Minh Anh A", "Nhds Trần Minh Anh B", "Nhds Nguyễn Gia Bảo A", "Nhds Nguyễn Gia Bảo C"]);
+  });
+});
+
+describe("ô tìm trường của bộ lọc", () => {
+  const SITE = `http://${process.env.ADMIN_HOST ?? "admin.localhost"}:3100`;
+  const get = async (actor: SessionUser, q: string) =>
+    schoolOptionsRoute(new Request(`${SITE}/api/admin/customer-banks/schools?q=${encodeURIComponent(q)}`, { headers: { Origin: SITE, Cookie: `${SESSION_COOKIE}=${(await createSession(actor.id)).token}` } }));
+
+  test("người xem hồ sơ tìm được cả trường đã đóng; người không có quyền hồ sơ nhận 403", async () => {
+    await setSchoolActive(p.manager, otherSchool, false);
+    const res = await get(staffA, "thpt nh khac");
+    expect(res.status).toBe(200);
+    expect(((await res.json()) as { id: string }[]).map((o) => o.id)).toEqual([otherSchool]);
+    expect((await get(staffNone, "thpt nh")).status).toBe(403);
   });
 });

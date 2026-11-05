@@ -119,13 +119,14 @@ export async function setSchoolActive(actor: SessionUser, id: string, active: bo
 // Tên xã bỏ tiền tố "Xã", "Phường" cho ngắn: "THPT Nguyễn Du - Châu Thành".
 const shortWard = (name: string) => name.replace(/^(Xã|Phường|Thị trấn|Đặc khu)\s+/, "");
 
-export async function searchSchoolOptions(q: string): Promise<{ id: string; label: string }[]> {
+// closed: bộ lọc danh sách cần cả trường đã đóng, vì hồ sơ cũ của trường vẫn còn.
+export async function searchSchoolOptions(q: string, { closed = false } = {}): Promise<{ id: string; label: string }[]> {
   const term = q.trim();
   const rows = await db
     .select({ id: schools.id, name: schools.name, ward: wards.name })
     .from(schools)
     .innerJoin(wards, eq(wards.code, schools.wardCode))
-    .where(and(eq(schools.active, true), term ? or(matchesPlain(schools.name, term), matchesPlain(wards.name, term)) : undefined))
+    .where(and(closed ? undefined : eq(schools.active, true), term ? or(matchesPlain(schools.name, term), matchesPlain(wards.name, term)) : undefined))
     .orderBy(asc(schools.name))
     .limit(20);
   return rows.map((r) => ({ id: r.id, label: `${r.name} - ${shortWard(r.ward)}` }));
