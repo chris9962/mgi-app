@@ -35,8 +35,39 @@
 
 ## Task
 
-- [ ] **Task 1: Nghiệp vụ danh sách.** `src/server/customerBankList.ts`: hàm danh sách nhận `SessionUser`, bộ lọc, trang. Test DB: học sinh 2 ngân hàng ra 2 dòng; Nhân viên chỉ thấy dòng ngân hàng mình quản và không thấy x/y của ngân hàng khác; từng bộ lọc; ngày tính giờ Việt Nam; phân trang 15.
-- [ ] **Task 2: Trang và menu.** Trang `/customer-banks`, mục menu, gộp cột ở Trang 3. E2E: học sinh chọn 2 ngân hàng thì trang có 2 dòng của học sinh đó; Nhân viên chỉ thấy dòng ngân hàng mình quản; lọc theo ngân hàng.
-- [ ] **Task 3: Xuất Excel.** Route `GET /api/admin/customer-banks/export`. Test DB: số dòng, phạm vi, audit.
+- [x] **Task 1: Nghiệp vụ danh sách.** `src/server/customerBankList.ts`: hàm danh sách nhận `SessionUser`, bộ lọc, trang. Test DB: học sinh 2 ngân hàng ra 2 dòng; Nhân viên chỉ thấy dòng ngân hàng mình quản và không thấy x/y của ngân hàng khác; từng bộ lọc; ngày tính giờ Việt Nam; phân trang 15.
+- [x] **Task 2: Trang và menu.** Trang `/customer-banks`, mục menu, gộp cột ở Trang 3. E2E: học sinh chọn 2 ngân hàng thì trang có 2 dòng của học sinh đó; Nhân viên chỉ thấy dòng ngân hàng mình quản; lọc theo ngân hàng.
+- [x] **Task 3: Xuất Excel.** Route `GET /api/admin/customer-banks/export`. Test DB: số dòng, phạm vi, audit.
 
 Cuối kế hoạch chạy đủ: `bun run test`, `bun test:db`, `bun test:s3`, `bun run e2e`, `bunx tsc --noEmit`, `bun run lint`.
+
+## Kết quả
+
+Làm ngày 2026-11-05, commit `ee2a695`, `96ae8fa`, `3ac71e8` trên `dev`.
+
+- `src/server/customerBankList.ts`: `listCustomerBanks` trả mỗi dòng `customer_banks` một dòng, kèm học sinh, lớp, trường, mã giới thiệu, trạng thái, người kiểm, lượt xác thực ảnh mới nhất. Phạm vi dùng `scopedBankIds` của Trang 3. Ô tìm dùng `customerSearch`, tách từ `customerWhere`.
+- `src/lib/customerBankFilters.ts`: bộ lọc trên URL gồm `q`, `from`, `to`, `bank`, `status`, `check`, `school`, `dir`.
+- Trang `/customer-banks` và mục menu "Ngân hàng" dưới "Hồ sơ học sinh". Cột Ngày đổi được chiều sắp. Bộ lọc Ngày, Ngân hàng, Trạng thái, Xác thực ảnh, Trường.
+- `UrlFilters` nhận thêm ô chọn nhiều (`multiple`) và ô tìm qua route (`kind: "search"`, dùng `MultiSelect`).
+- Route `GET /api/admin/customer-banks/schools` cho ô tìm trường: quyền hồ sơ, tối đa 20 dòng, có cả trường đã đóng.
+- Route `GET /api/admin/customer-banks/export`: file "ngan-hang-YYYY-MM-DD.xlsx", đầu bảng 3 tầng, nhóm HỌC SINH và NGÂN HÀNG, ghi `audit_log` với `targetType` `customer_banks`.
+- Trang 3: cột "Ngân hàng" liệt kê mỗi ngân hàng một dòng trong ô. File Excel hồ sơ giữ nguyên.
+- Test mới: `tests/unit/customerBankFilters.test.ts`, `tests/unit/menu.test.ts`, `tests/db/customerBankList.test.ts`, thêm ca ở `tests/db/exports.test.ts` và `tests/db/adminRoutes.test.ts`, `e2e/customerBanks.spec.ts`.
+- Đã chạy trên DB tạm `zz_test_bankpage`: `bun run test` 220/220, `bun test:db` 219/219, `bun test:s3` 29/29. `bunx tsc --noEmit` và `bun run lint` đạt.
+- Đã xem trang ở 1366x768 bằng bản sao app trỏ DB tạm: Quản trị, Nhân viên quản một ngân hàng, bảng Bộ lọc, ô tìm trường, bảng rỗng, Trang 3.
+
+### Ruling
+
+- Ô Ngân hàng và ô Trường chọn được nhiều giá trị, id ghép dấu phẩy trên URL. mgst-app cho chọn nhiều ngân hàng. Trường là danh sách lớn dần, nên ô Trường dùng `MultiSelect` tìm qua route.
+- Ô lọc Ngân hàng ẩn khi người xem chỉ thấy một ngân hàng, như ô Phòng của mgst-app.
+- Tham số `dir=asc` đổi chiều sắp theo ngày, như cột Ngày của mgst-app. Mặc định mới nhất trước, rồi theo thứ tự chọn ngân hàng. Thứ tự này khớp Trang 3 sau commit `7a39a0d`.
+- Cột Xác thực ảnh hiện trạng thái lượt mới nhất như `PhotoCheckScore` của mgst-app: "Đang kiểm", "Không kiểm được", hoặc x/y có màu theo tỉ lệ đạt và có ký hiệu.
+- x/y hiện ở mọi dòng người xem thấy. Phạm vi dòng và `reviewsBank` cùng đọc `customerScope`, nên người xem luôn quản ngân hàng của dòng mình thấy.
+- Route tìm trường riêng cho bộ lọc, vì route `/api/admin/schools/options` chỉ trả trường đang mở.
+- File Excel có thêm SĐT, phụ huynh, SĐT phụ huynh, kiểm lúc, như file hồ sơ.
+- Trang 4 vẫn ghi "Ngân hàng 1", "Ngân hàng 2" ở dòng meta của thẻ ngân hàng. Yêu cầu bỏ chữ này chỉ áp cho Trang 3 và trang mới.
+
+### Việc để lại
+
+- `bun run e2e` chưa chạy: coordinator giữ lượt e2e cho agent khác. `e2e/customerBanks.spec.ts` đã viết, qua `tsc` và `lint`.
+- Trang 4 còn chữ "Ngân hàng 1/2" ở dòng meta, nếu chủ dự án muốn bỏ ở mọi nơi.
