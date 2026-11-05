@@ -1,0 +1,24 @@
+import { z } from "zod";
+import { PERMISSIONS, ROLES } from "./types";
+
+const optionalText = z
+  .string()
+  .trim()
+  .transform((v) => (v === "" ? null : v));
+
+// Chuỗi rỗng đổi thành null: unique của staff_code chỉ bỏ qua null, không bỏ qua chuỗi rỗng.
+export const UserForm = z.object({
+  fullName: z.string().trim().min(1, "Nhập họ tên"),
+  staffCode: optionalText,
+  phone: optionalText.refine((v) => v === null || /^0[0-9]{9}$/.test(v), "Số điện thoại gồm 10 số, bắt đầu bằng 0"),
+  username: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .regex(/^[a-z0-9._]{3,32}$/, "Tên đăng nhập 3 tới 32 ký tự: chữ thường không dấu, số, dấu chấm, gạch dưới"),
+  role: z.enum(ROLES),
+  title: z.string().trim(),
+  permissions: z.array(z.enum(PERMISSIONS)),
+});
+export type UserFormInput = z.input<typeof UserForm>;
+export type UserFormValues = z.output<typeof UserForm>;

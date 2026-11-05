@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { eq } from "drizzle-orm";
 import { TEST_PREFIX, cleanTestUsers } from "./helpers";
-import { db, pool } from "../../src/server/db/client";
+import { db } from "../../src/server/db/client";
 import { sessions, users } from "../../src/server/db/schema";
 import { hashPassword } from "../../src/server/auth/password";
 import { attemptLogin } from "../../src/server/auth/login";
@@ -18,10 +18,8 @@ async function makeUser(name: string, active = true) {
 }
 
 beforeAll(cleanTestUsers);
-afterAll(async () => {
-  await cleanTestUsers();
-  await pool.end();
-});
+// Không đóng pool ở đây: các file test chạy chung một tiến trình và dùng chung pool của client.ts.
+afterAll(cleanTestUsers);
 
 describe("đăng nhập", () => {
   test("sai 5 lần thì khoá, lần sau đúng mật khẩu vẫn bị khoá", async () => {
