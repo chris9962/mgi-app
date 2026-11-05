@@ -43,6 +43,13 @@
       "when": 1793886574514,
       "tag": "0005_sad_jubilee",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1793889613821,
+      "tag": "0006_large_sandman",
+      "breakpoints": true
     }
   ]
 }

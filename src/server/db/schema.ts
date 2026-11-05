@@ -363,6 +363,8 @@ export const photoChecks = pgTable(
     checkedAt: at("checked_at"),
     // Lúc worker nhận lượt; worker khác bỏ qua lượt đang được giữ, worker chết giữa chừng thì quá hạn giữ là lấy lại được.
     claimedAt: at("claimed_at"),
+    // Số lần worker nhận lượt: worker chết giữa chừng (hết RAM với ảnh HEIC lớn) thì lượt không được nhận lại mãi.
+    claims: smallint("claims").notNull().default(0),
   },
   (t) => [
     index("photo_checks_queue")

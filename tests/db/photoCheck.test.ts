@@ -189,6 +189,23 @@ describe("worker kiểm ảnh", () => {
     expect(await runPhotoCheck(checkId, fake())).toBe("done");
   });
 
+  test("mỗi lần worker nhận lượt thì đếm một lần nhận", async () => {
+    const { checkId } = await submitted([{ name: "Ảnh 1", checkName: true, photo: "TRAN MINH ANH" }]);
+    expect(await runPhotoCheck(checkId, fake())).toBe("done");
+    expect((await checkRow(checkId)).claims).toBe(1);
+  });
+
+  test("worker chết giữa chừng 3 lần (hết RAM khi đổi HEIC) thì lần nhận thứ 4 ghi failed, không đọc ảnh nữa", async () => {
+    const { checkId } = await submitted([{ name: "Ảnh 1", checkName: true, photo: "TRAN MINH ANH" }]);
+    await db.update(photoChecks).set({ claims: 3, claimedAt: sql`now() - interval '6 minutes'` }).where(eq(photoChecks.id, checkId));
+    const calls = ocrCalls.length;
+    expect(await runPhotoCheck(checkId, fake())).toBe("failed");
+    const row = await checkRow(checkId);
+    expect([row.status, row.error, row.claims]).toEqual(["failed", "Máy kiểm ảnh dừng giữa chừng 3 lần với lượt này.", 4]);
+    expect(ocrCalls.length).toBe(calls);
+    expect(await pendingPhotoCheckIds(BATCH, [p.schoolId])).not.toContain(checkId);
+  });
+
   test("lỗi máy thì ghi failed kèm lý do, không thử lại", async () => {
     const { checkId } = await submitted([{ name: "Ảnh 1", checkName: true, photo: "TRAN MINH ANH" }]);
     const broken = fake({ ocr: async () => Promise.reject(new Error("Tiến trình OCR thoát (1).")) });

@@ -13,6 +13,7 @@ export const PHOTO_CHECK_CHANNEL = "photo_checks";
 export const BATCH = 20;
 // Một lượt đọc vài ảnh, mỗi ảnh vài giây: giữ quá 5 phút nghĩa là worker giữ lượt đã chết.
 const claimable = or(isNull(photoChecks.claimedAt), lt(photoChecks.claimedAt, sql`now() - interval '5 minutes'`));
+export const MAX_CLAIMS = 3;
 
 export type PhotoCheckDeps = {
   read: (key: string) => Promise<Uint8Array | null>;
@@ -34,13 +35,13 @@ export type CheckOutcome = "done" | "failed" | "dropped" | "skipped";
 
 // Nhận lượt bằng một câu update, không giữ khoá dòng suốt lúc đọc: xếp lượt mới phải xoá được lượt đang đọc.
 // Hai worker cùng nhận thì câu sau chờ câu trước commit rồi thấy lượt đã có người giữ.
-async function claim(id: string): Promise<string | null> {
+async function claim(id: string): Promise<{ customerBankId: string; claims: number } | null> {
   const [row] = await db
     .update(photoChecks)
-    .set({ claimedAt: sql`now()` })
+    .set({ claimedAt: sql`now()`, claims: sql`${photoChecks.claims} + 1` })
     .where(and(eq(photoChecks.id, id), eq(photoChecks.status, "pending"), claimable))
-    .returning({ customerBankId: photoChecks.customerBankId });
-  return row?.customerBankId ?? null;
+    .returning({ customerBankId: photoChecks.customerBankId, claims: photoChecks.claims });
+  return row ?? null;
 }
 
 // Worker nén đổi khoá ảnh rồi xoá object cũ: object không còn thì đọc lại khoá của dòng ảnh một lần.
@@ -92,10 +93,16 @@ async function judgeBank(customerBankId: string, deps: PhotoCheckDeps): Promise<
 
 // Kết quả chỉ để gợi ý: không đổi trạng thái customer_banks. Lỗi máy ghi failed kèm lý do, không thử lại.
 export async function runPhotoCheck(id: string, deps: PhotoCheckDeps = ocrDeps): Promise<CheckOutcome> {
-  const customerBankId = await claim(id);
-  if (!customerBankId) return "skipped";
+  const claimed = await claim(id);
+  if (!claimed) return "skipped";
+  const { customerBankId } = claimed;
   // Lượt bị xếp lượt mới xoá trong lúc đọc thì kết quả là của ảnh hoặc họ tên cũ: ghi vào 0 dòng và bỏ.
   const stillPending = and(eq(photoChecks.id, id), eq(photoChecks.status, "pending"));
+  if (claimed.claims > MAX_CLAIMS) {
+    const error = `Máy kiểm ảnh dừng giữa chừng ${MAX_CLAIMS} lần với lượt này.`;
+    const written = await db.update(photoChecks).set({ status: "failed", error, checkedAt: new Date() }).where(stillPending).returning({ id: photoChecks.id });
+    return written.length ? "failed" : "dropped";
+  }
   try {
     const items = await judgeBank(customerBankId, deps);
     if (!items.length) {

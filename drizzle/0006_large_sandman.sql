@@ -1,0 +1,1 @@
+ALTER TABLE "photo_checks" ADD COLUMN "claims" smallint DEFAULT 0 NOT NULL;
