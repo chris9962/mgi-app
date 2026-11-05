@@ -13,11 +13,17 @@ export const letterWords = (s: string): string[] =>
 export const nameKey = (fullName: string): string => letterWords(fullName).join("");
 
 // OCR hay dính từ ("TO THICAM HON") và đọc logo, biểu tượng thành chữ ở mép dòng, nên bỏ khoảng trắng và cho dư 2 chữ cái mỗi đầu.
-// Lời nhắn chuyển khoản app tự điền "<tên> chuyen tien" nên tên nối liền CHUYENTIEN cũng tính.
+// Lời nhắn chuyển khoản app tự điền "<tên> chuyen tien" nên tên nối liền CHUYENTIEN cũng tính, phía sau có gì cũng được.
+// Trước tên chỉ cho nhãn Nội dung, Lời nhắn và 2 chữ cái: "NGUYEN TRAN MINH ANH chuyen tien" là tên người khác.
+const TRANSFER_PREFIX = /^(NOIDUNG|LOINHAN)?[A-Z]{0,2}$/;
+
 export function lineHasName(line: string, expected: string): boolean {
   if (!expected) return false;
   const letters = letterWords(line).join("");
-  if (letters.includes(expected + "CHUYENTIEN")) return true;
+  const note = expected + "CHUYENTIEN";
+  for (let at = letters.indexOf(note); at >= 0; at = letters.indexOf(note, at + 1)) {
+    if (TRANSFER_PREFIX.test(letters.slice(0, at))) return true;
+  }
   if (letters.length < expected.length) return false;
   for (let at = letters.indexOf(expected); at >= 0; at = letters.indexOf(expected, at + 1)) {
     if (at <= 2 && letters.length - at - expected.length <= 2) return true;

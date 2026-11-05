@@ -31,8 +31,17 @@ describe("họ tên trên ảnh", () => {
     expect(has("TRAN MINH AN", "Trần Minh Anh")).toBe(false);
   });
 
-  test("lời nhắn chuyển khoản app tự điền: tên nối liền chuyen tien", () => {
+  test("lời nhắn chuyển khoản app tự điền: tên nối liền chuyen tien, phía sau có gì cũng được", () => {
     expect(has("Nội dung: TRAN MINH ANH chuyen tien", "Trần Minh Anh")).toBe(true);
+    expect(has("TRAN MINH ANH chuyen tien", "Trần Minh Anh")).toBe(true);
+    expect(has("Lời nhắn TRAN MINH ANH chuyen tien den ban Hoa", "Trần Minh Anh")).toBe(true);
+    expect(has("VW TRAN MINH ANH chuyen tien", "Trần Minh Anh")).toBe(true);
+  });
+
+  test("lời nhắn chuyển khoản: trước tên chỉ được nhãn Nội dung hoặc Lời nhắn và tối đa 2 chữ cái", () => {
+    expect(has("NGUYEN TRAN MINH ANH chuyen tien", "Trần Minh Anh")).toBe(false);
+    expect(has("Noi dung: LE VAN TRAN MINH ANH chuyen tien den ban", "Trần Minh Anh")).toBe(false);
+    expect(has("Nội dung: ABC TRAN MINH ANH chuyen tien", "Trần Minh Anh")).toBe(false);
   });
 
   test("tên rỗng không đạt", () => {
