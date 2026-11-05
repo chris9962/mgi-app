@@ -1,9 +1,11 @@
 import { describe, expect, test } from "bun:test";
+import { deflateSync } from "node:zlib";
 import sharp from "sharp";
-import { toHeic } from "../support/heic";
+import { heicFixture } from "../support/heic";
 import { broken, HEIC_HEAD, JPEG_HEAD, PNG_HEAD, screenshot } from "../support/screenshot";
 import { MAX_IMAGE_BYTES } from "../../src/lib/imageKey";
 import { putImage } from "../../src/server/storage";
+import { heicPixels } from "../../src/server/heic";
 import { toWebpOnServer } from "../../src/server/toWebpOnServer";
 
 const MAX_BYTES = 300 * 1024;
@@ -23,17 +25,53 @@ describe("đổi WebP lúc nhận", () => {
   });
 
   test("HEIC thành WebP", async () => {
-    const heic = toHeic(await screenshot(1200, 1600, "png"));
-    if (!heic) return;
-    const meta = await sharp((await toWebpOnServer(heic, "heic"))!).metadata();
-    expect([meta.format, meta.width, meta.height]).toEqual(["webp", 1200, 1600]);
-  }, 60_000);
+    const meta = await sharp((await toWebpOnServer(heicFixture("heic-320x240.heic"), "heic"))!).metadata();
+    expect([meta.format, meta.width, meta.height]).toEqual(["webp", 320, 240]);
+  });
 
   test("file hỏng mang chữ ký ảnh thì không đổi được, nơi gọi giữ bản gốc", async () => {
     expect(await toWebpOnServer(broken(PNG_HEAD), "png")).toBeNull();
     expect(await toWebpOnServer(broken(JPEG_HEAD), "jpg")).toBeNull();
     expect(await toWebpOnServer(broken(HEIC_HEAD), "heic")).toBeNull();
   });
+});
+
+// PNG chỉ có phần đầu khai kích thước, dữ liệu điểm ảnh gần như rỗng: vài trăm byte mà giải mã ra hàng trăm MB.
+function pngClaiming(width: number, height: number): Uint8Array {
+  const chunk = (type: string, data: Uint8Array) => {
+    const body = new Uint8Array([...new TextEncoder().encode(type), ...data]);
+    const out = new Uint8Array(12 + data.length);
+    const view = new DataView(out.buffer);
+    view.setUint32(0, data.length);
+    out.set(body, 4);
+    view.setUint32(8 + data.length, Bun.hash.crc32(body));
+    return out;
+  };
+  const ihdr = new Uint8Array(13);
+  new DataView(ihdr.buffer).setUint32(0, width);
+  new DataView(ihdr.buffer).setUint32(4, height);
+  ihdr.set([8, 2, 0, 0, 0], 8);
+  return new Uint8Array([...PNG_HEAD, ...chunk("IHDR", ihdr), ...chunk("IDAT", new Uint8Array(deflateSync(new Uint8Array(1000)))), ...chunk("IEND", new Uint8Array())]);
+}
+
+describe("trần điểm ảnh: route nộp ảnh mở cho học sinh không đăng nhập", () => {
+  test("đọc số điểm ảnh của HEIC từ hộp ispe, không giải mã", () => {
+    expect(heicPixels(heicFixture("heic-320x240.heic"))).toBe(320 * 240);
+    expect(heicPixels(heicFixture("heic-10240x10240-phang.heic"))).toBe(10240 * 10240);
+    expect(heicPixels(broken(HEIC_HEAD))).toBeNull();
+  });
+
+  test("PNG khai 110 MP không bị giải mã: trả null ngay, nơi gọi giữ bản gốc", async () => {
+    const started = Date.now();
+    expect(await toWebpOnServer(pngClaiming(11_000, 10_000), "png")).toBeNull();
+    expect(Date.now() - started).toBeLessThan(1500);
+  }, 120_000);
+
+  test("HEIC 10240x10240 nền phẳng (48 KB) không bị giải mã: trả null ngay, nơi gọi giữ bản gốc", async () => {
+    const started = Date.now();
+    expect(await toWebpOnServer(heicFixture("heic-10240x10240-phang.heic"), "heic")).toBeNull();
+    expect(Date.now() - started).toBeLessThan(1500);
+  }, 120_000);
 });
 
 describe("putImage từ chối trước khi ghi S3", () => {
