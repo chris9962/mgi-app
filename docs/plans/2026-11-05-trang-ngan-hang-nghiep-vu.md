@@ -71,3 +71,22 @@ Làm ngày 2026-11-05, commit `ee2a695`, `96ae8fa`, `3ac71e8` trên `dev`.
 ### Việc để lại
 
 - Trang 4 còn chữ "Ngân hàng 1/2" ở dòng meta, nếu chủ dự án muốn bỏ ở mọi nơi.
+
+### Sửa theo review lần 1
+
+Reviewer đọc `90878fa`, không có Critical hay Important, có 7 Minor. Sửa cả 7, mỗi mục một commit, từ `31d9128` tới `e231a7c`.
+
+1. Esc trong ô tìm trường chỉ đóng gợi ý. `FilterButton` bỏ qua phím Esc đã bị `preventDefault`. Esc lần hai đóng bảng và trả focus về nút Bộ lọc. Kiểm bằng e2e.
+2. `readCustomerBankFilters` ở máy chủ bỏ id ngân hàng ngoài phạm vi người xem và id trường không có. Trang và route xuất Excel cùng dùng hàm này. Nhân viên mở `?bank=<ngân hàng mình không quản>` thì thấy mọi dòng của mình. Kiểm bằng test DB.
+3. Nút Bộ lọc đếm số mục đang lọc như mgst-app. Mục Ngân hàng trong bảng vẫn ghi số ngân hàng đã chọn. Kiểm bằng e2e.
+4. Tab trình duyệt của `/banks` ghi "Ngân hàng & mã giới thiệu", đúng tiêu đề trên trang. Tên hai mục menu giữ nguyên. Test e2e chọn mục Ngân hàng trong nhóm Nghiệp vụ, không dùng `first()`.
+5. `CUSTOMER_BANK_STATUS_LABEL` là bảng nhãn duy nhất cho trạng thái dòng ngân hàng. Nhãn ngắn của Trang 3 chỉ đổi "Chờ". File hồ sơ học sinh đổi cột KẾT QUẢ thành TRẠNG THÁI. Kiểm bằng test DB.
+6. `inBanks` không export nữa.
+7. Test route xuất Excel trang Ngân hàng có ca người có quyền Xuất Excel mà không quản ngân hàng nào. Test đạt ngay vì code đã đúng. Bỏ kiểm quyền hồ sơ thì test fail.
+
+Ruling:
+
+- Tên cột chung là TRẠNG THÁI. Trang Ngân hàng ghi cột và bộ lọc "Trạng thái". Trang 3 và Trang 4 chỉ hiện nhãn, không có tên cột. File hồ sơ có 3 cột TRẠNG THÁI, phân biệt bằng nhóm HỌC SINH, NGÂN HÀNG 1, NGÂN HÀNG 2.
+- `readCustomerBankFilters` bỏ cả id trường không có, không chỉ id ngân hàng. Id trường lạ cũng không có chip để bỏ.
+
+Kết quả chạy trên DB tạm `zz_test_bankpage`: `bun run test` 224/224, `bun test:db` 221/221, `bun test:s3` 29/29. `bun run e2e` 30/30 trên dev server và DB chính. `bunx tsc --noEmit` và `bun run lint` đạt.
