@@ -80,10 +80,7 @@ export function Result({ state }: { state: StudentState }) {
       <ul aria-label="Ngân hàng đã gửi" className="my-4 flex flex-col divide-y divide-line rounded-2xl border border-line bg-card">
         {state.banks.map((b) => (
           <li key={b.id} className="flex items-center justify-between gap-3 px-4 py-3">
-            <span className="flex flex-col">
-              <strong className="text-[15px]">{b.name}</strong>
-              <span className="text-[13px] text-text-2">Ngân hàng {b.slot}</span>
-            </span>
+            <strong className="text-[15px]">{b.name}</strong>
             <StatusTag tone={STATUS[b.status].tone}>{STATUS[b.status].label}</StatusTag>
           </li>
         ))}

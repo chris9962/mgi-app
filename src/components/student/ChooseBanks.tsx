@@ -1,14 +1,17 @@
 "use client";
 
 import { clsx } from "clsx";
+import { Check } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { studentApi } from "@/lib/studentApi";
 import type { StudentState } from "@/lib/studentState";
 import { AppHead, Bottom, EndBlock, Steps, ZaloBox } from "./parts";
 
-const slotBadge = (slot: number) => (
-  <span className={clsx("rounded-full px-2.5 py-0.5 text-xs font-semibold", slot === 1 ? "bg-accent text-on-accent" : "bg-accent-soft text-accent-ink")}>Ngân hàng {slot}</span>
+const pickedMark = (
+  <span className="grid size-6 shrink-0 place-items-center rounded-full bg-accent text-on-accent">
+    <Check size={15} strokeWidth={3} aria-hidden />
+  </span>
 );
 
 export function ChooseBanks({ state, notice, onDone }: { state: StudentState; notice?: string; onDone: (notice?: string) => void }) {
@@ -48,12 +51,12 @@ export function ChooseBanks({ state, notice, onDone }: { state: StudentState; no
               {need === 1 ? (
                 <div className={box}>
                   {b.name}
-                  {slotBadge(1)}
+                  {pickedMark}
                 </div>
               ) : (
                 <button type="button" aria-pressed={slot > 0} disabled={!slot && chosen.length >= 2} onClick={() => toggle(b.id)} className={clsx(box, "text-text disabled:opacity-50")}>
                   {b.name}
-                  {slot > 0 && slotBadge(slot)}
+                  {slot > 0 && pickedMark}
                 </button>
               )}
             </li>
