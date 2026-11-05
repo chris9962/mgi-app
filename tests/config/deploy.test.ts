@@ -31,6 +31,16 @@ describe("Nginx", () => {
     expect(burst("= /api/customers", "mgi_bank_create")).toBeGreaterThanOrEqual(40);
   });
 
+  test("HSTS: trả Strict-Transport-Security khi chạy https, kể cả ở location tự đặt add_header (Nginx không kế thừa add_header khi location có add_header riêng)", () => {
+    expect(read("deploy/nginx/limits.conf")).toMatch(/map \$scheme \$mgi_bank_hsts \{\s*https "max-age=31536000";\s*default "";\s*\}/);
+    const app = read("deploy/nginx/app.conf");
+    const line = 'add_header Strict-Transport-Security $mgi_bank_hsts always;';
+    const serverLevel = app.slice(0, app.search(/^location /m));
+    expect(serverLevel).toContain(line);
+    for (const block of app.split(/^location /m).slice(1)) if (block.includes("add_header")) expect(block).toContain(line);
+    expect(read("docs/deploy.md")).toContain("Strict-Transport-Security");
+  });
+
   test("ảnh tải qua app: trần body ít nhất 20 MB ở cả hai tên miền", () => {
     const size = Number(read("deploy/nginx/app.conf").match(/client_max_body_size (\d+)m;/)?.[1]);
     expect(size).toBeGreaterThanOrEqual(20);

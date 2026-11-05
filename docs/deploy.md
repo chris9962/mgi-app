@@ -210,13 +210,14 @@ Lệnh cuối in `502` khi app chưa chạy, in `200` sau mục 7.
 
 Certbot xác minh qua cổng 80 mỗi lần gia hạn, nên Security Group phải giữ cổng 80 mở. Gia hạn tự động bằng `certbot.timer`. Kiểm bằng `certbot renew --dry-run`.
 
-Cấu hình làm năm việc:
+Cấu hình làm các việc sau:
 
 - Chuyển đúng header `Host`. `src/proxy.ts` chọn trang quản lý hay web học sinh theo Host, thiếu header thì mọi trang trả 404.
 - Ghi đè `X-Forwarded-For` bằng địa chỉ thật của kết nối. App lấy địa chỉ cuối của header này cho `audit_log.ip` và `customers.created_ip` (`src/server/http/ip.ts`). Học sinh tự khai header thì bị Nginx ghi đè.
 - Giới hạn request theo IP với ngưỡng cao, vì cả trường dùng chung một IP Wi-Fi: 30 request mỗi giây, dồn được 600. File tĩnh `/_next/static/` không tính. Vượt ngưỡng thì trả 429.
 - Đường gửi ảnh `/api/customers/me/photos` có vùng riêng: 10 request mỗi giây, dồn được 300. Mỗi ảnh là một request. Cách tính: 300 học sinh chung một IP, mỗi em 3 tới 6 ảnh trong 10 phút là tới 1.800 request; một lớp 40 em gửi cùng lúc là tới 240.
 - Đường tạo hồ sơ `POST /api/customers` (B1) có thêm vùng riêng: 2 request mỗi giây, dồn được 100. Cách tính: 300 em tạo hồ sơ trong 10 phút, một lớp 40 em cùng lúc. Vùng này chặn một máy đổ hàng nghìn hồ sơ rác.
+- HSTS: qua https, mọi phản hồi mang `Strict-Transport-Security: max-age=31536000` (giá trị đặt ở `deploy/nginx/limits.conf`, header ở `deploy/nginx/app.conf`). Trình duyệt đã vào https một lần thì trong một năm không gọi http nữa, Wi-Fi trường không hạ được kết nối xuống http. Không bật `includeSubDomains` vì tên miền con khác của `minhgroup-i.com.vn` có thể chưa có https. Không dùng cờ `--hsts` của certbot để cấu hình nằm trong repo.
 - Trần body 22 MB ở cả hai tên miền (`client_max_body_size 22m` trong `deploy/nginx/app.conf`): ảnh tối đa 20 MB cộng phần bao của multipart. Trong app có thêm hai trần. `next.config.ts` đặt `experimental.proxyClientMaxBodySize` là 22 MB, vì `src/proxy.ts` chạy cho mọi đường dẫn và Next chỉ giữ 10 MB body khi có proxy, ảnh lớn hơn bị cắt. `putImage` từ chối file quá 20 MB.
 - Bảo trì: file `deploy/maintenance/on` có thì trang trả 503 với trang bảo trì, API trả 503 với JSON. `deploy/maintenance-on.sh` và `deploy/maintenance-off.sh` bật tắt, không cần reload Nginx.
 
