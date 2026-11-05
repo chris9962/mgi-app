@@ -5,7 +5,7 @@ import { heicFixture } from "../support/heic";
 import { broken, HEIC_HEAD, JPEG_HEAD, PNG_HEAD, screenshot } from "../support/screenshot";
 import { MAX_IMAGE_BYTES } from "../../src/lib/imageKey";
 import { putImage } from "../../src/server/storage";
-import { heicPixels, heicToJpeg } from "../../src/server/heic";
+import { heicFits, heicPixels, heicToJpeg } from "../../src/server/heic";
 import { toWebpOnServer } from "../../src/server/toWebpOnServer";
 
 const MAX_BYTES = 300 * 1024;
@@ -54,10 +54,22 @@ function pngClaiming(width: number, height: number): Uint8Array {
   return new Uint8Array([...PNG_HEAD, ...chunk("IHDR", ihdr), ...chunk("IDAT", new Uint8Array(deflateSync(new Uint8Array(1000)))), ...chunk("IEND", new Uint8Array())]);
 }
 
+// Ghi kích thước khác vào mọi hộp ispe: thử ngưỡng của trần mà không phải dựng ảnh thật cỡ đó.
+function withSize(heic: Uint8Array, width: number, height: number): Uint8Array {
+  const out = new Uint8Array(heic);
+  const view = new DataView(out.buffer);
+  for (let i = 4; i + 16 <= out.length; i += 1) {
+    if (String.fromCharCode(...out.subarray(i, i + 4)) !== "ispe" || view.getUint32(i - 4) !== 20) continue;
+    view.setUint32(i + 8, width);
+    view.setUint32(i + 12, height);
+  }
+  return out;
+}
+
 describe("trần điểm ảnh: route nộp ảnh mở cho học sinh không đăng nhập", () => {
   test("đọc số điểm ảnh của HEIC từ hộp ispe, không giải mã", () => {
     expect(heicPixels(heicFixture("heic-320x240.heic"))).toBe(320 * 240);
-    expect(heicPixels(heicFixture("heic-8000x8000-phang.heic"))).toBe(8000 * 8000);
+    expect(heicPixels(heicFixture("heic-8192x8192-phang.heic"))).toBe(8192 * 8192);
     expect(heicPixels(broken(HEIC_HEAD))).toBeNull();
   });
 
@@ -67,9 +79,16 @@ describe("trần điểm ảnh: route nộp ảnh mở cho học sinh không đ�
     expect(Date.now() - started).toBeLessThan(1500);
   }, 120_000);
 
-  test("HEIC 8000x8000 nền phẳng (33 KB, 64 MP) vượt trần 50 MP của HEIC: không giải mã, trả null ngay, nơi gọi giữ bản gốc", async () => {
+  test("trần HEIC 64 MP: ảnh 50 MP của máy Android (8160x6144) vẫn đổi; ảnh 8192x8192 hoặc thiếu hộp ispe thì không", () => {
+    expect(heicFits(heicFixture("heic-320x240.heic"))).toBe(true);
+    expect(heicFits(withSize(heicFixture("heic-320x240.heic"), 8160, 6144))).toBe(true);
+    expect(heicFits(heicFixture("heic-8192x8192-phang.heic"))).toBe(false);
+    expect(heicFits(broken(HEIC_HEAD))).toBe(false);
+  });
+
+  test("HEIC 8192x8192 nền phẳng (31 KB, 67 MP) vượt trần: không giải mã, trả null ngay, nơi gọi giữ bản gốc", async () => {
     const started = Date.now();
-    expect(await toWebpOnServer(heicFixture("heic-8000x8000-phang.heic"), "heic")).toBeNull();
+    expect(await toWebpOnServer(heicFixture("heic-8192x8192-phang.heic"), "heic")).toBeNull();
     expect(Date.now() - started).toBeLessThan(1000);
   }, 120_000);
 

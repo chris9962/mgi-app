@@ -21,3 +21,12 @@ export function heicPixels(bytes: Uint8Array): number | null {
   }
   return most;
 }
+
+// Máy Android 50 MP chụp 8160x6144, nhỉnh hơn 50 triệu điểm. Ảnh 64 MP tốn thêm khoảng 585 MB khi đổi, vừa trần 3 GB của app vì đổi từng ảnh một.
+export const MAX_HEIC_PIXELS = 64_000_000;
+
+// Thiếu hộp ispe thì không biết kích thước trước khi giải mã: coi như vượt trần.
+export function heicFits(bytes: Uint8Array): boolean {
+  const pixels = heicPixels(bytes);
+  return pixels !== null && pixels <= MAX_HEIC_PIXELS;
+}
