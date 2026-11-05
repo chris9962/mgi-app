@@ -1,7 +1,7 @@
 import { afterAll, describe, expect, test } from "bun:test";
 import { PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import sharp from "sharp";
-import { toHeic } from "../support/heic";
+import { heicFixture } from "../support/heic";
 import { broken, JPEG_HEAD, screenshot } from "../support/screenshot";
 import { deleteImage, newKey, presignGet, putImage, readImage } from "../../src/server/storage";
 
@@ -50,8 +50,7 @@ describe("putImage đổi WebP lúc nhận", () => {
   });
 
   test("HEIC ghi thành WebP, cả ảnh học sinh lẫn ảnh mẫu", async () => {
-    const heic = toHeic(await screenshot(1200, 1600, "png"));
-    if (!heic) return;
+    const heic = heicFixture("heic-320x240.heic");
     for (const folder of ["proofs", "samples"] as const) {
       const r = await stored(heic, folder);
       expect(r.key).toMatch(new RegExp(`^${folder}/.+\\.webp$`));

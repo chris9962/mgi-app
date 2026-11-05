@@ -3,8 +3,7 @@ import { and, eq, isNull } from "drizzle-orm";
 import sharp from "sharp";
 import { cleanTestUsers, makeActor } from "../db/helpers";
 import { insertCustomer, setupProgram, type Program } from "../db/fixtures";
-import { toHeic } from "../support/heic";
-import { screenshot } from "../support/screenshot";
+import { heicFixture } from "../support/heic";
 import { db } from "../../src/server/db/client";
 import { photoChecks, proofPhotos } from "../../src/server/db/schema";
 import { SESSION_COOKIE, createSession } from "../../src/server/auth/session";
@@ -20,7 +19,7 @@ const SITE = `http://${process.env.ADMIN_HOST ?? "admin.localhost"}:3100`;
 let p: Program;
 let staffCookie = "";
 let managerCookie = "";
-let heic: Uint8Array | null = null;
+const heic = heicFixture("heic-320x240.heic");
 const keys: string[] = [];
 
 const post = (path: string, cookie: string, form: FormData) => new Request(`${SITE}${path}`, { method: "POST", headers: { Origin: SITE, Cookie: `${SESSION_COOKIE}=${cookie}` }, body: form });
@@ -31,7 +30,6 @@ beforeAll(async () => {
   const staff = await makeActor("adup_staff", "staff", [], [p.bank.A]);
   staffCookie = (await createSession(staff.id)).token;
   managerCookie = (await createSession(p.manager.id)).token;
-  heic = toHeic(await screenshot(1200, 1600, "png"));
 });
 afterAll(async () => {
   for (const key of keys) await deleteImage(key).catch(() => undefined);
@@ -40,7 +38,6 @@ afterAll(async () => {
 
 describe("ảnh tải ở trang quản lý đổi WebP lúc nhận", () => {
   test("nhân viên tải HEIC làm ảnh thay thế: dòng ảnh mới có khoá .webp, dung lượng của object đã ghi, lượt kiểm ảnh đọc được", async () => {
-    if (!heic) return;
     const c = await insertCustomer(p, { fullName: "Thay Ảnh Trần Minh Anh", status: "pending_review", submittedAt: new Date(), banks: [{ key: "A", status: "pending" }] });
     const form = new FormData();
     form.append("slotId", p.slot.A);
@@ -70,7 +67,6 @@ describe("ảnh tải ở trang quản lý đổi WebP lúc nhận", () => {
   }, 60_000);
 
   test("ảnh mẫu và ảnh QR HEIC ghi thành WebP", async () => {
-    if (!heic) return;
     for (const folder of ["samples", "qr"]) {
       const form = new FormData();
       form.append("file", new File([new Uint8Array(heic)], "IMG_0004.HEIC"));
