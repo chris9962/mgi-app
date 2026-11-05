@@ -53,6 +53,7 @@ describe("route quản lý theo quyền", () => {
     expect((await customersRoute(req("/api/admin/customers", "lonely"))).status).toBe(403);
     expect((await customerExportRoute(req("/api/admin/customers/export", "lonely"))).status).toBe(403);
     expect((await customerBankExportRoute(req("/api/admin/customer-banks/export", "staff"))).status).toBe(403);
+    expect((await customerBankExportRoute(req("/api/admin/customer-banks/export", "lonely"))).status).toBe(403);
   });
 
   test("chưa đăng nhập 401, Origin của trang khác 403", async () => {
