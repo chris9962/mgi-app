@@ -4,7 +4,7 @@ import { and, eq } from "drizzle-orm";
 import { cleanTestUsers, makeActor } from "./helpers";
 import { insertCustomer, setupProgram, type Program } from "./fixtures";
 import { db } from "../../src/server/db/client";
-import { auditLog, bankPhotoSlots, customers, photoChecks, proofPhotos, vouchers } from "../../src/server/db/schema";
+import { auditLog, bankPhotoSlots, customerBanks, customers, photoChecks, proofPhotos, vouchers } from "../../src/server/db/schema";
 import { getCustomerDetail, photoForView, updateCustomerInfo } from "../../src/server/customerDetail";
 import { CustomerEditForm } from "../../src/lib/customerForm";
 import type { SessionUser } from "../../src/lib/types";
@@ -50,6 +50,18 @@ describe("chi tiết hồ sơ", () => {
     ]);
     const all = (await getCustomerDetail(p.manager, c.id))!;
     expect(all.banks.map((b) => b.photos.map((ph) => ph.id))).toEqual([[c.photoA], [c.photoB]]);
+  });
+
+  test("ngân hàng người xem không quản không trả ghi chú nội bộ và kết quả xác thực ảnh", async () => {
+    const c = await submitted();
+    await db.update(customerBanks).set({ note: "Ghi chú của ngân hàng B" }).where(eq(customerBanks.id, c.rows.B));
+    await db.insert(photoChecks).values({ customerBankId: c.rows.B, status: "done", passed: 0, total: 1, result: [{ slotId: p.slot.B, slotName: "Ảnh B", expected: "Detail Trần Minh Anh", passed: false, reason: "Họ tên" }] });
+    const d = (await getCustomerDetail(staffA, c.id))!;
+    const other = d.banks.find((b) => b.slot === 2)!;
+    expect([other.managed, other.note, other.check, other.slots]).toEqual([false, "", null, []]);
+    expect(JSON.stringify(d)).not.toContain("Ghi chú của ngân hàng B");
+    const all = (await getCustomerDetail(p.manager, c.id))!;
+    expect([all.banks[1].note, all.banks[1].check?.total]).toEqual(["Ghi chú của ngân hàng B", 1]);
   });
 
   test("hồ sơ trùng cùng tên và SĐT", async () => {
