@@ -1,0 +1,11 @@
+[Unit]
+Description=Xoá ảnh mồ côi trong proofs/ của bucket ảnh mgi-bank
+After=network-online.target docker.service
+OnFailure=mgi-bank-alert@%n.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/mgi-bank
+EnvironmentFile=/opt/mgi-bank/.env.local
+ExecStart=/root/.bun/bin/bun scripts/s3-orphans.ts
+TimeoutStartSec=1800

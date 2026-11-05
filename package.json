@@ -22,7 +22,8 @@
     "ops:watch": "bun --env-file=.env.local scripts/ops-watch.ts",
     "db:backup": "bun --env-file=.env.local --env-file=.env.backup scripts/db-backup.ts",
     "db:backup:check": "bun --env-file=.env.local --env-file=.env.backup scripts/db-backup-check.ts",
-    "db:restore": "bun --env-file=.env.local --env-file=.env.backup scripts/db-restore.ts"
+    "db:restore": "bun --env-file=.env.local --env-file=.env.backup scripts/db-restore.ts",
+    "s3:orphans": "bun --env-file=.env.local scripts/s3-orphans.ts"
   },
   "dependencies": {
     "@aws-sdk/client-s3": "^3.1104.0",

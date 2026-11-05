@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-import { CopyObjectCommand, DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
+import { CopyObjectCommand, DeleteObjectCommand, GetObjectCommand, HeadObjectCommand, ListObjectsV2Command, PutObjectCommand, S3Client } from "@aws-sdk/client-s3";
 import { getSignedUrl } from "@aws-sdk/s3-request-presigner";
 
 import { allowedExt, FOLDERS, isImageKey, MAX_IMAGE_BYTES, type Folder } from "@/lib/imageKey";
@@ -125,6 +125,16 @@ export async function deleteImage(key: string): Promise<void> {
   if (!isValidKey(key)) throw new Error("Khoá ảnh không hợp lệ.");
   const c = readConfig();
   await client(c).send(new DeleteObjectCommand({ Bucket: c.bucket, Key: key }), deadline());
+}
+
+export async function* listObjects(prefix: string): AsyncGenerator<{ key: string; at: Date }> {
+  const c = readConfig();
+  let token: string | undefined;
+  do {
+    const page = await client(c).send(new ListObjectsV2Command({ Bucket: c.bucket, Prefix: prefix, ContinuationToken: token }), deadline());
+    for (const o of page.Contents ?? []) if (o.Key && o.LastModified) yield { key: o.Key, at: o.LastModified };
+    token = page.IsTruncated ? page.NextContinuationToken : undefined;
+  } while (token);
 }
 
 export const imageUrl = (key: string) => `/api/admin/images?key=${encodeURIComponent(key)}`;

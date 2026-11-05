@@ -1,0 +1,10 @@
+[Unit]
+Description=Xoá ảnh mồ côi của mgi-bank lúc 03:30
+
+[Timer]
+# Giờ vắng nhất: lượt dọn duyệt cả thư mục proofs/.
+OnCalendar=*-*-* 03:30:00
+Persistent=true
+
+[Install]
+WantedBy=timers.target

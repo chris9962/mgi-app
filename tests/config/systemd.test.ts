@@ -7,7 +7,7 @@ const unit = (name: string) => readFileSync(new URL(name, DIR), "utf8");
 describe("unit systemd mẫu", () => {
   test("mỗi service chạy script có thật trong repo, từ /opt/mgi-bank, đọc .env.local", () => {
     const services = readdirSync(DIR).filter((f) => f.endsWith(".service") && !f.includes("@"));
-    expect(services).toEqual(expect.arrayContaining(["mgi-bank-backup.service", "mgi-bank-backup-check.service", "mgi-bank-ops-watch.service"]));
+    expect(services).toEqual(expect.arrayContaining(["mgi-bank-backup.service", "mgi-bank-backup-check.service", "mgi-bank-ops-watch.service", "mgi-bank-s3-orphans.service"]));
     for (const s of services) {
       const text = unit(s);
       const script = text.match(/^ExecStart=\S+ (scripts\/\S+\.ts)/m)?.[1];
@@ -30,5 +30,10 @@ describe("unit systemd mẫu", () => {
     const text = unit("mgi-bank-ops-watch.service");
     expect(text).toContain("Restart=always");
     expect(text).toContain("WantedBy=multi-user.target");
+  });
+
+  test("dọn object mồ côi chạy mỗi ngày lúc 03:30", () => {
+    expect(unit("mgi-bank-s3-orphans.timer")).toContain("OnCalendar=*-*-* 03:30:00");
+    expect(unit("mgi-bank-s3-orphans.service")).toContain("scripts/s3-orphans.ts");
   });
 });
