@@ -77,6 +77,18 @@ describe("script deploy", () => {
     expect(text.slice(text.indexOf("== 7/7"))).toMatch(/MA_DB" = "401"/);
   });
 
+  test("container app có trần RAM đủ cho ảnh HEIC 48 MP đổi WebP trong app (đo 1,22 GB một ảnh): production 2 ảnh cùng lúc, bản test 1 ảnh", () => {
+    const gb = (text: string) => Number(text.match(/doc_env APP_MEMORY (\d+)g/)?.[1]);
+    const deploy = read("deploy/deploy.sh");
+    expect(gb(deploy)).toBeGreaterThanOrEqual(3);
+    const runs = [...deploy.matchAll(/docker run -d --name "\$(?:APP|TEN-app-thu)"[^\n]*/g)].map((m) => m[0]);
+    expect(runs.length).toBe(2);
+    for (const r of runs) expect(r).toContain('--memory "$RAM_APP" --memory-swap "$RAM_APP"');
+    const testEnv = read("deploy/test-env.sh");
+    expect(gb(testEnv)).toBeGreaterThanOrEqual(2);
+    expect(testEnv).toContain('--memory "$RAM_APP" --memory-swap "$RAM_APP"');
+  });
+
   test("worker kiểm ảnh: thử OCR trả ready trước khi thay, trần RAM đủ cho HEIC 48 MP, chờ dừng lâu hơn hạn đọc một ảnh", () => {
     const text = read("deploy/worker-photo.sh");
     expect(text).toContain("--target photo-check");

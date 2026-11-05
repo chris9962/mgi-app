@@ -40,8 +40,9 @@ case "${1:-}" in
     docker build --target runner -t mgi-bank-app:test .
     chung
     docker rm -f "$APP" >/dev/null 2>&1 || true
-    # Trần 1 GB để bản test không giành RAM của production.
-    docker run -d --name "$APP" --restart unless-stopped --memory 1g --memory-swap 1g \
+    # Trần riêng để bản test không giành RAM của production, vẫn đủ đổi một ảnh HEIC 48 MP (đo 1,22 GB).
+    RAM_APP="$(doc_env APP_MEMORY 2g)"
+    docker run -d --name "$APP" --restart unless-stopped --memory "$RAM_APP" --memory-swap "$RAM_APP" \
       "${CHUNG[@]}" -p "127.0.0.1:${CONG_APP}:3000" mgi-bank-app:test >/dev/null
     sleep 8
     MA="$(curl -s -o /dev/null -w '%{http_code}' -H "Host: $ADMIN_HOST" "http://127.0.0.1:$CONG_APP/login")"

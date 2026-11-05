@@ -148,6 +148,7 @@ S3_ACCESS_KEY_ID=<access key FPT Object Storage>
 S3_SECRET_ACCESS_KEY=<secret key FPT Object Storage>
 S3_QUOTA_GB=500
 VOUCHER_SECRET=<chuỗi openssl rand -hex 32>
+APP_MEMORY=3g
 PHOTO_CHECK_MEMORY=4g
 PHOTO_CHECK_CPUS=2
 EOF
@@ -244,6 +245,8 @@ cd /opt/mgi-bank && git pull && ./deploy/deploy.sh
 ```
 
 `git pull` đứng trước để lấy chính bản `deploy/deploy.sh` mới nhất. Script tự `git reset --hard origin/main` lần nữa ở bên trong.
+
+Container app có trần RAM `APP_MEMORY`, mặc định `3g`. App đổi mọi ảnh sang WebP lúc nhận; một ảnh HEIC 48 MP qua `heic-convert` đo được 1,22 GB ngày 2026-11-05. Trần 3 GB đủ cho hai ảnh như vậy cùng lúc. Vượt trần thì Docker chỉ dừng container app rồi chạy lại, request đang dở trả lỗi, Postgres và worker không bị kéo theo.
 
 `deploy/deploy.sh` chỉ đụng container app, làm bảy bước:
 
@@ -415,7 +418,7 @@ cd /opt/mgi-bank-test
 ./deploy/test-env.sh on       # bật lại
 ```
 
-Script dừng khi chạy ngoài `/opt/mgi-bank-test` hoặc khi `DATABASE_URL` không trỏ `127.0.0.1:5437`. Container app của bản test có trần 1 GB RAM. Dựng image bản test chiếm CPU vài phút, nên chạy `update` ngoài giờ học sinh nộp hồ sơ.
+Script dừng khi chạy ngoài `/opt/mgi-bank-test` hoặc khi `DATABASE_URL` không trỏ `127.0.0.1:5437`. Container app của bản test có trần `APP_MEMORY` của `/opt/mgi-bank-test/.env.local`, mặc định `2g`: đủ đổi một ảnh HEIC 48 MP. Dựng image bản test chiếm CPU vài phút, nên chạy `update` ngoài giờ học sinh nộp hồ sơ.
 
 ## 13. Biến môi trường
 
@@ -432,6 +435,7 @@ Script dừng khi chạy ngoài `/opt/mgi-bank-test` hoặc khi `DATABASE_URL` k
 | `S3_QUOTA_GB` | không | hạn mức bucket ảnh, ô S3 của Trang 18 hiện phần trăm |
 | `S3_TIMEOUT_MS` | không | hạn giờ mỗi lệnh S3, mặc định 60000 |
 | `OCR_TIMEOUT_MS` | không | hạn đọc một ảnh của worker kiểm ảnh, mặc định 120000 |
+| `APP_MEMORY` | không | trần RAM container app, mặc định `3g` (bản test `2g`) |
 | `PHOTO_CHECK_MEMORY`, `PHOTO_CHECK_CPUS` | không | trần container kiểm ảnh, mặc định `4g` và `2` |
 | `COOKIE_SECURE` | không | chỉ đặt `false` khi chạy tạm bằng HTTP |
 | `OPS_WATCH_SLEEP`, `OPS_S3_EVERY_MINUTES`, `OPS_DISK_PATH`, `OPS_KEEP_DAYS` | không | nhịp đo của ops-watch: 60 giây, 60 phút, `/`, 7 ngày |

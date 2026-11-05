@@ -30,6 +30,8 @@ done
 [ "$(doc_env S3_BUCKET '')" != "mgst-images" ] || { echo "DỪNG: S3_BUCKET là bucket của mgst-app." >&2; exit 1; }
 ADMIN_HOST="$(doc_env ADMIN_HOST '')"
 STUDENT_HOST="$(doc_env STUDENT_HOST '')"
+# App đổi ảnh sang WebP lúc nhận: một HEIC 48 MP qua heic-convert đo được 1,22 GB. 3g đủ hai ảnh như vậy cùng lúc; vượt trần thì Docker chỉ dừng app rồi chạy lại.
+RAM_APP="$(doc_env APP_MEMORY 3g)"
 chung
 echo "  env: đạt"
 
@@ -42,7 +44,7 @@ echo "== 4/7 Thử image ở cổng $CONG_THU =="
 # App đổi mọi ảnh sang WebP bằng sharp lúc nhận. sharp là module native: thiếu libvips trong image thì chỉ lộ ra lúc học sinh gửi ảnh.
 docker run --rm -w /app "$IMAGE:new" bun -e 'require("sharp")({ create: { width: 8, height: 8, channels: 3, background: "#fff" } }).webp().toBuffer().then((b) => console.log("  sharp: đổi được WebP, " + b.length + " byte"))'
 docker rm -f "$TEN-app-thu" >/dev/null 2>&1 || true
-docker run -d --name "$TEN-app-thu" "${CHUNG[@]}" -p "127.0.0.1:${CONG_THU}:3000" "$IMAGE:new" >/dev/null
+docker run -d --name "$TEN-app-thu" --memory "$RAM_APP" --memory-swap "$RAM_APP" "${CHUNG[@]}" -p "127.0.0.1:${CONG_THU}:3000" "$IMAGE:new" >/dev/null
 sleep 8
 thu() {
   local mong="$1" ma="$2" mo_ta="$3"
@@ -83,7 +85,7 @@ if docker container inspect "$APP" >/dev/null 2>&1; then
   docker rename "$APP" "$BAN_CU"
 fi
 chay_app() {
-  docker run -d --name "$APP" --restart unless-stopped "${CHUNG[@]}" -p "127.0.0.1:${CONG_APP}:3000" "$1" >/dev/null
+  docker run -d --name "$APP" --memory "$RAM_APP" --memory-swap "$RAM_APP" --restart unless-stopped "${CHUNG[@]}" -p "127.0.0.1:${CONG_APP}:3000" "$1" >/dev/null
   sleep 8
 }
 chay_app "$IMAGE:new"
