@@ -10,8 +10,11 @@ async function main() {
   console.log(`Database: ${url.hostname}:${url.port || "5432"}${url.pathname}`);
 
   const pool = new Pool({ connectionString });
-  const applied = async () =>
-    Number((await pool.query<{ n: string }>("select case when to_regclass('drizzle.__drizzle_migrations') is null then 0 else (select count(*) from drizzle.__drizzle_migrations) end as n")).rows[0].n);
+  // Database mới chưa có bảng migration: Postgres báo lỗi ngay khi câu đếm nhắc tới bảng đó, nên hỏi bảng có chưa trước.
+  const applied = async () => {
+    const exists = (await pool.query<{ t: string | null }>("select to_regclass('drizzle.__drizzle_migrations') as t")).rows[0].t;
+    return exists ? Number((await pool.query<{ n: string }>("select count(*) as n from drizzle.__drizzle_migrations")).rows[0].n) : 0;
+  };
   const before = await applied();
   await migrate(drizzle(pool), { migrationsFolder: "./drizzle" });
   const after = await applied();
