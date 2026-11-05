@@ -69,7 +69,13 @@ export async function putImage(raw: Uint8Array, folder: Folder): Promise<PutResu
   if (!allowedExt(folder, ext)) return { ok: false, message: "Không mở được ảnh này. Chọn ảnh khác." };
   const c = readConfig();
   const key = newKey(folder, ext);
-  await client(c).send(new PutObjectCommand({ Bucket: c.bucket, Key: key, Body: bytes, ContentType: MIME.get(ext) }), deadline());
+  try {
+    await client(c).send(new PutObjectCommand({ Bucket: c.bucket, Key: key, Body: bytes, ContentType: MIME.get(ext) }), deadline());
+  } catch (e) {
+    // Như mgst-app: ghi nguyên lỗi cho người vận hành, không trả ra cho người gửi vì lỗi của SDK kèm tên bucket và cấu hình.
+    console.error("[storage] không đẩy được ảnh lên S3:", e);
+    return { ok: false, message: "Không tải được ảnh lên kho lưu trữ. Thử lại sau ít phút." };
+  }
   return { ok: true, key, size: bytes.length };
 }
 
