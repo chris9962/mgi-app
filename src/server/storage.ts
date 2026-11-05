@@ -28,6 +28,9 @@ const client = (c: Config) =>
     credentials: { accessKeyId: c.accessKeyId, secretAccessKey: c.secretAccessKey },
   });
 
+// S3 treo thì lệnh lỗi sau hạn giờ, kể cả các lượt SDK tự thử lại: worker không đứng mãi ở một ảnh và SIGTERM thoát được.
+const deadline = () => ({ abortSignal: AbortSignal.timeout(Number(process.env.S3_TIMEOUT_MS) || 60_000) });
+
 // Nhận diện ảnh bằng chữ ký đầu file như mgst-app, không tin Content-Type trình duyệt khai.
 const SIGNATURES: { ext: string; mime: string; test: (b: Uint8Array) => boolean }[] = [
   { ext: "jpg", mime: "image/jpeg", test: (b) => b[0] === 0xff && b[1] === 0xd8 && b[2] === 0xff },
@@ -60,7 +63,7 @@ export async function putImage(bytes: Uint8Array, folder: Folder): Promise<{ ok:
   if (!ext || !allowedExt(folder, ext)) return { ok: false, message: "Chỉ nhận ảnh jpg, png hoặc webp." };
   const c = readConfig();
   const key = newKey(folder, ext);
-  await client(c).send(new PutObjectCommand({ Bucket: c.bucket, Key: key, Body: bytes, ContentType: MIME.get(ext) }));
+  await client(c).send(new PutObjectCommand({ Bucket: c.bucket, Key: key, Body: bytes, ContentType: MIME.get(ext) }), deadline());
   return { ok: true, key };
 }
 
@@ -84,13 +87,13 @@ export async function presignPut(key: string, contentType: string, size: number,
 export async function copyImage(from: string, to: string): Promise<void> {
   if (!isValidKey(from) || !isValidKey(to)) throw new Error("Khoá ảnh không hợp lệ.");
   const c = readConfig();
-  await client(c).send(new CopyObjectCommand({ Bucket: c.bucket, CopySource: `${c.bucket}/${from}`, Key: to }));
+  await client(c).send(new CopyObjectCommand({ Bucket: c.bucket, CopySource: `${c.bucket}/${from}`, Key: to }), deadline());
 }
 
 export async function headSize(key: string): Promise<number | null> {
   const c = readConfig();
   try {
-    const r = await client(c).send(new HeadObjectCommand({ Bucket: c.bucket, Key: key }));
+    const r = await client(c).send(new HeadObjectCommand({ Bucket: c.bucket, Key: key }), deadline());
     return r.ContentLength ?? 0;
   } catch (e) {
     if ((e as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode === 404) return null;
@@ -103,7 +106,7 @@ export async function readImage(key: string): Promise<Uint8Array | null> {
   if (!isValidKey(key)) throw new Error("Khoá ảnh không hợp lệ.");
   const c = readConfig();
   try {
-    const r = await client(c).send(new GetObjectCommand({ Bucket: c.bucket, Key: key }));
+    const r = await client(c).send(new GetObjectCommand({ Bucket: c.bucket, Key: key }), deadline());
     return r.Body ? await r.Body.transformToByteArray() : new Uint8Array();
   } catch (e) {
     const status = (e as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode;
@@ -115,13 +118,13 @@ export async function readImage(key: string): Promise<Uint8Array | null> {
 export async function writeImage(key: string, bytes: Uint8Array): Promise<void> {
   if (!isValidKey(key)) throw new Error("Khoá ảnh không hợp lệ.");
   const c = readConfig();
-  await client(c).send(new PutObjectCommand({ Bucket: c.bucket, Key: key, Body: bytes, ContentType: MIME.get(key.split(".").pop() ?? "") }));
+  await client(c).send(new PutObjectCommand({ Bucket: c.bucket, Key: key, Body: bytes, ContentType: MIME.get(key.split(".").pop() ?? "") }), deadline());
 }
 
 export async function deleteImage(key: string): Promise<void> {
   if (!isValidKey(key)) throw new Error("Khoá ảnh không hợp lệ.");
   const c = readConfig();
-  await client(c).send(new DeleteObjectCommand({ Bucket: c.bucket, Key: key }));
+  await client(c).send(new DeleteObjectCommand({ Bucket: c.bucket, Key: key }), deadline());
 }
 
 export const imageUrl = (key: string) => `/api/admin/images?key=${encodeURIComponent(key)}`;
