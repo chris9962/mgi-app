@@ -4,6 +4,7 @@ import { clsx } from "clsx";
 import { ExternalLink } from "lucide-react";
 import { useRef, useState, type KeyboardEvent } from "react";
 import { Button } from "@/components/ui/Button";
+import { ImageLightbox } from "@/components/ui/ImageLightbox";
 import { ConfirmDialog } from "@/components/users/ConfirmDialog";
 import { studentApi } from "@/lib/studentApi";
 import type { StudentBank, StudentState } from "@/lib/studentState";
@@ -55,6 +56,8 @@ function CodeBox({ bank }: { bank: StudentBank }) {
 
 function BankPanel({ bank, onSaved, onBusy }: { bank: StudentBank; onSaved: () => Promise<void>; onBusy: (slotId: string, busy: boolean) => void }) {
   const done = bank.slots.filter((s) => s.photo).length;
+  const samples = bank.slots.flatMap((s, i) => (s.sampleUrl ? [{ slotId: s.id, src: s.sampleUrl, alt: `Ảnh mẫu ${s.name}`, caption: `${i + 1}. ${s.name}` }] : []));
+  const [sampleAt, setSampleAt] = useState<number | null>(null);
   return (
     <div className="flex flex-col gap-4">
       {bank.steps.length > 0 && (
@@ -72,11 +75,20 @@ function BankPanel({ bank, onSaved, onBusy }: { bank: StudentBank; onSaved: () =
           </h3>
           <ul className="flex flex-col gap-4">
             {bank.slots.map((slot, i) => (
-              <PhotoSlot key={slot.id} index={i + 1} customerBankId={bank.id} slot={slot} onSaved={onSaved} onBusy={onBusy} />
+              <PhotoSlot
+                key={slot.id}
+                index={i + 1}
+                customerBankId={bank.id}
+                slot={slot}
+                onSaved={onSaved}
+                onBusy={onBusy}
+                onViewSample={() => setSampleAt(samples.findIndex((s) => s.slotId === slot.id))}
+              />
             ))}
           </ul>
         </section>
       )}
+      {sampleAt !== null && <ImageLightbox photos={samples} startIndex={sampleAt} onClose={() => setSampleAt(null)} />}
     </div>
   );
 }

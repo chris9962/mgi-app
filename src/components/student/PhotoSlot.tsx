@@ -2,7 +2,6 @@
 
 import { clsx } from "clsx";
 import { useState, type ChangeEvent } from "react";
-import { Dialog } from "@/components/ui/Dialog";
 import { compressImage, contentTypeOf } from "@/lib/compressImage";
 import { MAX_IMAGE_BYTES } from "@/lib/imageKey";
 import { studentApi } from "@/lib/studentApi";
@@ -28,16 +27,17 @@ export function PhotoSlot({
   slot,
   onSaved,
   onBusy,
+  onViewSample,
 }: {
   index: number;
   customerBankId: string;
   slot: StudentPhotoSlot;
   onSaved: () => Promise<void>;
   onBusy: (slotId: string, busy: boolean) => void;
+  onViewSample: () => void;
 }) {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState("");
-  const [viewSample, setViewSample] = useState(false);
 
   async function pick(event: ChangeEvent<HTMLInputElement>) {
     const file = event.target.files?.[0];
@@ -67,7 +67,7 @@ export function PhotoSlot({
       </span>
       <div className="grid grid-cols-2 gap-2">
         {slot.sampleUrl ? (
-          <button type="button" onClick={() => setViewSample(true)} className="relative h-40 overflow-hidden rounded-xl border border-line bg-surface" aria-label={`Xem ảnh mẫu ${slot.name}`}>
+          <button type="button" onClick={onViewSample} className="relative h-40 overflow-hidden rounded-xl border border-line bg-surface" aria-label={`Xem ảnh mẫu ${slot.name}`}>
             {/* Link S3 có hạn, không đi qua bộ tối ưu ảnh của Next. */}
             {/* eslint-disable-next-line @next/next/no-img-element */}
             <img src={slot.sampleUrl} alt="" className="size-full object-cover" />
@@ -113,12 +113,6 @@ export function PhotoSlot({
         <p role="alert" className="text-sm text-danger">
           {error}
         </p>
-      )}
-      {viewSample && slot.sampleUrl && (
-        <Dialog open title={`Ảnh mẫu: ${slot.name}`} onClose={() => setViewSample(false)} width={520}>
-          {/* eslint-disable-next-line @next/next/no-img-element */}
-          <img src={slot.sampleUrl} alt={`Ảnh mẫu ${slot.name}`} className="max-h-[70dvh] w-full rounded-lg object-contain" />
-        </Dialog>
       )}
     </li>
   );
