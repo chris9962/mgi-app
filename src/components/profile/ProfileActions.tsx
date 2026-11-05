@@ -27,11 +27,12 @@ export function EditInfoRow({ fullName, phone }: { fullName: string; phone: stri
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const f = new FormData(event.currentTarget);
-    const parsed = InfoForm.safeParse({ fullName: f.get("fullName"), phone: f.get("phone") });
+    const raw = { fullName: f.get("fullName"), phone: f.get("phone") };
+    const parsed = InfoForm.safeParse(raw);
     if (!parsed.success) return s.setErrors(Object.fromEntries(parsed.error.issues.map((i) => [String(i.path[0]), i.message])));
     s.setErrors({});
     s.setPending(true);
-    const r = await apiSend("PATCH", "/api/admin/profile", parsed.data);
+    const r = await apiSend("PATCH", "/api/admin/profile", raw);
     s.setPending(false);
     if (!r.ok) return s.setFormError(r.message);
     setOpen(false);

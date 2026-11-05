@@ -38,7 +38,8 @@ export function UserFormDialog({ open, onClose, initial, canGrantAdmin }: { open
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const f = new FormData(event.currentTarget);
-    const parsed = UserForm.safeParse({
+    // Gửi dữ liệu thô, không gửi bản đã chuyển: máy chủ kiểm lại bằng cùng schema, mà schema chỉ nhận chuỗi.
+    const raw = {
       fullName: f.get("fullName"),
       staffCode: f.get("staffCode"),
       phone: f.get("phone"),
@@ -46,7 +47,8 @@ export function UserFormDialog({ open, onClose, initial, canGrantAdmin }: { open
       role: f.get("role"),
       title: f.get("title"),
       permissions: f.getAll("permissions"),
-    });
+    };
+    const parsed = UserForm.safeParse(raw);
     if (!parsed.success) {
       setErrors(Object.fromEntries(parsed.error.issues.map((i) => [String(i.path[0]), i.message])));
       return;
@@ -55,8 +57,8 @@ export function UserFormDialog({ open, onClose, initial, canGrantAdmin }: { open
     setFormError("");
     setPending(true);
     const r = editing
-      ? await apiSend("PATCH", `/api/admin/users/${start.id}`, parsed.data)
-      : await apiSend<{ id: string; password: string }>("POST", "/api/admin/users", parsed.data);
+      ? await apiSend("PATCH", `/api/admin/users/${start.id}`, raw)
+      : await apiSend<{ id: string; password: string }>("POST", "/api/admin/users", raw);
     setPending(false);
     if (!r.ok) {
       if (r.field) setErrors({ [r.field]: r.message });
