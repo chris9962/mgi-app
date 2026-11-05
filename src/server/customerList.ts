@@ -72,13 +72,7 @@ export function customerWhere(actor: SessionUser, f: CustomerFilters): SQL | und
   );
 }
 
-// Hàng chờ đứng đầu, ai gửi trước kiểm trước; hồ sơ khác mới nhất lên trên.
-export const customerOrder = [
-  sql`case when ${customers.status} = 'pending_review' then 0 else 1 end`,
-  sql`case when ${customers.status} = 'pending_review' then ${customers.submittedAt} end`,
-  sql`coalesce(${customers.submittedAt}, ${customers.createdAt}) desc`,
-  desc(customers.id),
-];
+export const customerOrder = [desc(customers.createdAt), desc(customers.id)];
 
 const rowColumns = {
   id: customers.id,

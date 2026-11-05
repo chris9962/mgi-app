@@ -25,8 +25,8 @@ beforeAll(async () => {
   id.bao = bao.id;
   const ngan = await insertCustomer(p, { fullName: "Locds Võ Thị Kim Ngân", status: "reviewed", submittedAt: at("2026-11-02T09:20:00Z"), banks: [{ key: "A", status: "passed" }, { key: "B", status: "passed" }] });
   id.ngan = ngan.id;
-  id.do = (await insertCustomer(p, { fullName: "Locds Đỗ Văn Đức", status: "new" })).id;
-  id.ha = (await insertCustomer(p, { fullName: "Locds Phạm Thu Hà", status: "banks_selected", banks: [{ key: "A", status: "selected" }] })).id;
+  id.do = (await insertCustomer(p, { fullName: "Locds Đỗ Văn Đức", status: "new", createdAt: at("2026-11-05T01:00:00Z") })).id;
+  id.ha = (await insertCustomer(p, { fullName: "Locds Phạm Thu Hà", status: "banks_selected", createdAt: at("2026-11-05T02:00:00Z"), banks: [{ key: "A", status: "selected" }] })).id;
   // Lượt kiểm mới nhất mới tính: Bảo có lượt cũ đủ ảnh, lượt mới thiếu.
   await addPhotoCheck(bao.rows.A, 2, 2, at("2026-11-03T18:00:00Z"));
   await addPhotoCheck(bao.rows.A, 1, 2, at("2026-11-03T19:00:00Z"));
@@ -119,13 +119,13 @@ describe("phân trang và thứ tự", () => {
     expect((await listCustomers(p.manager, filters({ q: "trangds" }), 1.5)).page).toBe(1);
   });
 
-  test("hồ sơ chờ kiểm tra đứng đầu, gửi trước xếp trước; còn lại mới nhất trước", async () => {
+  test("xếp theo ngày tạo hồ sơ, mới nhất trước, hồ sơ chờ kiểm tra không được đưa lên đầu", async () => {
     expect(await names(p.manager, { q: "locds", status: "" })).toEqual([
-      "Locds Trần Minh Anh",
-      "Locds Lê Hoàng Nam",
-      "Locds Nguyễn Gia Bảo",
       "Locds Phạm Thu Hà",
       "Locds Đỗ Văn Đức",
+      "Locds Nguyễn Gia Bảo",
+      "Locds Lê Hoàng Nam",
+      "Locds Trần Minh Anh",
       "Locds Võ Thị Kim Ngân",
     ]);
   });
