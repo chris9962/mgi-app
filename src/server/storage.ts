@@ -98,6 +98,26 @@ export async function headSize(key: string): Promise<number | null> {
   }
 }
 
+// Object không còn thì trả null: worker phân biệt "ảnh đã bị thay" với lỗi mạng.
+export async function readImage(key: string): Promise<Uint8Array | null> {
+  if (!isValidKey(key)) throw new Error("Khoá ảnh không hợp lệ.");
+  const c = readConfig();
+  try {
+    const r = await client(c).send(new GetObjectCommand({ Bucket: c.bucket, Key: key }));
+    return r.Body ? await r.Body.transformToByteArray() : new Uint8Array();
+  } catch (e) {
+    const status = (e as { $metadata?: { httpStatusCode?: number } }).$metadata?.httpStatusCode;
+    if (status === 404 || (e as { name?: string }).name === "NoSuchKey") return null;
+    throw e;
+  }
+}
+
+export async function writeImage(key: string, bytes: Uint8Array): Promise<void> {
+  if (!isValidKey(key)) throw new Error("Khoá ảnh không hợp lệ.");
+  const c = readConfig();
+  await client(c).send(new PutObjectCommand({ Bucket: c.bucket, Key: key, Body: bytes, ContentType: MIME.get(key.split(".").pop() ?? "") }));
+}
+
 export async function deleteImage(key: string): Promise<void> {
   if (!isValidKey(key)) throw new Error("Khoá ảnh không hợp lệ.");
   const c = readConfig();
