@@ -1,5 +1,5 @@
 import sharp from "sharp";
-import { and, asc, eq, isNull, lt } from "drizzle-orm";
+import { and, asc, eq, isNull, like, lt, lte, or, sql } from "drizzle-orm";
 import { db } from "./db/client";
 import { proofPhotos } from "./db/schema";
 import { heicToJpeg } from "./heic";
@@ -9,6 +9,8 @@ export const MAX_EDGE = 1600;
 export const MAX_BYTES = 300 * 1024;
 export const MAX_ATTEMPTS = 3;
 export const BATCH = 20;
+// Ảnh 48 MP đã tốn khoảng 1,2 GB RAM khi giải mã; ảnh lớn hơn trần thì lần thử lỗi thay vì làm chết worker.
+const MAX_INPUT_PIXELS = 100_000_000;
 // Bậc chất lượng chép từ mgst-app: dừng ở bậc đầu tiên lọt trần, ảnh nền phẳng đạt ngay ở 85.
 const QUALITY_STEPS = [85, 80, 75, 70];
 
@@ -19,26 +21,27 @@ export type CompressStore = {
 };
 export const s3CompressStore: CompressStore = { read: readImage, write: writeImage, remove: deleteImage };
 
-const extOf = (key: string) => key.split(".").pop() ?? "";
-
 // Định dạng nhận theo nội dung, không theo đuôi khoá: điện thoại khai sai loại thì HEIC vẫn nằm dưới khoá .jpg.
 export async function toWebp(bytes: Uint8Array): Promise<Uint8Array> {
   const src = Buffer.from(imageExtOf(bytes) === "heic" ? await heicToJpeg(bytes) : bytes);
   let out = Buffer.alloc(0);
   for (const quality of QUALITY_STEPS) {
     // failOn none: JPEG thiếu vài byte cuối vẫn dựng được phần đã có, như mgst-app.
-    out = await sharp(src, { failOn: "none" }).rotate().resize({ width: MAX_EDGE, height: MAX_EDGE, fit: "inside", withoutEnlargement: true }).webp({ quality }).toBuffer();
+    out = await sharp(src, { failOn: "none", limitInputPixels: MAX_INPUT_PIXELS }).rotate().resize({ width: MAX_EDGE, height: MAX_EDGE, fit: "inside", withoutEnlargement: true }).webp({ quality }).toBuffer();
     if (out.length <= MAX_BYTES) break;
   }
   return new Uint8Array(out);
 }
+
+// Lần thử ghi lúc nhận ảnh; hết 5 phút mà chưa xong thì coi như worker đó đã chết, worker khác lấy lại.
+const retryDue = or(isNull(proofPhotos.compressTriedAt), lt(proofPhotos.compressTriedAt, sql`now() - interval '5 minutes'`));
 
 // Ảnh nén lỗi 3 lần vẫn nằm trong chỉ mục compressed_at is null, nên phải lọc số lần thử ở đây.
 export async function compressQueue(limit = BATCH): Promise<string[]> {
   const rows = await db
     .select({ id: proofPhotos.id })
     .from(proofPhotos)
-    .where(and(isNull(proofPhotos.compressedAt), lt(proofPhotos.compressAttempts, MAX_ATTEMPTS)))
+    .where(and(isNull(proofPhotos.compressedAt), lt(proofPhotos.compressAttempts, MAX_ATTEMPTS), retryDue))
     .orderBy(asc(proofPhotos.createdAt))
     .limit(limit);
   return rows.map((r) => r.id);
@@ -46,52 +49,69 @@ export async function compressQueue(limit = BATCH): Promise<string[]> {
 
 export type CompressOutcome = "compressed" | "kept" | "failed" | "skipped";
 
-// Khoá dòng ảnh suốt lúc nén: worker khác bỏ qua dòng đang khoá (skip locked), mỗi ảnh chỉ một bên ghi.
-export async function compressOne(id: string, store: CompressStore = s3CompressStore): Promise<CompressOutcome> {
-  const keys: { source: string | null; written: string | null } = { source: null, written: null };
-  let outcome: CompressOutcome;
+const ioTimeoutMs = () => Number(process.env.COMPRESS_TIMEOUT_MS) || 60_000;
+
+// S3 treo thì lần thử này lỗi và worker đi tiếp, không đứng mãi ở một ảnh.
+async function withTimeout<T>(work: Promise<T>, what: string): Promise<T> {
+  const ms = ioTimeoutMs();
+  let timer: ReturnType<typeof setTimeout> | undefined;
+  const expired = new Promise<never>((_, reject) => {
+    timer = setTimeout(() => reject(new Error(`${what} quá ${Math.round(ms / 1000)} giây.`)), ms);
+  });
   try {
-    outcome = await db.transaction(async (tx) => {
-      const [row] = await tx
-        .select({ key: proofPhotos.s3Key, size: proofPhotos.sizeBytes, attempts: proofPhotos.compressAttempts })
-        .from(proofPhotos)
-        .where(and(eq(proofPhotos.id, id), isNull(proofPhotos.compressedAt), lt(proofPhotos.compressAttempts, MAX_ATTEMPTS)))
-        .for("update", { skipLocked: true });
-      if (!row) return "skipped";
-      keys.source = row.key;
-      const ext = extOf(row.key);
-      if (ext === "webp" && row.size !== null && row.size <= MAX_BYTES) {
-        await tx.update(proofPhotos).set({ compressedAt: new Date() }).where(eq(proofPhotos.id, id));
-        return "kept";
-      }
-      try {
-        const bytes = await store.read(row.key);
-        if (!bytes) throw new Error("Không tải được ảnh từ S3.");
-        const out = await toWebp(bytes);
-        // Giữ thư mục, ngày và uuid, chỉ đổi đuôi: ảnh đã là webp thì ghi đè đúng khoá cũ.
-        const key = row.key.replace(/\.[a-z]+$/, ".webp");
-        await store.write(key, out);
-        keys.written = key;
-        await tx.update(proofPhotos).set({ s3Key: key, sizeBytes: out.length, compressedAt: new Date() }).where(eq(proofPhotos.id, id));
-        return "compressed";
-      } catch (e) {
-        console.error("[compress] không nén được ảnh", id, e);
-        await tx.update(proofPhotos).set({ compressAttempts: row.attempts + 1 }).where(eq(proofPhotos.id, id));
-        return "failed";
-      }
-    });
+    return await Promise.race([work, expired]);
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Khoá webp giữ uuid của ảnh gốc nên có thể trùng khoá một dòng đang dùng: chỉ xoá khi không dòng nào trỏ tới.
+async function removeIfUnused(store: CompressStore, key: string) {
+  const [used] = await db.select({ id: proofPhotos.id }).from(proofPhotos).where(eq(proofPhotos.s3Key, key));
+  if (!used) await store.remove(key).catch((e) => console.error("[compress] không xoá được ảnh vừa nén trên S3:", key, e));
+}
+
+// Không giữ transaction hay khoá dòng lúc tải, nén, ghi: S3 treo hay ảnh lớn không chặn học sinh chụp lại hoặc gửi kiểm tra.
+export async function compressOne(id: string, store: CompressStore = s3CompressStore): Promise<CompressOutcome> {
+  const kept = await db
+    .update(proofPhotos)
+    .set({ compressedAt: new Date() })
+    .where(and(eq(proofPhotos.id, id), isNull(proofPhotos.compressedAt), like(proofPhotos.s3Key, "%.webp"), lte(proofPhotos.sizeBytes, MAX_BYTES)))
+    .returning({ id: proofPhotos.id });
+  if (kept.length) return "kept";
+  // Ghi lần thử và commit trước khi tải: tiến trình chết giữa chừng (hết RAM với ảnh lớn) vẫn tính một lần, không kẹt mãi ở ảnh cũ nhất.
+  const [row] = await db
+    .update(proofPhotos)
+    .set({ compressAttempts: sql`${proofPhotos.compressAttempts} + 1`, compressTriedAt: sql`now()` })
+    .where(and(eq(proofPhotos.id, id), isNull(proofPhotos.compressedAt), lt(proofPhotos.compressAttempts, MAX_ATTEMPTS), retryDue))
+    .returning({ key: proofPhotos.s3Key });
+  if (!row) return "skipped";
+  // Giữ thư mục, ngày và uuid, chỉ đổi đuôi: ảnh đã là webp thì ghi đè đúng khoá cũ.
+  const key = row.key.replace(/\.[a-z]+$/, ".webp");
+  let written = false;
+  try {
+    const bytes = await withTimeout(store.read(row.key), "Tải ảnh");
+    if (!bytes) throw new Error("Không tải được ảnh từ S3.");
+    const out = await toWebp(bytes);
+    await withTimeout(store.write(key, out), "Ghi ảnh");
+    written = true;
+    // Dòng đổi trong lúc nén (học sinh chụp lại xoá dòng cũ) thì ghi vào 0 dòng và bỏ ảnh vừa nén.
+    const done = await db
+      .update(proofPhotos)
+      .set({ s3Key: key, sizeBytes: out.length, compressedAt: new Date() })
+      .where(and(eq(proofPhotos.id, id), eq(proofPhotos.s3Key, row.key), isNull(proofPhotos.compressedAt)))
+      .returning({ id: proofPhotos.id });
+    if (!done.length) {
+      await removeIfUnused(store, key);
+      return "skipped";
+    }
   } catch (e) {
-    // Transaction lỗi sau khi đã ghi khoá mới: dòng vẫn trỏ khoá cũ, object mới thành rác.
-    const { source, written } = keys;
-    if (written && written !== source) await store.remove(written).catch(() => undefined);
-    throw e;
+    console.error("[compress] không nén được ảnh", id, e);
+    if (written) await removeIfUnused(store, key);
+    return "failed";
   }
-  // Xoá ảnh gốc sau commit: transaction lỗi thì dòng vẫn trỏ ảnh gốc còn nguyên.
-  const { source, written } = keys;
-  if (outcome === "compressed" && source && written && source !== written) {
-    await store.remove(source).catch((e) => console.error("[compress] không xoá được ảnh gốc trên S3:", source, e));
-  }
-  return outcome;
+  if (key !== row.key) await store.remove(row.key).catch((e) => console.error("[compress] không xoá được ảnh gốc trên S3:", row.key, e));
+  return "compressed";
 }
 
 // Một vòng của worker; stopped() đúng thì dừng sau ảnh đang nén, không bỏ dở dòng nào.

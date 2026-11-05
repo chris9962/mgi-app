@@ -309,6 +309,8 @@ export const proofPhotos = pgTable(
     sizeBytes: integer("size_bytes"),
     compressedAt: at("compressed_at"),
     compressAttempts: smallint("compress_attempts").notNull().default(0),
+    // Lúc worker nén nhận ảnh, ghi trước khi tải: worker khác chờ hết hạn mới lấy lại, không nén trùng.
+    compressTriedAt: at("compress_tried_at"),
     uploadedBy: uuid("uploaded_by").references(() => users.id),
     replacedAt: at("replaced_at"),
     createdAt: createdAt(),

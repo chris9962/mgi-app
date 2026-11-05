@@ -36,6 +36,13 @@
       "when": 1793883782474,
       "tag": "0004_crazy_sebastian_shaw",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1793886574514,
+      "tag": "0005_sad_jubilee",
+      "breakpoints": true
     }
   ]
 }

@@ -1,0 +1,1 @@
+ALTER TABLE "proof_photos" ADD COLUMN "compress_tried_at" timestamp with time zone;

@@ -3,14 +3,14 @@ import { execFileSync, spawn } from "node:child_process";
 import { existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { eq } from "drizzle-orm";
+import { eq, sql } from "drizzle-orm";
 import sharp from "sharp";
 import { cleanTestUsers } from "../db/helpers";
 import { toHeic } from "../support/heic";
 import { insertCustomer, setupProgram, type Program } from "../db/fixtures";
 import { db } from "../../src/server/db/client";
 import { proofPhotos } from "../../src/server/db/schema";
-import { compressOne, compressQueue, MAX_BYTES } from "../../src/server/compress";
+import { compressOne, compressQueue, MAX_BYTES, s3CompressStore, type CompressStore } from "../../src/server/compress";
 import { deleteImage, newKey, readImage, writeImage } from "../../src/server/storage";
 
 // Chạy trên bucket dev mgi-bank-dev và DB local; mọi object test tạo ra đều xoá ở afterAll.
@@ -39,6 +39,9 @@ async function stored(bytes: Uint8Array, ext: string): Promise<string> {
   await writeImage(key, bytes);
   return key;
 }
+
+// Đẩy lần thử trước về quá khứ để test không phải chờ hạn thử lại thật.
+const retryNow = (id: string) => db.update(proofPhotos).set({ compressTriedAt: sql`now() - interval '1 day'` }).where(eq(proofPhotos.id, id));
 
 const rowOf = async (id: string) => (await db.select().from(proofPhotos).where(eq(proofPhotos.id, id)))[0];
 
@@ -129,7 +132,7 @@ describe("worker nén ảnh", () => {
 
     expect(await compressOne(id)).toBe("compressed");
     const row = await rowOf(id);
-    expect([row.s3Key, row.compressAttempts]).toEqual([key.replace(/\.jpg$/, ".webp"), 0]);
+    expect([row.s3Key, row.compressAttempts]).toEqual([key.replace(/\.jpg$/, ".webp"), 1]);
     const meta = await sharp((await readImage(row.s3Key))!).metadata();
     expect([meta.format, meta.width, meta.height]).toEqual(["webp", 1200, 1600]);
     expect(await readImage(key)).toBeNull();
@@ -141,6 +144,7 @@ describe("worker nén ảnh", () => {
     for (const attempts of [1, 2, 3]) {
       expect(await compressOne(id)).toBe("failed");
       expect((await rowOf(id)).compressAttempts).toBe(attempts);
+      await retryNow(id);
     }
     expect(await compressOne(id)).toBe("skipped");
     const row = await rowOf(id);
@@ -155,7 +159,58 @@ describe("worker nén ảnh", () => {
     const results = await Promise.all([compressOne(id), compressOne(id)]);
     expect(results.sort()).toEqual(["compressed", "skipped"]);
     const row = await rowOf(id);
-    expect([row.s3Key.endsWith(".webp"), row.compressAttempts]).toEqual([true, 0]);
+    expect([row.s3Key.endsWith(".webp"), row.compressAttempts]).toEqual([true, 1]);
+  }, 60_000);
+});
+
+// Store S3 thật nhưng lượt tải dừng ở cổng tới khi test mở: test làm việc khác đúng lúc worker đang nén.
+function gatedStore() {
+  let open!: () => void;
+  let entered!: () => void;
+  const gate = new Promise<void>((r) => (open = r));
+  const inside = new Promise<void>((r) => (entered = r));
+  const store: CompressStore = {
+    ...s3CompressStore,
+    read: async (key) => {
+      entered();
+      await gate;
+      return s3CompressStore.read(key);
+    },
+  };
+  return { store, open, inside };
+}
+
+describe("worker nén không giữ khoá lúc nén", () => {
+  test("số lần thử ghi xong trước khi tải ảnh: tiến trình chết giữa chừng vẫn tính một lần", async () => {
+    const png = await screenshot(1200, 1600, "png");
+    const key = await stored(png, "png");
+    const id = await photoRow(key, png.length);
+    const { store, open, inside } = gatedStore();
+    const running = compressOne(id, store);
+    await inside;
+    const row = await rowOf(id).finally(open);
+    expect([row.compressAttempts, row.compressedAt]).toEqual([1, null]);
+    expect(await running).toBe("compressed");
+  }, 60_000);
+
+  test("học sinh chụp lại trong lúc nén: không bị chặn, dòng giữ ảnh mới, ảnh vừa nén bị xoá", async () => {
+    const png = await screenshot(1200, 1600, "png");
+    const key = await stored(png, "png");
+    const id = await photoRow(key, png.length);
+    const [old] = await db.select().from(proofPhotos).where(eq(proofPhotos.id, id));
+    const { store, open, inside } = gatedStore();
+    const running = compressOne(id, store);
+    await inside;
+    const fresh = newKey("proofs", "webp");
+    const [created] = await db.transaction(async (tx) => {
+      await tx.execute(sql`set local lock_timeout = '2s'`);
+      await tx.delete(proofPhotos).where(eq(proofPhotos.id, id));
+      return tx.insert(proofPhotos).values({ customerBankId: old.customerBankId, slotId: old.slotId, s3Key: fresh, sizeBytes: 1000 }).returning({ id: proofPhotos.id });
+    }).finally(open);
+    expect(await running).toBe("skipped");
+    const row = await rowOf(created.id);
+    expect([row.s3Key, row.compressedAt]).toEqual([fresh, null]);
+    expect(await readImage(key.replace(/\.png$/, ".webp"))).toBeNull();
   }, 60_000);
 });
 
