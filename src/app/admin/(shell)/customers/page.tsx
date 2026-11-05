@@ -75,7 +75,7 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
             <table className="w-full text-left text-sm">
               <thead className="text-xs font-semibold tracking-wide text-text-2 uppercase">
                 <tr className="border-b border-line">
-                  {["Gửi lúc", "Họ tên", "Lớp", "Trường", "SĐT phụ huynh", "Ngân hàng 1", "Ngân hàng 2", "Người kiểm"].map((h) => (
+                  {["Tạo lúc", "Họ tên", "Lớp", "Trường", "SĐT phụ huynh", "Ngân hàng 1", "Ngân hàng 2", "Người kiểm"].map((h) => (
                     <th key={h} scope="col" className="px-4 py-3 font-semibold whitespace-nowrap">
                       {h}
                     </th>
@@ -87,7 +87,7 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
                   const [one, two] = [c.banks.find((b) => b.slot === 1), c.banks.find((b) => b.slot === 2)];
                   return (
                     <tr key={c.id} className="border-b border-line align-top last:border-0">
-                      <td className="px-4 py-3 whitespace-nowrap tabular-nums">{c.submittedAt ? formatShortDateTime(c.submittedAt) : <span className="text-text-3">Chưa gửi</span>}</td>
+                      <td className="px-4 py-3 whitespace-nowrap tabular-nums">{formatShortDateTime(c.createdAt)}</td>
                       <td className="px-4 py-3 font-semibold">
                         <Link href={`/customers/${c.id}`} className="text-link hover:underline">
                           {c.fullName}

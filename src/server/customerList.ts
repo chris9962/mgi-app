@@ -21,6 +21,7 @@ export type CustomerListRow = {
   parentPhone: string;
   status: CustomerStatus;
   submittedAt: Date | null;
+  createdAt: Date;
   banks: ListBank[];
   reviewers: string[];
 };
@@ -87,6 +88,7 @@ const rowColumns = {
   parentPhone: customers.parentPhone,
   status: customers.status,
   submittedAt: customers.submittedAt,
+  createdAt: customers.createdAt,
 };
 
 export async function banksOf(actor: SessionUser, customerIds: string[]) {
