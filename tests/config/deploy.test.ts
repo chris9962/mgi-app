@@ -1,5 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { existsSync, readdirSync, readFileSync } from "node:fs";
+import { fileURLToPath } from "node:url";
 
 const read = (path: string) => readFileSync(new URL(`../../${path}`, import.meta.url), "utf8");
 const scripts = readdirSync(new URL("../../deploy/", import.meta.url)).filter((f) => f.endsWith(".sh"));
@@ -129,6 +130,13 @@ describe("tải ảnh chép mgst-app", () => {
     expect(Object.keys(JSON.parse(read("package.json")).scripts).filter((k) => /compress|cors/.test(k))).toEqual([]);
     expect(read("src/server/storage.ts")).not.toMatch(/presignPut|CopyObjectCommand|HeadObjectCommand/);
     expect(read(".env.example")).not.toMatch(/COMPRESS|CORS/);
+  });
+
+  test("code và tên test không còn nói tới worker nén", () => {
+    const root = fileURLToPath(new URL("../../", import.meta.url));
+    const files = ["src", "e2e", "tests/db", "tests/s3", "tests/unit"].flatMap((dir) => [...new Bun.Glob("**/*.{ts,tsx}").scanSync(`${root}${dir}`)].map((f) => `${dir}/${f}`));
+    expect(files.length).toBeGreaterThan(50);
+    expect(files.filter((f) => read(f).includes("worker nén"))).toEqual([]);
   });
 });
 

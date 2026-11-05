@@ -69,7 +69,7 @@ withOcr("worker kiểm ảnh với OCR thật", () => {
     }, 180_000);
   }
 
-  test("ảnh HEIC chưa được worker nén vẫn đọc được, nhận định dạng theo nội dung chứ không theo đuôi khoá", async () => {
+  test("ảnh HEIC máy chủ không đổi được sang WebP vẫn đọc được, nhận định dạng theo nội dung chứ không theo đuôi khoá", async () => {
     const screen = { name: "Trần Minh Anh", code: "AT107" };
     const heic = toHeic(await bankScreen(screen, "png"));
     if (!heic) return;
