@@ -1,0 +1,12 @@
+[Unit]
+Description=Sao lưu database mgi-bank mỗi giờ từ 06:00 đến 23:00
+
+[Timer]
+# Giờ theo đồng hồ máy chủ (Asia/Ho_Chi_Minh). Học sinh có thể nộp hồ sơ buổi tối nên chạy tới 23:00.
+OnCalendar=*-*-* 06..23:00:00
+# Máy chủ dừng qua giờ hẹn thì chạy bù ngay khi bật lại.
+Persistent=true
+RandomizedDelaySec=120
+
+[Install]
+WantedBy=timers.target

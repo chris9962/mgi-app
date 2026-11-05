@@ -1,0 +1,9 @@
+[Unit]
+Description=Báo động khi %i hỏng
+
+[Service]
+Type=oneshot
+# Ghi vào journal mức err để journalctl -p err lọc ra, kèm 20 dòng cuối của unit hỏng.
+ExecStart=/bin/sh -c '\
+  echo "MGI-BANK HỎNG: %i" | systemd-cat -t mgi-bank -p err; \
+  journalctl -u %i -n 20 --no-pager | systemd-cat -t mgi-bank -p err'

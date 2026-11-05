@@ -1,0 +1,16 @@
+[Unit]
+Description=Sao lưu database mgi-bank lên S3
+# Không có Docker thì docker exec pg_dump không chạy được.
+After=docker.service
+Requires=docker.service
+OnFailure=mgi-bank-alert@%n.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/mgi-bank
+# Đúng thứ tự này: .env.local mang DATABASE_URL và khoá S3 của app, .env.backup mang bucket sao lưu và ghi đè khoá nếu có khoá riêng.
+EnvironmentFile=/opt/mgi-bank/.env.local
+EnvironmentFile=/opt/mgi-bank/.env.backup
+ExecStart=/root/.bun/bin/bun scripts/db-backup.ts
+# Trần chống treo, không phải thời gian mong đợi.
+TimeoutStartSec=600

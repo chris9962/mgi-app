@@ -1,0 +1,17 @@
+[Unit]
+Description=Đo CPU, RAM, ổ đĩa, S3 cho Trang 18 Vận hành hệ thống của mgi-bank
+After=network-online.target docker.service
+OnFailure=mgi-bank-alert@%n.service
+
+[Service]
+Type=simple
+WorkingDirectory=/opt/mgi-bank
+# .env.local trỏ DATABASE_URL vào 127.0.0.1 của máy chủ: đúng khi chạy thẳng trên máy chủ.
+EnvironmentFile=/opt/mgi-bank/.env.local
+# Chạy thẳng trên máy chủ, không trong container: trong container thì df ra ổ đĩa của container.
+ExecStart=/root/.bun/bin/bun scripts/ops-watch.ts
+Restart=always
+RestartSec=30
+
+[Install]
+WantedBy=multi-user.target

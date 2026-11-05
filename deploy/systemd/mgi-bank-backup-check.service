@@ -1,0 +1,12 @@
+[Unit]
+Description=Kiểm bản sao lưu mgi-bank mới nhất có quá cũ không
+After=network-online.target
+OnFailure=mgi-bank-alert@%n.service
+
+[Service]
+Type=oneshot
+WorkingDirectory=/opt/mgi-bank
+EnvironmentFile=/opt/mgi-bank/.env.local
+EnvironmentFile=/opt/mgi-bank/.env.backup
+ExecStart=/root/.bun/bin/bun scripts/db-backup-check.ts
+TimeoutStartSec=120
