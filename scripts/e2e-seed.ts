@@ -23,7 +23,7 @@ async function seedStudentWeb(adminId: string): Promise<Record<string, string>> 
       .insert(banks)
       .values({ code: `ZZE2EH${i + 1}`, name: `${E2E_NAME}HS ${b.key}`, sortOrder: 90 + i, guide: [`Tải app ${b.key}.`, "Chọn Mở tài khoản, chụp CCCD và khuôn mặt.", "Nhập mã giới thiệu bên dưới."] })
       .returning({ id: banks.id });
-    await db.insert(bankPhotoSlots).values(b.slots.map((name, n) => ({ bankId: bank.id, name, sortOrder: n, checkName: n === 0, sampleKey: n === 0 ? sample.key : null })));
+    await db.insert(bankPhotoSlots).values(b.slots.map((name, n) => ({ bankId: bank.id, name, sortOrder: n, checkName: n === 0, checkCode: n === 0, sampleKey: n === 0 ? sample.key : null })));
     const [code] = await db
       .insert(referralCodes)
       .values({ bankId: bank.id, displayName: `${E2E_NAME}HS ${b.key}`, code: `HS-${b.key.toUpperCase()}-01`, openUrl: b.openUrl, monthlyQuota: 100, createdBy: adminId })

@@ -48,7 +48,7 @@ function PhotoCheck({ check }: { check: NonNullable<DetailBank["check"]> }) {
         <ul className="flex flex-col gap-2">
           {check.items.map((item, i) => (
             <li key={`${item.slotId}-${i}`} className="flex items-start gap-3 rounded-xl border border-line p-3 text-sm">
-              {item.passed ? <StatusTag tone="ok">Đạt</StatusTag> : <StatusTag tone="danger">Không đạt</StatusTag>}
+              {item.passed ? <StatusTag tone="ok">Đạt</StatusTag> : <StatusTag tone="warn">Không đạt</StatusTag>}
               <div className="flex flex-col gap-0.5">
                 <b className="font-semibold">{item.slotName}</b>
                 <span className="text-text-2">{item.reason}</span>

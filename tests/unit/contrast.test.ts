@@ -25,5 +25,9 @@ for (const scope of [":root {", ':root[data-theme="dark"] {']) {
     test("chữ trên nút chính ≥ 4.5", () => expect(ratio(t("on-accent"), t("accent"))).toBeGreaterThanOrEqual(4.5));
     test("viền ô nhập trên nền thẻ ≥ 3", () => expect(ratio(t("field-border"), t("card"))).toBeGreaterThanOrEqual(3));
     test("chữ mờ trên nền thẻ ≥ 4.5", () => expect(ratio(t("text-3"), t("card"))).toBeGreaterThanOrEqual(4.5));
+    test("chữ nhãn cảnh báo trên nền thẻ ≥ 4.5, viền ≥ 3", () => {
+      expect(ratio(t("warn-ink"), t("card"))).toBeGreaterThanOrEqual(4.5);
+      expect(ratio(t("warn"), t("card"))).toBeGreaterThanOrEqual(3);
+    });
   });
 }

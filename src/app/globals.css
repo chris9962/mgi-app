@@ -29,6 +29,9 @@
   --danger: #b91c1c;
   --danger-soft: #fee2e2;
   --danger-ink: #7f1d1d;
+  /* Kết quả máy kiểm ảnh chỉ là gợi ý: "Không đạt" của máy dùng màu cảnh báo, khác màu đỏ của người quản bấm Không đạt. */
+  --warn: #d97706;
+  --warn-ink: #b45309;
   --link: #1d5bd8;
   color-scheme: light;
 }
@@ -61,6 +64,8 @@
   --danger: #f87171;
   --danger-soft: #3b1414;
   --danger-ink: #fecaca;
+  --warn: #f59e0b;
+  --warn-ink: #fbbf24;
   --link: #7aa7ff;
   color-scheme: dark;
 }
@@ -92,6 +97,8 @@
   --color-danger: var(--danger);
   --color-danger-soft: var(--danger-soft);
   --color-danger-ink: var(--danger-ink);
+  --color-warn: var(--warn);
+  --color-warn-ink: var(--warn-ink);
   --color-link: var(--link);
   --font-sans: "Google Sans", system-ui, sans-serif;
 }
