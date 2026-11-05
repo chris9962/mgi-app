@@ -1,8 +1,6 @@
 "use client";
 
-import { useState } from "react";
 import { QrPreview } from "@/components/settings/QrPreview";
-import { Button } from "@/components/ui/Button";
 import { StatusTag, type Tone } from "@/components/ui/StatusTag";
 import { formatDateTime } from "@/lib/dates";
 import type { CustomerBankStatus, StudentState } from "@/lib/studentState";
@@ -16,7 +14,6 @@ const STATUS: Record<CustomerBankStatus, { label: string; tone: Tone }> = {
 };
 
 function VoucherCard({ state }: { state: StudentState }) {
-  const [copied, setCopied] = useState(false);
   const { voucher } = state;
   const waiting = state.banks.some((b) => b.status === "pending");
   return (
@@ -26,32 +23,19 @@ function VoucherCard({ state }: { state: StudentState }) {
       </h2>
       {voucher ? (
         <>
-          <div className="flex items-center gap-3">
-            {state.pviAppUrl && (
-              <a href={state.pviAppUrl} target="_blank" rel="noopener noreferrer" className="flex-none">
+          {state.pviAppUrl && (
+            <a href={state.pviAppUrl} target="_blank" rel="noopener noreferrer" className="flex items-center gap-3">
+              <span className="flex-none">
                 <QrPreview value={state.pviAppUrl} label="QR mở app PVI" />
-              </a>
-            )}
-            <div className="flex min-w-0 flex-col gap-1">
-              <span className="text-[13px] text-text-2">Mã voucher khi mua trên app PVI</span>
-              <strong className="break-all font-mono text-lg">{voucher.code}</strong>
-              {state.pviAppUrl && <span className="text-[13px] text-text-2">Quét QR để mở app PVI</span>}
-            </div>
-          </div>
+              </span>
+              <span className="text-sm font-semibold">Quét QR để mở app PVI</span>
+            </a>
+          )}
           {voucher.smsSentAt && (
             <span className="text-[13px] text-text-2">
               Đã gửi SMS tới {state.parentPhone} lúc {formatDateTime(voucher.smsSentAt)}
             </span>
           )}
-          <Button
-            variant="secondary"
-            onClick={async () => {
-              await navigator.clipboard?.writeText(voucher.code).catch(() => undefined);
-              setCopied(true);
-            }}
-          >
-            {copied ? "Đã sao chép" : "Sao chép mã voucher"}
-          </Button>
         </>
       ) : waiting ? (
         <>

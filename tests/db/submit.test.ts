@@ -129,7 +129,7 @@ describe("Màn kết quả", () => {
     expect([state.voucher, state.reviewedAt]).toEqual([null, null]);
   });
 
-  test("có voucher: mã voucher, giờ gửi SMS, giờ kiểm tra xong", async () => {
+  test("có voucher: giờ gửi SMS, giờ kiểm tra xong, không trả mã voucher cho học sinh", async () => {
     const c = await student();
     await put(c, "A", "A1");
     await put(c, "A", "A2");
@@ -144,7 +144,8 @@ describe("Màn kết quả", () => {
     const [row] = await db.select().from(customers).where(eq(customers.id, c.id));
     const state = await studentState(row, MONTH, fakeStore().store);
     expect(state.banks.map((b) => b.status)).toEqual(["passed", "failed"]);
-    expect(state.voucher).toEqual({ code: `ZZTEST-${c.id.slice(0, 8)}`, smsSentAt: reviewedAt.toISOString() });
+    expect(state.voucher).toEqual({ smsSentAt: reviewedAt.toISOString() });
+    expect(JSON.stringify(state)).not.toContain(`ZZTEST-${c.id.slice(0, 8)}`);
     expect(state.reviewedAt).toBe(reviewedAt.toISOString());
   });
 });

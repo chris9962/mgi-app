@@ -278,7 +278,7 @@ export async function studentState(customer: Customer, month = currentYearMonth(
   const done = status === "pending_review" || status === "reviewed";
   const [voucher] = done
     ? await db
-        .select({ code: vouchers.code, smsSentAt: smsMessages.sentAt })
+        .select({ smsSentAt: smsMessages.sentAt })
         .from(vouchers)
         .leftJoin(smsMessages, and(eq(smsMessages.customerId, vouchers.customerId), eq(smsMessages.kind, "voucher")))
         .where(eq(vouchers.customerId, customer.id))
@@ -290,7 +290,7 @@ export async function studentState(customer: Customer, month = currentYearMonth(
     submittedAt: customer.submittedAt?.toISOString() ?? null,
     reviewedAt: reviewed?.at ? new Date(reviewed.at).toISOString() : null,
     parentPhone: maskPhone(customer.parentPhone),
-    voucher: voucher ? { code: voucher.code, smsSentAt: voucher.smsSentAt?.toISOString() ?? null } : null,
+    voucher: voucher ? { smsSentAt: voucher.smsSentAt?.toISOString() ?? null } : null,
     eligibleBanks,
     existingBanks,
     banks: await chosenBanks({ ...customer, status }, store),

@@ -77,8 +77,8 @@ test("Người quản ngân hàng đánh dấu Đạt, voucher hiện ở Trang 
   await expect(reviewer.getByRole("row", { name: new RegExp(code) })).toContainText(STUDENT);
 
   await student.reload();
-  await expect(student.getByText(code)).toBeVisible();
-  await expect(student.getByText("Mã voucher khi mua trên app PVI")).toBeVisible();
+  await expect(student.getByRole("img", { name: "QR mở app PVI" })).toBeVisible();
+  await expect(student.getByText(code)).toHaveCount(0);
 });
 
 test("Bộ lọc hồ sơ ghi lên URL, chip bỏ được lọc, Esc đóng bảng và trả focus về nút", async ({ browser }) => {
