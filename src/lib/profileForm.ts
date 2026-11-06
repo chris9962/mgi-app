@@ -14,8 +14,7 @@ export const InfoForm = z.object({
   fullName: z.string().trim().min(1, "Nhập họ tên"),
   phone: z
     .string()
-    .trim()
-    .transform((v) => (v === "" ? null : v))
+    .transform((v) => v.replace(/[\s.]/g, "") || null)
     .refine((v) => v === null || /^0[0-9]{9}$/.test(v), "Số điện thoại gồm 10 số, bắt đầu bằng 0"),
 });
 export type InfoFormValues = z.output<typeof InfoForm>;

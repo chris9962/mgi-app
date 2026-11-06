@@ -10,7 +10,10 @@ const optionalText = z
 export const UserForm = z.object({
   fullName: z.string().trim().min(1, "Nhập họ tên"),
   staffCode: optionalText,
-  phone: optionalText.refine((v) => v === null || /^0[0-9]{9}$/.test(v), "Số điện thoại gồm 10 số, bắt đầu bằng 0"),
+  phone: z
+    .string()
+    .transform((v) => v.replace(/[\s.]/g, "") || null)
+    .refine((v) => v === null || /^0[0-9]{9}$/.test(v), "Số điện thoại gồm 10 số, bắt đầu bằng 0"),
   username: z
     .string()
     .trim()
