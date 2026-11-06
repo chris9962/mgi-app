@@ -19,7 +19,7 @@ async function restore(page: Page, before: Settings) {
   expect(r.status, JSON.stringify(r.body)).toBe(204);
 }
 
-test("Cài đặt: mẫu SMS 400 ký tự đếm 3 tin; mẫu có dấu, emoji, xuống dòng, trống, biến lạ, ngoặc lẻ, thiếu MA_VOUCHER đều báo lỗi đúng nghĩa; lưu được rồi gõ sai thì không còn câu Đã lưu", async ({ page }) => {
+test("Cài đặt: mẫu SMS 400 ký tự đếm 3 tin; mẫu có dấu, emoji, xuống dòng, tab, ký tự điều khiển, trống, biến lạ, ngoặc lẻ, thiếu MA_VOUCHER đều báo lỗi đúng nghĩa; lưu được rồi gõ sai thì không còn câu Đã lưu", async ({ page }) => {
   await apiLogin(page, "zz_e2e_admin");
   const before = await current(page);
   try {
@@ -32,6 +32,8 @@ test("Cài đặt: mẫu SMS 400 ký tự đếm 3 tin; mẫu có dấu, emoji, 
       ["Ma có dấu {MA_VOUCHER}", "Mẫu SMS viết không dấu"],
       ["Ma 😀 {MA_VOUCHER}", "Mẫu SMS viết không dấu"],
       ["Dong mot\nDong hai {MA_VOUCHER}", "Mẫu SMS viết trên một dòng"],
+      ["Co\ttab {MA_VOUCHER}", "Có ký tự không hợp lệ"],
+      ["Co \u0001 {MA_VOUCHER}", "Có ký tự không hợp lệ"],
       ["", "Nhập mẫu SMS"],
       ["    ", "Nhập mẫu SMS"],
       ["{HOTEN} {MA_VOUCHER}", "Mẫu SMS có biến không có thật: {HOTEN}"],

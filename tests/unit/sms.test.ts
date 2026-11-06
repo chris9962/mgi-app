@@ -30,6 +30,15 @@ describe("Cài đặt mẫu SMS", () => {
     expect((await parse("HO_TEN} da mo")).success).toBe(false);
     expect((await parse("{ho_ten} da mo")).success).toBe(false);
   });
+
+  test("mẫu có tab, ký tự điều khiển, nửa cặp surrogate báo Có ký tự không hợp lệ, không báo nhầm viết không dấu", async () => {
+    for (const bad of ["Ma\t{MA_VOUCHER}", "Ma \u0001 {MA_VOUCHER}", "Ma \u007f {MA_VOUCHER}", "Ma \ud83c {MA_VOUCHER}"]) {
+      expect([bad, (await parse(bad)).error?.issues.map((i) => i.message)]).toEqual([bad, ["Có ký tự không hợp lệ"]]);
+    }
+    expect((await parse("Ma\n{MA_VOUCHER}")).error?.issues.map((i) => i.message)).toEqual(["Mẫu SMS viết trên một dòng"]);
+    expect((await parse("Mã {MA_VOUCHER}")).error?.issues.map((i) => i.message)).toEqual(["Mẫu SMS viết không dấu"]);
+    expect((await parse("Ma 😀 {MA_VOUCHER}")).error?.issues.map((i) => i.message)).toEqual(["Mẫu SMS viết không dấu"]);
+  });
 });
 
 describe("giá trị điền vào SMS", () => {

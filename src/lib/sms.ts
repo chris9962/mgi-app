@@ -61,6 +61,8 @@ export const SettingsForm = z.object({
     .trim()
     .min(1, { message: "Nhập mẫu SMS", abort: true })
     .refine((v) => !/[\r\n]/.test(v), { message: "Mẫu SMS viết trên một dòng", abort: true })
+    // Tab, ký tự điều khiển không nhìn thấy được: báo "viết không dấu" thì người sửa không biết sai ở đâu.
+    .refine(noControlChar, { message: CONTROL_CHAR_MESSAGE, abort: true })
     .regex(/^[\x20-\x7E]+$/, "Mẫu SMS viết không dấu")
     .superRefine((v, ctx) => {
       const bad = unknownField(v);
