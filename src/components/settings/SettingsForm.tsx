@@ -21,6 +21,7 @@ export function SettingsForm({ initial }: { initial: SettingsValues }) {
   const set = (k: keyof SettingsValues) => (v: string) => setValues((s) => ({ ...s, [k]: v }));
 
   async function save() {
+    setStatus("");
     const parsed = Schema.safeParse(values);
     if (!parsed.success) return setErrors(Object.fromEntries(parsed.error.issues.map((i) => [String(i.path[0]), i.message])));
     setErrors({});
