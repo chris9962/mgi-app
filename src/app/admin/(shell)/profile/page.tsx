@@ -18,7 +18,7 @@ function Row({ label, value }: { label: string; value: React.ReactNode }) {
   return (
     <div className="flex min-h-12 items-center justify-between gap-4 px-4 text-sm">
       <span className="text-text-2">{label}</span>
-      <b className="font-semibold">{value}</b>
+      <b className="min-w-0 text-right font-semibold wrap-anywhere">{value}</b>
     </div>
   );
 }
