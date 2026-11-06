@@ -23,24 +23,27 @@ type Screen =
   | { kind: "profile"; state: StudentState; notice?: string };
 
 const NETWORK = "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.";
+// Như màn đăng nhập của mgst-app: máy chủ có trả lời mà lỗi (502 lúc khởi động lại, 500, 429) thì không bảo học sinh kiểm tra mạng.
+const LATER = "Thử lại sau ít phút.";
+const loadFailed = (status: number, link?: string): Screen => ({ kind: "error", message: status === 0 ? NETWORK : LATER, link });
 
-async function fetchSchool(id: string): Promise<StudentSchool | null | "error"> {
+async function fetchSchool(id: string): Promise<StudentSchool | null | { failed: number }> {
   const r = await studentApi<StudentSchool>("GET", `/api/schools/${id}`);
   if (r.ok) return r.data;
-  return r.status === 404 ? null : "error";
+  return r.status === 404 ? null : { failed: r.status };
 }
 
 async function resolveScreen(linkId?: string): Promise<Screen> {
   const device = readDevice(localStorage);
   if (linkId !== undefined) {
     const linked = isSchoolId(linkId) ? await fetchSchool(linkId) : null;
-    if (linked === "error") return { kind: "error", message: NETWORK, link: linkId };
+    if (linked && "failed" in linked) return loadFailed(linked.failed, linkId);
     // Cắt URL về / để lần sau mở web là vào đúng trường và bước đang dở.
     history.replaceState(null, "", "/");
     const decision = decideLink({ linkId, linkFound: Boolean(linked), storedId: device.schoolId, hasProfile: Boolean(device.token) });
     if (decision.kind === "ask" && linked) {
       const current = await fetchSchool(device.schoolId!);
-      if (current === "error") return { kind: "error", message: NETWORK, link: linkId };
+      if (current && "failed" in current) return loadFailed(current.failed, linkId);
       if (current) return { kind: "ask", current, next: linked };
     }
     if (decision.kind !== "keep") {
@@ -53,12 +56,12 @@ async function resolveScreen(linkId?: string): Promise<Screen> {
   if (device.token) {
     const me = await studentApi<StudentState>("GET", "/api/customers/me");
     if (me.ok) return { kind: "profile", state: me.data };
-    // Đọc hồ sơ chỉ hỏng vì mạng hoặc máy chủ chưa trả lời (502 lúc khởi động lại): câu mặc định "Không lưu được" sai nghĩa ở màn tải.
-    if (me.status !== 401) return { kind: "error", message: NETWORK };
+    // Câu mặc định "Không lưu được" của studentApi sai nghĩa ở màn tải.
+    if (me.status !== 401) return loadFailed(me.status);
     clearProfile(localStorage);
   }
   const school = await fetchSchool(device.schoolId);
-  if (school === "error") return { kind: "error", message: NETWORK };
+  if (school && "failed" in school) return loadFailed(school.failed);
   if (!school) {
     localStorage.removeItem("mgi.schoolId");
     return { kind: "noSchool" };

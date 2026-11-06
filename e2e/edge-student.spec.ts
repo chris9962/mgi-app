@@ -1,6 +1,7 @@
 import { expect, test } from "@playwright/test";
 import { BANK, CODE, NAME, SCHOOL } from "../scripts/e2e-data-student";
 import {
+  LATER,
   NETWORK,
   PHONE,
   PHONE_ERROR,
@@ -106,13 +107,14 @@ test.describe("A. Mở link và chọn trường", () => {
     await expect(page.getByRole("heading", { level: 1, name: "Chưa có trường" })).toBeVisible();
   });
 
-  test("A8 máy chủ trả 502 lúc mở web: báo không tải được, không ghi Không lưu được; Thử lại vào đúng bước", async ({ page, request }) => {
+  test("A8 máy chủ trả 502 lúc mở web: báo thử lại sau ít phút, không bảo kiểm tra mạng, không ghi Không lưu được; Thử lại vào đúng bước", async ({ page, request }) => {
     const s = await apiCreate(request, SCHOOL.photo, info("Trần Thị Năm Lẻ Hai"));
     await onDevice(page, device(SCHOOL.photo, s));
     await page.route("**/api/customers/me", (r) => r.fulfill({ status: 502, contentType: "text/html", body: "<html><body>502 Bad Gateway</body></html>" }));
     await page.goto("/");
     await expect(page.getByRole("heading", { level: 1, name: "Không tải được" })).toBeVisible();
-    await expect(page.getByText(NETWORK)).toBeVisible();
+    await expect(page.getByText(LATER, { exact: true })).toBeVisible();
+    await expect(page.getByText(NETWORK)).toHaveCount(0);
     await expect(page.getByText(/Không lưu được/)).toHaveCount(0);
     await page.unroute("**/api/customers/me");
     await page.getByRole("button", { name: "Thử lại" }).click();

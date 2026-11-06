@@ -170,3 +170,4 @@ export const cameraOptions = (file: string) => ({
 
 export const PHONE_ERROR = "SĐT phải có 10 số, bắt đầu bằng 0.";
 export const NETWORK = "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.";
+export const LATER = "Thử lại sau ít phút.";
