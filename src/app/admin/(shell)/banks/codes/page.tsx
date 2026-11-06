@@ -117,7 +117,7 @@ export default async function CodesPage({ searchParams }: { searchParams: Promis
                 {!rows.length && (
                   <tr>
                     <td colSpan={11} className="px-4 py-10 text-center text-text-3 mobile:text-left">
-                      {q || bankId ? "Không có mã khớp bộ lọc." : "Chưa có mã giới thiệu nào."}
+                      {q || bankId || hideStopped ? "Không có mã khớp bộ lọc." : "Chưa có mã giới thiệu nào."}
                     </td>
                   </tr>
                 )}
