@@ -130,6 +130,7 @@ describe("ca biên cấu hình: từ khoá có ký tự NUL trên URL", () => {
     for (const q of ["%00", "a%00b", "zztest%00"]) expect([q, (await schoolExportRoute(await get(`/api/admin/schools/export?q=${q}`))).status]).toEqual([q, 200]);
   });
 
+  // containsPattern cũng bỏ NUL, nên test này vẫn pass khi bỏ readParam của 32fd07d: nó giữ luật q=%00 như ô trống, không đo bản sửa đó.
   test("ô chọn trường, ô chọn người quản, ô tìm trường của bộ lọc: q=%00 như ô trống", async () => {
     for (const [route, path] of [
       [schoolOptionsRoute, "/api/admin/schools/options"],
