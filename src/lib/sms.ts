@@ -37,10 +37,14 @@ export const smsValues = (v: { fullName: string; className: string; schoolName: 
 // Tin không dấu dài tối đa 160 ký tự; tin dài hơn tách thành nhiều phần, mỗi phần 153 ký tự.
 export const smsParts = (text: string) => (text.length <= 160 ? 1 : Math.ceil(text.length / 153));
 
+// Web học sinh vẽ QR của link; QR mức M chứa tối đa 2.331 byte, link dài hơn thì không vẽ được QR. 500 ký tự có dấu vẫn dưới mức đó.
+const URL_MAX = 500;
+
 const url = z
   .string()
   .trim()
-  .refine((v) => v === "" || /^https?:\/\/\S+$/i.test(v), "Link phải bắt đầu bằng http:// hoặc https://");
+  .refine((v) => v === "" || /^https?:\/\/\S+$/i.test(v), { message: "Link phải bắt đầu bằng http:// hoặc https://", abort: true })
+  .max(URL_MAX, `Link tối đa ${URL_MAX} ký tự`);
 
 // Biến gõ sai như {HOTEN} không được thay, phụ huynh nhận nguyên chữ {HOTEN}: chặn từ lúc lưu mẫu.
 const unknownField = (template: string): string | null => {
