@@ -277,6 +277,18 @@ test.describe("Tin SMS lỗi", () => {
     expect([await insideViewport(resendDialog(phone)), await insideViewport(resendDialog(phone).getByRole("button", { name: "Gửi lại" }))]).toEqual([true, true]);
   });
 
+  test("tin có cột Lỗi 500 ký tự liền ở 1366 và 390 px: trang không cuộn ngang, chi tiết hồ sơ cũng không", async ({ browser }) => {
+    for (const device of [DESKTOP, PHONE]) {
+      const page = await loginAs(browser, "zz_e2e_admin", device);
+      await open(page, `/sms?${q(B.B_NAMES.longError)}`);
+      await expect(rows(page, SMS)).toContainText(B.B_LONG_SMS_ERROR);
+      expect([device.viewport.width, "sms", await pageOverflow(page)]).toEqual([device.viewport.width, "sms", 0]);
+      await open(page, `/customers/${B.B_IDS.longError}`);
+      await expect(card(page, "SMS cho phụ huynh")).toContainText(B.B_LONG_SMS_ERROR);
+      expect([device.viewport.width, "chi tiết", await pageOverflow(page)]).toEqual([device.viewport.width, "chi tiết", 0]);
+    }
+  });
+
   test("Gửi lại: SĐT trống, sai dạng báo ở ô; Huỷ rồi mở lại hiện SĐT đang lưu; Enter gửi, SĐT có dấu cách được chuẩn hoá", async ({ browser }) => {
     const page = await loginAs(browser, "zz_e2e_admin");
     await open(page, `/sms?${q(B.B_NAMES.resend)}`);

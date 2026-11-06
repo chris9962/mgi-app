@@ -22,7 +22,7 @@ type Spec = {
   createdAt?: Date;
   banks?: { bank: 1 | 2; status: BankStatus; note?: string }[];
   voucher?: { code: string; issuedAt: Date };
-  sms?: { status: "failed" | "sent"; at: Date };
+  sms?: { status: "failed" | "sent"; at: Date; error?: string };
 };
 
 // Trạng thái hồ sơ suy từ các dòng ngân hàng như luồng thật: còn dòng chờ là Chờ kiểm tra, mọi dòng đã đánh dấu là Đã kiểm tra.
@@ -113,6 +113,15 @@ export async function seedBusiness(adminId: string) {
     { id: B.B_IDS.sameTime, fullName: B.B_NAMES.sameTime, n: 223, createdAt: new Date("2026-10-22T03:01:00Z"), banks: [{ bank: 1, status: "pending" }] },
     { id: B.B_IDS.failFirst, fullName: B.B_NAMES.failFirst, n: 224, createdAt: new Date("2026-10-22T03:02:00Z"), banks: [{ bank: 1, status: "pending" }] },
     { id: B.B_IDS.doubleClick, fullName: B.B_NAMES.doubleClick, n: 225, createdAt: new Date("2026-10-22T03:03:00Z"), banks: [{ bank: 1, status: "pending" }] },
+    {
+      id: B.B_IDS.longError,
+      fullName: B.B_NAMES.longError,
+      n: 226,
+      createdAt: new Date("2026-10-22T03:04:00Z"),
+      banks: [{ bank: 1, status: "passed" }],
+      voucher: { code: "ZZBIEN-BLD-10A1-HHHH", issuedAt: new Date("2026-10-22T04:00:00Z") },
+      sms: { status: "failed", at: new Date("2026-10-22T04:00:00Z"), error: B.B_LONG_SMS_ERROR },
+    },
   ];
 
   const [reviewer1, reviewer2] = staff;
@@ -160,7 +169,7 @@ export async function seedBusiness(adminId: string) {
         body: "ZZE2E",
         status: s.sms.status,
         attempts: s.sms.status === "failed" ? 3 : 1,
-        error: s.sms.status === "failed" ? "Nhà mạng từ chối số này" : "",
+        error: s.sms.status === "failed" ? (s.sms.error ?? "Nhà mạng từ chối số này") : "",
         sentAt: s.sms.status === "sent" ? s.sms.at : null,
         createdAt: s.sms.at,
       });

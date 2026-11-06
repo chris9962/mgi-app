@@ -42,6 +42,8 @@ export const B_LONG_CLASS = "12CHUYENTOANTINHOCAB";
 export const B_UNBROKEN_NAME = exactly("BiênTênLiềnKhôngDấuCách", 100);
 export const B_UNBROKEN_PARENT = exactly("PhụHuynhTênLiềnKhôngCách", 100);
 export const B_UNBROKEN_NOTE = exactly("GhiChúLiềnKhôngCóDấuCách", 1000);
+// Worker SMS lưu tới 500 ký tự lỗi của nhà mạng.
+export const B_LONG_SMS_ERROR = exactly("LỗiNhàMạngTrảVềKhôngCóDấuCách", 500);
 export const B_XSS = "Biên <script>alert(1)</script>";
 export const B_IMG = "<img src=x onerror=alert(1)> Phụ Huynh";
 export const B_QUOTES = `Biên "Kép" 'Đơn' 50% a_b \\ x`;
@@ -84,6 +86,7 @@ export const B_IDS = {
   sameTime: id(223),
   failFirst: id(224),
   doubleClick: id(225),
+  longError: id(226),
 } as const;
 
 export const B_NAMES: Record<keyof typeof B_IDS, string> = {
@@ -112,4 +115,5 @@ export const B_NAMES: Record<keyof typeof B_IDS, string> = {
   sameTime: "Biên Đạt Cùng Lúc",
   failFirst: "Biên Không Đạt Trước",
   doubleClick: "Biên Bấm Đúp",
+  longError: "Biên Lỗi Dài",
 };
