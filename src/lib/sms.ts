@@ -63,6 +63,8 @@ export const SettingsForm = z.object({
     .superRefine((v, ctx) => {
       const bad = unknownField(v);
       if (bad) ctx.addIssue({ code: "custom", message: bad.length > 1 ? `Mẫu SMS có biến không có thật: ${bad}` : "Mẫu SMS có dấu ngoặc { } lẻ" });
+      // Tin SMS chỉ để gửi mã voucher cho phụ huynh: mẫu thiếu biến mã thì tin gửi đi vô dụng.
+      else if (!v.includes("{MA_VOUCHER}")) ctx.addIssue({ code: "custom", message: "Mẫu SMS phải có {MA_VOUCHER}" });
     }),
   zaloUrl: url,
   pviAppUrl: url,
