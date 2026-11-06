@@ -34,6 +34,8 @@ export function Dialog({ open, title, onClose, footer, children, width = 480 }: 
       ref={ref}
       aria-labelledby={titleId}
       onCancel={(e) => {
+        // Huỷ hộp chọn file hay chọn lại đúng file cũ cũng phát `cancel` từ ô file và nổi lên tới đây; chỉ Esc phát trên chính thẻ dialog.
+        if (e.target !== e.currentTarget) return;
         e.preventDefault();
         onClose();
       }}
