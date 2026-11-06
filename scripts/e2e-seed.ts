@@ -7,7 +7,7 @@ import { newCustomerToken } from "../src/server/customers";
 import { plain } from "../src/lib/text";
 import { putImage } from "../src/server/storage";
 import { cleanE2e, E2E_NAME, E2E_PASSWORD, E2E_PREFIX } from "./e2e-clean";
-import { E2E_MOBILE_CUSTOMER, E2E_REVIEW_BANK, E2E_STUDENT_SCHOOL, E2E_STUDENT_SCHOOL_ID } from "./e2e-data";
+import { E2E_MOBILE_CUSTOMER, E2E_REVIEW_BANK, E2E_SECOND_BANK, E2E_STUDENT_SCHOOL, E2E_STUDENT_SCHOOL_ID } from "./e2e-data";
 
 // Web học sinh cần sẵn một trường có 3 ngân hàng mở, mỗi ngân hàng có hướng dẫn, khung ảnh và mã gắn cho trường.
 async function seedStudentWeb(adminId: string): Promise<Record<string, string>> {
@@ -54,6 +54,10 @@ async function main() {
   const [reviewer] = await db.insert(users).values({ username: `${E2E_PREFIX}reviewer`, fullName: "E2E Hậu kiểm", role: "staff", passwordHash }).returning({ id: users.id });
   await db.insert(userManagedBanks).values({ userId: reviewer.id, bankId: bankIds[E2E_REVIEW_BANK] });
   await db.insert(userPermissions).values({ userId: reviewer.id, permission: "vouchers" });
+  // Flow hậu kiểm cần một Nhân viên quản cả hai ngân hàng học sinh chọn để đánh dấu Đạt một bên, Không đạt bên kia.
+  const [twoBanks] = await db.insert(users).values({ username: `${E2E_PREFIX}kiem`, fullName: "E2E Kiểm hai ngân hàng", role: "staff", passwordHash }).returning({ id: users.id });
+  await db.insert(userManagedBanks).values([E2E_REVIEW_BANK, E2E_SECOND_BANK].map((name) => ({ userId: twoBanks.id, bankId: bankIds[name] })));
+  await db.insert(userPermissions).values({ userId: twoBanks.id, permission: "vouchers" });
   // Trang chi tiết hồ sơ cần ít nhất một hồ sơ để test khổ điện thoại đo được.
   await db.insert(customers).values({
     schoolId: E2E_STUDENT_SCHOOL_ID,
