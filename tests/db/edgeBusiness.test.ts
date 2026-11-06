@@ -1,5 +1,5 @@
-import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { and, eq, isNull } from "drizzle-orm";
+import { afterAll, beforeAll, describe, expect, setSystemTime, test } from "bun:test";
+import { and, eq, isNull, sql } from "drizzle-orm";
 import { cleanTestUsers, FAKE_WEBP, fakeStore, makeActor } from "./helpers";
 import { insertCustomer, setupProgram, type Program } from "./fixtures";
 import { db } from "../../src/server/db/client";
@@ -7,7 +7,7 @@ import { customerBanks, proofPhotos, reviewEvents, smsMessages, userManagedBanks
 import { loadSessionUser } from "../../src/server/auth/session";
 import { listCustomers } from "../../src/server/customerList";
 import { listCustomerBanks, readCustomerBankFilters } from "../../src/server/customerBankList";
-import { exportCustomerBanks, exportCustomers, exportVouchers } from "../../src/server/exports";
+import { EXPORT_LIMIT, exportCustomerBanks, exportCustomers, exportVouchers } from "../../src/server/exports";
 import { replacePhoto, reviewCustomerBank } from "../../src/server/review";
 import { searchSchoolOptions } from "../../src/server/schools";
 import { listSms } from "../../src/server/sms/queue";
@@ -128,4 +128,50 @@ describe("bấm Đạt trên ảnh cũ", () => {
     expect(await replacePhoto(admin, { customerBankId: c.rows.A, slotId: p.slot.A }, FAKE_WEBP, null, fakeStore().store)).toEqual({ ok: true });
     expect(await reviewCustomerBank(admin, { customerBankId: c.rows.A, result: "failed", expected: "pending", photos: [] }, null)).toEqual({ ok: true });
   });
+});
+
+describe("tên file Excel theo ngày giờ Việt Nam", () => {
+  test("xuất lúc 00:30 ngày 01/11 giờ Việt Nam trên máy chủ đặt giờ UTC thì tên file ghi 2026-11-01", async () => {
+    const tz = process.env.TZ;
+    process.env.TZ = "UTC";
+    setSystemTime(new Date("2026-10-31T17:30:00Z"));
+    try {
+      expect(new Date().getDate()).toBe(31);
+      expect(await exportCustomers(admin, parseCustomerFilters({ q: "edgeb" }), null)).toMatchObject({ ok: true, fileName: "ho-so-hoc-sinh-2026-11-01.xlsx" });
+      expect(await exportCustomerBanks(admin, (await readCustomerBankFilters(admin, { q: "edgeb" })).filters, null)).toMatchObject({ ok: true, fileName: "ngan-hang-2026-11-01.xlsx" });
+      expect(await exportVouchers(admin, parseVoucherFilters({ q: "edgeb" }), null)).toMatchObject({ ok: true, fileName: "ma-voucher-2026-11-01.xlsx" });
+    } finally {
+      setSystemTime();
+      if (tz === undefined) delete process.env.TZ;
+      else process.env.TZ = tz;
+    }
+  });
+});
+
+describe("xuất Excel quá 20.000 dòng", () => {
+  test("Hồ sơ, Ngân hàng, Mã voucher báo số dòng và không dựng file", async () => {
+    const big = await setupProgram("bigx", ["A"]);
+    const ofSchool = sql`select id from customers where school_id = ${big.schoolId}`;
+    // Dựng thẳng bằng generate_series: 20.001 lần insertCustomer mất vài phút.
+    await db.execute(sql`
+      insert into customers (school_id, full_name, name_search, class_name, phone, parent_name, parent_phone, status, token_hash, submitted_at)
+      select ${big.schoolId}, 'Bigx ' || g, 'bigx ' || g, '10A1', '09' || lpad(g::text, 8, '0'), 'Phụ Huynh', '08' || lpad(g::text, 8, '0'), 'reviewed', md5('bigx-' || g || '-' || random()), now()
+      from generate_series(1, ${EXPORT_LIMIT + 1}) g`);
+    await db.execute(sql`
+      insert into customer_banks (customer_id, bank_id, slot, referral_code_id, referral_code, year_month, status, submitted_at)
+      select id, ${big.bank.A}, 1, ${big.code.A}, 'BIGX-A', '2026-11', 'pending', now() from customers where school_id = ${big.schoolId}`);
+    await db.execute(sql`insert into vouchers (code, customer_id) select 'ZZTESTBIGX-' || id, id from customers where school_id = ${big.schoolId}`);
+    try {
+      const n = EXPORT_LIMIT + 1;
+      const tooMany = { ok: false, status: 400, message: `Danh sách có ${n} dòng, quá ${EXPORT_LIMIT} dòng một file. Lọc bớt rồi xuất lại.` };
+      expect(await exportCustomers(admin, parseCustomerFilters({ q: "bigx" }), null)).toEqual(tooMany);
+      expect(await exportCustomerBanks(admin, (await readCustomerBankFilters(admin, { q: "bigx" })).filters, null)).toEqual(tooMany);
+      expect(await exportVouchers(admin, parseVoucherFilters({ q: "bigx" }), null)).toEqual(tooMany);
+      expect((await exportCustomers(admin, parseCustomerFilters({ q: "bigx 20001" }), null)).ok).toBe(true);
+    } finally {
+      await db.execute(sql`delete from vouchers where customer_id in (${ofSchool})`);
+      await db.execute(sql`delete from customer_banks where customer_id in (${ofSchool})`);
+      await db.execute(sql`delete from customers where school_id = ${big.schoolId}`);
+    }
+  }, 60_000);
 });
