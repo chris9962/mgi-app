@@ -33,6 +33,7 @@ Brief chung ở `docs/plans/2026-11-06-e2e-ca-bien.md`. Mọi ca e2e chạy ở 
 | A16 | Camera thấy QR không phải link trường | Câu "Mã QR này không phải của trường.", không chuyển màn |
 | A17 | Máy mới mở `/t/<id>` lúc mạng lỗi, bấm Thử lại. Máy có hồ sơ ở trường A mở link trường B lúc mạng lỗi, bấm Thử lại | Vào B1 của trường trong link. Máy có hồ sơ thì thấy màn "Đổi trường" |
 | A18 | Quét QR trường lúc mạng lỗi, bấm Thử lại | Vào B1 của trường vừa quét |
+| A19 | Mạng vẫn lỗi, bấm Thử lại, bấm thêm lần nữa trong lúc chờ | Nút ghi "Đang thử lại" và không gửi thêm request. Lỗi thì nút về "Thử lại", tiêu điểm vẫn ở nút |
 
 ### B. B1 khai thông tin
 
@@ -68,6 +69,7 @@ Brief chung ở `docs/plans/2026-11-06-e2e-ca-bien.md`. Mọi ca e2e chạy ở 
 | C6 | Tên ngân hàng dài có và không có dấu cách | Nút không tràn, dấu tích nằm trong nút, trang không cuộn ngang |
 | C7 | Bấm đúp Tiếp tục | Giữ chỗ một lần, vào B3, không có câu lỗi |
 | C8 | Trường đóng lúc học sinh ở B2, bấm Tiếp tục | Màn "Trường đã đóng", không giữ chỗ |
+| C9 | Hai tab ở B2. Tab kia giữ chỗ trước, tab này chọn ngân hàng khác rồi bấm Tiếp tục | Tab này sang B3 với ngân hàng tab kia đã chọn |
 
 ### D. B3 mở tài khoản
 
@@ -77,7 +79,7 @@ Brief chung ở `docs/plans/2026-11-06-e2e-ca-bien.md`. Mọi ca e2e chạy ở 
 | D2 | Bước hướng dẫn dài, có link dài không dấu cách, có `<b>` và `"` | Chữ đúng nguyên văn, xuống dòng, không cuộn ngang |
 | D3 | Mã giới thiệu 55 ký tự liền | Mã xuống dòng, nút Sao chép nằm trong khung |
 | D4 | Sao chép khi trình duyệt cho ghi clipboard | "Đã sao chép" ở vùng `aria-live`, clipboard có đúng mã, 2 giây sau câu báo mất. Vùng báo rỗng không thêm hàng trống |
-| D5 | Sao chép khi trình duyệt không có clipboard (trình duyệt trong app Zalo, trang http) | Không báo "Đã sao chép". Báo "Không sao chép được" như nút chép của mgst-app, 2 giây sau câu báo mất |
+| D5 | Sao chép khi trình duyệt không có clipboard (trình duyệt trong app Zalo, trang http) | Không báo "Đã sao chép". Báo "Không sao chép được" như nút chép của mgst-app, 2 giây sau câu báo mất. Mã có `user-select: all` để một cú bấm chọn hết mã |
 | D6 | Link "Quét QR code" có dấu cách. Ngân hàng không có link | `href` đã mã hoá dấu cách, mở tab mới. Không có link thì không có nút |
 | D7 | Khung không có ảnh mẫu. Bấm ảnh mẫu khung có tên dài | "Chưa có ảnh mẫu". Hộp xem ảnh mở đúng ảnh, chú thích không tràn ngang |
 | D8 | Ngân hàng chưa cài Hướng dẫn (không bước, không khung ảnh) | Tab chỉ có mã, ghi đủ ảnh. Gửi kiểm tra được khi ngân hàng kia đủ ảnh |
@@ -86,12 +88,15 @@ Brief chung ở `docs/plans/2026-11-06-e2e-ca-bien.md`. Mọi ca e2e chạy ở 
 | D11 | Gửi kiểm tra: còn khung trống, rồi bấm đúp khi đủ ảnh | Nút khoá khi còn khung trống. Bấm đúp chỉ gửi một lần, vào màn kết quả |
 | D12 | Người quản lý thêm khung ảnh trong lúc học sinh đủ ảnh ở B3, học sinh bấm Gửi kiểm tra | Báo "Còn khung chưa có ảnh.", web tải lại và hiện khung mới. Nộp ảnh vào khung mới thì câu lỗi mất |
 | D13 | Người quản lý bỏ một khung trống lúc học sinh ở B3, học sinh nộp ảnh vào khung đó | Báo "Không tìm thấy khung ảnh.", web tải lại, khung biến mất, Gửi kiểm tra bật |
-| D14 | Trường vừa đóng mà web chưa tải lại, học sinh bấm Quay lại chọn ngân hàng: chưa có ảnh, rồi đã có ảnh | Web tải lại, nút Quay lại ẩn, câu "Trường đã đóng." hiện dưới tab, hộp hỏi đóng lại, ảnh còn nguyên |
+| D14 | Trường vừa đóng mà web chưa tải lại, học sinh bấm Quay lại chọn ngân hàng: chưa có ảnh, rồi đã có ảnh | Web tải lại, nút Quay lại ẩn, câu "Trường đã đóng." hiện dưới tab, hộp hỏi đóng lại, ảnh còn nguyên. Tiêu điểm nằm ở câu lỗi, không rơi về `body` |
 | D15 | Hai tab ở B3. Tab 2 gửi kiểm tra. Tab 1 bấm Quay lại chọn ngân hàng | Tab 1 sang màn kết quả |
 | D16 | Bấm đúp Quay lại khi chưa có ảnh, mạng chậm | Nút khoá trong lúc chờ, chỉ một request, về B2 |
 | D17 | Trang ẩn rồi hiện lại (camera Android) lúc mạng chậm, ảnh nộp xong trước khi lần tải lại cũ về | Ảnh vừa nộp vẫn hiện |
 | D18 | Link ảnh mẫu, ảnh đã nộp, ảnh QR trả 403 (link hết hạn) | Khung vẫn ghi "Đã gửi", khung ảnh giữ 160 px, ô QR giữ 96 px, trang không cuộn ngang |
 | D19 | Tab tên dài cạnh tab tên ngắn. Hai tab tên dài | Vòng tròn đánh dấu giữ 16x16 px, tên ngắn nằm trên một dòng, trang không cuộn ngang |
+| D20 | Có ảnh, bấm Quay lại trong hộp hỏi lúc mạng chậm, rồi bấm Huỷ, X, Esc | Huỷ khoá, X và Esc không đóng hộp. Xong thì về B2 |
+| D21 | Hộp hỏi Quay lại báo mất mạng. Bấm Huỷ, có mạng lại, mở hộp lần nữa | Hộp không còn câu lỗi cũ, Quay lại được |
+| D22 | Hai tab ở B3. Tab kia bấm Quay lại nên hồ sơ về B2. Tab này nộp ảnh | Web tải lại sang B2, không hiện câu "Hồ sơ đã gửi kiểm tra." |
 
 ### E. Tải ảnh từng khung
 
@@ -147,9 +152,9 @@ Brief chung ở `docs/plans/2026-11-06-e2e-ca-bien.md`. Mọi ca e2e chạy ở 
 | 4. Bộ lọc và URL | A1, A2, A7, A10, A17, G5. Web học sinh không có bộ lọc, tham số URL duy nhất là id trường |
 | 5. Phân trang | Không áp dụng: web học sinh không có danh sách phân trang |
 | 6. Ngày giờ | F5 |
-| 7. Form | B1 tới B12, C7, D11, D16 |
+| 7. Form | B1 tới B12, A19, C7, D11, D14, D16, D20, D21 |
 | 8. Phân quyền | A6, G1, G6, G9. Học sinh không có vai trò hay quyền, chỉ có token |
-| 9. Đồng thời và trạng thái cũ | A13, C4, C5, C8, D10, D12 tới D15, D17 |
+| 9. Đồng thời và trạng thái cũ | A13, C4, C5, C8, C9, D10, D12 tới D15, D17, D20, D22 |
 | 10. Rỗng | B14, B15, B16, C3, D7, D8, F4 |
 | 11. Xuất Excel | Không áp dụng: web học sinh không xuất Excel |
 | 12. Link | D6, F3, F8. Web học sinh không có ô nhập link; link đến từ Kho mã và Cài đặt, nhóm C kiểm form chặn `javascript:` |
@@ -309,3 +314,66 @@ Ngày 2026-11-06. Working tree lúc chạy có việc đang làm dở của nhó
 | Kiểm đột biến dưới khoá: bỏ grid ở thanh tab | D19 fail, tên ngắn vỡ thành 6 dòng |
 
 Agent chạy e2e trên code đã sửa trước khi tách thành từng commit. Sau khi tách, agent so từng file với bản đã chạy: giống hệt.
+
+## Lượt 3: sửa theo review lần 2
+
+Agent nhóm A làm ngày 2026-11-06 và 2026-11-07, commit 00c97bc tới commit ghi mục này, trên nhánh `dev`. Review lần 2 tìm ra 1 lỗi Important (N1), 5 lỗi Minor (N2 tới N6) và 7 ca sót.
+
+### Test đã thêm
+
+- 5 test e2e mới: A19, C9, D20, D21, D22. Nhóm A nay có 76 test e2e.
+- Test đã sửa: D5 kiểm `user-select: all` của mã giới thiệu. D14 kiểm tiêu điểm ở cả hai nhánh, chưa có ảnh và có ảnh.
+- 1 test DB mới ở `tests/db/e2eSeedStudent.test.ts`: lệnh `slot-add` nhận id của khung thật thì phải báo lỗi, khung giữ nguyên.
+- Lượt chạy đầu trên code cũ (bd01e42): A19, D5, D14, D20, D21 fail đúng chỗ lỗi. C9 và D22 pass ngay, nên ca sót 3, 4 không cần sửa code. Test DB fail: lệnh thoát mã 0 và đổi tên khung thật.
+- Trước khi sửa N5, agent đo bằng trình duyệt: sau 409, `document.activeElement` là `body` ở cả hai nhánh của D14.
+
+### Lỗi đã sửa
+
+| Mã review | Ca | Lỗi, góc nhìn học sinh | Commit |
+|---|---|---|---|
+| N1 | D20 | Mạng chậm, học sinh bấm Quay lại trong hộp hỏi rồi bấm Huỷ, X hay Esc. Hộp đóng, học sinh tưởng giữ được ảnh, lát sau ảnh vẫn bị xoá và web nhảy về B2. Hộp xác nhận ở trang quản lý có cùng lỗi | 00c97bc |
+| N2 | D21 | Hộp hỏi báo mất mạng, học sinh bấm Huỷ. Có mạng lại, mở hộp lần nữa thì câu lỗi cũ vẫn còn | b3cc5ce |
+| N3 | D5 | Trong app Zalo nút Sao chép không chép được. Nhấn giữ để chọn mã thì trình duyệt chỉ chọn một đoạn giữa hai dấu `-` | 229ec88 |
+| N4 | Test DB | Lệnh `slot-add` của dữ liệu e2e nhận id khung bất kỳ. Truyền id của khung thật thì lệnh đổi tên và mở lại khung đó | 003b031 |
+| N5 | D14 | Quay lại bị máy chủ trả 409 thì nút vừa bấm biến mất, tiêu điểm rơi về `body`. Người dùng bàn phím phải Tab lại từ đầu trang | 3d3c32d |
+| Ca sót 6 | A19 | Màn "Không tải được": bấm Thử lại khi mạng vẫn lỗi thì màn đứng yên như chưa bấm | 0a684b4 |
+
+Commit 14af9ac là test cho ca sót 3, 4 (C9, D22).
+
+Lượt này agent sửa một file dùng chung: `src/components/users/ConfirmDialog.tsx` (N1). Trang quản lý dùng hộp này ở Trường, Ngân hàng, Kho mã, Tài khoản và hậu kiểm Đạt, Không đạt.
+
+### Ruling mới
+
+- Ruling (N1): `ConfirmDialog` chép `../mgst-app/src/components/ui/ConfirmDialog.tsx`. Lúc request đang chạy, nút Huỷ khoá, X và Esc không đóng hộp. Request xong hay lỗi thì hộp đóng được như cũ. Hộp Đạt, Không đạt ở `e2e/edge-business-detail.spec.ts` bấm Huỷ sau lỗi 409 vẫn đóng.
+- Ruling (N2): `OpenAccount` chỉ dựng hộp hỏi lúc mở, như năm chỗ dùng ở trang quản lý. Agent không thêm bước xoá lỗi vào `ConfirmDialog`.
+- Ruling (N5): Quay lại bị 409 thì tiêu điểm chuyển tới câu lỗi dưới tab (`tabIndex={-1}`), ở cả hai nhánh có ảnh và chưa có ảnh. Agent không chọn nút Gửi kiểm tra vì nút đó có thể đang khoá.
+- Ruling (ca sót 6): chép `ErrorState` của mgst-app (`../mgst-app/src/components/ui/ErrorState.tsx`). Trong lúc chờ, nút ghi "Đang thử lại" và mang `aria-disabled`, bấm thêm không gửi request. `aria-disabled` giữ tiêu điểm ở nút, `disabled` thì gỡ tiêu điểm. Agent không dùng màn "Đang tải" vì màn đó gỡ nút, tiêu điểm rơi về `body`. Máy tắt hẳn mạng thì request lỗi ngay, nên chữ "Đang thử lại" chỉ hiện rất ngắn. mgst-app hiện lâu hơn vì TanStack Query tự thử lại một lần sau 1 giây.
+- Ruling (ca sót 3): tab này sang B3 với ngân hàng tab kia đã giữ và không hiện câu 409 "Hồ sơ đã chọn ngân hàng.", như D15. Màn B3 đã hiện đúng ngân hàng đang giữ.
+- Ruling (ca sót 4): web tải lại sang B2 nên câu sai nghĩa "Hồ sơ đã gửi kiểm tra." không hiện. Agent không đổi câu của máy chủ.
+- N6: giữ nguyên `openBanksAtSchool` theo luật sửa tối thiểu.
+
+### Ca chưa làm
+
+| Ca | Nội dung | Lý do |
+|---|---|---|
+| Ca sót 7 của review lần 2 | Học sinh ở B2 lúc 23:59, bấm Tiếp tục lúc 00:00 ngày đầu tháng giờ Việt Nam. Máy chủ tính lượt theo tháng mới, danh sách đổi thì web tải lại | Chỉ test được ở tầng DB với tham số `month`. Ưu tiên thấp. Brief của lượt này chỉ yêu cầu ghi lại |
+| Esc lần thứ ba | Hộp hỏi đang chạy, học sinh nhấn Esc (hay nút Back của Android) ba lần liền, không bấm gì xen giữa. Chrome đóng thẻ `<dialog>` ở lần thứ ba dù trang chặn `cancel`, request vẫn chạy | Luật chống lạm dụng của trình duyệt. Agent đo bằng test tạm (đã xoá): Esc lần 1 và 2 giữ hộp mở, lần 3 đóng hộp. mgst-app cũng vậy. Agent không sửa |
+
+B14, D8 và thời hạn request (ca sót 7 của review lần 1) giữ nguyên hành vi, chờ chủ dự án quyết.
+
+### Kết quả các lệnh
+
+Ngày 2026-11-06 và 2026-11-07. Working tree lúc chạy có việc đang làm dở của nhóm B và nhóm C.
+
+| Lệnh | Kết quả |
+|---|---|
+| `bun run test` | 233 pass, 0 fail |
+| `bunx tsc --noEmit` | Sạch |
+| `bun run lint` | 0 lỗi, 2 cảnh báo `<img>` cũ |
+| `bun test:db` trên DB tạm `zz_test_edge_a2` (đã xoá) | 256 pass, 0 fail. DB mới migrate phải chạy `bun db:seed` để có tỉnh, xã |
+| Test mới và test đã sửa của nhóm A trên code cũ bd01e42, dưới khoá | 2 pass (C9, D22), 5 fail đúng chỗ lỗi (A19, D5, D14, D20, D21) |
+| `bun run e2e e2e/edge-student` trên code đã sửa, dưới khoá | 77 pass, 0 fail: 76 test của nhóm A và 1 test đo tạm Esc (đã xoá) |
+| `bun run e2e e2e/edge-config-` trên cùng bản build, dưới khoá | 70 pass, 10 fail. 9 fail ở `e2e/edge-config-zzred.spec.ts`, test đỏ của nhóm C cho lỗi nhóm C chưa đưa vào bản build. 1 fail ở `edge-config-codes.spec.ts:114`: nhóm C commit test và bản sửa ở d8a782d sau khi bản build bắt đầu. Không test nào của hộp xác nhận fail |
+| `bun run e2e e2e/edge-business` trên cùng bản build, dưới khoá | 31 pass, 1 fail: ô tìm mã voucher (`edge-business-lists.spec.ts:117`) ra "0 mã". Nhóm B commit test và bản sửa ở 64ddec2 sau khi bản build bắt đầu. Trang Voucher không dùng `ConfirmDialog`. Chạy lại riêng nhóm test voucher trên 14af9ac, dưới khoá: 4 pass |
+
+Bản build cho ba lượt e2e trên code đã sửa bắt đầu lúc 23:52:26 từ 7a571ab cộng các thay đổi của lượt này. 7a571ab chỉ đổi script dọn dữ liệu và test DB so với bd01e42. Lúc đó working tree chỉ có thêm file test chưa commit của agent khác. Trong lúc build và chạy, nhóm B và nhóm C commit thêm từ 7a3b3f3 tới debb57b. Sau khi tách thành từng commit, agent kiểm: bỏ hết các đoạn của bảy commit thì các file đó ra đúng bản ở debb57b, và bản cuối giống hệt bản đã chạy.
