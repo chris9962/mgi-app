@@ -6,7 +6,7 @@ import { customerBanks, customerExistingBanks, customers } from "../../src/serve
 import { createBank, setBankActive } from "../../src/server/banks";
 import { createSchool, setSchoolActive } from "../../src/server/schools";
 import { createCode, setCodeActive } from "../../src/server/referralCodes";
-import { createCustomer, customerFromRequest, openBanksAtSchool } from "../../src/server/customers";
+import { createCustomer, customerFromRequest, openBanksAtSchool, programBanksAtSchool } from "../../src/server/customers";
 import { BankForm } from "../../src/lib/bankForm";
 import { CodeForm } from "../../src/lib/codeForm";
 import { CustomerForm } from "../../src/lib/customerForm";
@@ -77,6 +77,11 @@ describe("ngân hàng mở ở trường", () => {
   test("chỉ ngân hàng đang mở có mã đang dùng còn lượt gắn cho trường, xếp theo thứ tự", async () => {
     expect((await openBanksAtSchool(schoolId, MONTH)).map((b) => b.id)).toEqual([bank.MB, bank.VPB]);
     expect(await openBanksAtSchool(emptySchoolId, MONTH)).toEqual([]);
+  });
+
+  test("B1 hỏi ngân hàng đã có trên mọi ngân hàng của chương trình ở trường, kể cả ngân hàng hết lượt", async () => {
+    expect((await programBanksAtSchool(schoolId, MONTH)).map((b) => b.id)).toEqual([bank.MB, bank.VPB, bank.FULL]);
+    expect(await programBanksAtSchool(emptySchoolId, MONTH)).toEqual([]);
   });
 });
 

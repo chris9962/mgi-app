@@ -57,11 +57,13 @@ async function loadCandidates(ex: Executor, schoolId: string, month: string, loc
   return codes.map(({ monthlyQuota, ...c }) => ({ ...c, quota: quotaOf.get(c.id) ?? monthlyQuota, used: usedOf.get(c.id) ?? 0 }));
 }
 
-function openBanksOf(candidates: Candidate[], exclude: Set<string>): { id: string; name: string }[] {
-  const open = new Map<string, Candidate>();
-  for (const c of candidates) if (c.used < c.quota && !exclude.has(c.bankId)) open.set(c.bankId, c);
-  return [...open.values()].sort((a, b) => a.bankSort - b.bankSort || a.bankName.localeCompare(b.bankName, "vi")).map((c) => ({ id: c.bankId, name: c.bankName }));
+function banksOf(candidates: Candidate[]): { id: string; name: string }[] {
+  const unique = new Map<string, Candidate>();
+  for (const c of candidates) unique.set(c.bankId, c);
+  return [...unique.values()].sort((a, b) => a.bankSort - b.bankSort || a.bankName.localeCompare(b.bankName, "vi")).map((c) => ({ id: c.bankId, name: c.bankName }));
 }
+
+const openBanksOf = (candidates: Candidate[], exclude: Set<string>) => banksOf(candidates.filter((c) => c.used < c.quota && !exclude.has(c.bankId)));
 
 // no_bank là điểm dừng: chỉ khi ngân hàng đã có phủ hết ngân hàng của chương trình ở trường (bỏ qua lượt). Hết lượt chỉ là tạm.
 function hasAllBanks(candidates: Candidate[], existing: Set<string>): boolean {
@@ -70,6 +72,9 @@ function hasAllBanks(candidates: Candidate[], existing: Set<string>): boolean {
 }
 
 export const openBanksAtSchool = async (schoolId: string, month = currentYearMonth()) => openBanksOf(await loadCandidates(db, schoolId, month), new Set());
+
+// Ô tick ngân hàng đã có ở B1 dùng cùng tập với hasAllBanks: ngân hàng đang hết lượt vẫn phải tick được, không thì học sinh đủ ngân hàng kẹt ở màn hết lượt.
+export const programBanksAtSchool = async (schoolId: string, month = currentYearMonth()) => banksOf(await loadCandidates(db, schoolId, month));
 
 // Học sinh không có tài khoản: token trên điện thoại là thứ duy nhất chứng minh hồ sơ là của mình.
 export function newCustomerToken(): { token: string; tokenHash: string } {

@@ -1,5 +1,5 @@
 import { expect, test } from "@playwright/test";
-import { BANK, NAME, SCHOOL } from "../scripts/e2e-data-student";
+import { BANK, CODE, NAME, SCHOOL } from "../scripts/e2e-data-student";
 import {
   NETWORK,
   PHONE,
@@ -355,6 +355,25 @@ test.describe("B. B1 khai thông tin", () => {
     await fillInfo(page, info("Không Ngân Hàng"));
     await next(page).click();
     await expect(page.getByRole("heading", { name: "Ngân hàng đã hết lượt trong tháng này" })).toBeVisible();
+  });
+
+  test("B16 mọi ngân hàng của trường hết lượt: vẫn có ô tick đủ ngân hàng, tick đủ thì thấy Không có ngân hàng nào phù hợp", async ({ page, request }) => {
+    dbOp("reset", SCHOOL.quota);
+    dbOp("quota", CODE.q2, "1");
+    try {
+      await apiPick(request, await apiCreate(request, SCHOOL.quota, info("Lấy Hết Lượt B1")), [BANK.q1, BANK.q2]);
+      await onDevice(page, device(SCHOOL.quota));
+      await page.goto("/");
+      await expect(page.getByText(NAME.schoolQuota)).toBeVisible();
+      const banks = page.getByRole("group", { name: "Ngân hàng đã có tài khoản" });
+      await expect(banks.getByRole("checkbox")).toHaveCount(2);
+      await fillInfo(page, info("Có Đủ Ngân Hàng Hết Lượt"));
+      for (const name of [NAME.q1, NAME.q2]) await banks.getByRole("checkbox", { name, exact: true }).check();
+      await next(page).click();
+      await expect(page.getByRole("heading", { name: "Không có ngân hàng nào phù hợp" })).toBeVisible();
+    } finally {
+      dbOp("reset", SCHOOL.quota);
+    }
   });
 
   test("B15 tick đủ mọi ngân hàng của trường thì thấy Không có ngân hàng nào phù hợp", async ({ page }) => {
