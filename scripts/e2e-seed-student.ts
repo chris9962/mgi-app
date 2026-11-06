@@ -146,6 +146,8 @@ const ops: Record<string, (...args: string[]) => Promise<unknown>> = {
   school: async (schoolId, state) => db.update(s.schools).set({ active: state === "open" }).where(eq(s.schools.id, await hsbSchool(schoolId))),
   "slot-add": async (bankId, slotId, name) => {
     if (!isHsbBank(bankId)) throw new Error(`Không phải ngân hàng HSB: ${bankId}`);
+    // Trùng id thì lệnh đổi tên và mở lại khung: id ngoài SLOT có thể là khung thật.
+    if (!(Object.values(SLOT) as string[]).includes(slotId)) throw new Error(`Không phải khung HSB: ${slotId}`);
     await db.insert(s.bankPhotoSlots).values({ id: slotId, bankId, name, sortOrder: 9 }).onConflictDoUpdate({ target: s.bankPhotoSlots.id, set: { name, removedAt: null } });
   },
   // Khung của ngân hàng Đổi khung về như lúc seed: test thêm hay bỏ khung chạy thứ tự nào cũng được. Khung đã thêm có ảnh nên đánh dấu bỏ, không xoá.
