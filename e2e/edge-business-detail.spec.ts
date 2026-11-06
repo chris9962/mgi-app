@@ -520,6 +520,27 @@ test("Trang 4 hai tab cùng tải ảnh thay thế một khung: người tải s
   expect(await voucherCount(b, B.B_NAMES.replaceTabs)).toBe(1);
 });
 
+test("Trang 4 mạng chậm: bấm Không đạt rồi bấm Đạt ngay thì Đạt được, không báo đã có người đánh dấu; cấp đúng 1 voucher", async ({ browser }) => {
+  test.setTimeout(60_000);
+  const page = await loginAs(browser, "zz_e2e_admin");
+  await open(page, detail(B.B_IDS.failThenPass));
+  const rsc = /[?&]_rsc=/;
+  // Lượt tải lại trang sau khi đánh dấu về trễ 5 giây, như điện thoại ở mạng chậm.
+  await page.route(rsc, async (route) => {
+    await new Promise((r) => setTimeout(r, 5_000));
+    await route.continue();
+  });
+  await bank1(page).getByRole("button", { name: "Không đạt" }).click();
+  await page.getByRole("dialog", { name: "Đánh dấu Không đạt" }).getByRole("button", { name: "Không đạt", exact: true }).click();
+  await bank1(page).getByRole("button", { name: "Đạt", exact: true }).click({ timeout: 30_000 });
+  const confirm = page.getByRole("dialog", { name: "Đánh dấu Đạt" });
+  await confirm.getByRole("button", { name: "Đạt", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 30_000 });
+  await page.unroute(rsc);
+  await expect(bank1(page).locator("header")).toContainText("Đạt", { timeout: 15_000 });
+  expect(await voucherCount(page, B.B_NAMES.failThenPass)).toBe(1);
+});
+
 test("Trang 4 hai tab: cùng bấm nút Đạt trong hộp xác nhận đúng một lúc thì một tab Đạt, tab kia báo đã có người đánh dấu; chỉ 1 voucher và 1 tin SMS", async ({ browser }) => {
   const a = await loginAs(browser, B.B_USER1);
   const b = await loginAs(browser, "zz_e2e_admin");

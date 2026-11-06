@@ -92,6 +92,7 @@ export const B_IDS = {
   selfReplace: id(228),
   slotGone: id(229),
   replaceTabs: id(230),
+  failThenPass: id(231),
 } as const;
 
 export const B_NAMES: Record<keyof typeof B_IDS, string> = {
@@ -125,4 +126,5 @@ export const B_NAMES: Record<keyof typeof B_IDS, string> = {
   selfReplace: "Biên Tải Rồi Đạt",
   slotGone: "Biên Gỡ Khung",
   replaceTabs: "Biên Cùng Khung",
+  failThenPass: "Biên Không Đạt Rồi Đạt",
 };

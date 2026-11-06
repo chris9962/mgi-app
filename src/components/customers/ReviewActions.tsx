@@ -146,14 +146,18 @@ export function NoteButton({ bank }: { bank: Bank }) {
 export function ReviewActions({ bank }: { bank: Bank }) {
   const router = useRouter();
   const [dialog, setDialog] = useState<"passed" | "failed" | "replace" | null>(null);
+  const [refreshing, startTransition] = useTransition();
   const open = bank.status === "pending" || bank.status === "failed";
   if (!open) return null;
 
   const mark = async (result: "passed" | "failed") => {
     const r = await apiSend("POST", `/api/admin/customer-banks/${bank.id}/review`, { result, expected: bank.status, photos: bank.photos });
     if (!r.ok) return r.message;
-    setDialog(null);
-    router.refresh();
+    // Như hộp Tải ảnh thay thế: đóng trước khi trạng thái mới hiện thì mạng chậm, bấm Đạt trên trạng thái cũ nhận 409.
+    startTransition(() => {
+      setDialog(null);
+      router.refresh();
+    });
     return null;
   };
 
@@ -171,9 +175,9 @@ export function ReviewActions({ bank }: { bank: Bank }) {
           Tải ảnh thay thế
         </Button>
       )}
-      {dialog === "passed" && <ConfirmDialog open title="Đánh dấu Đạt" text={`Đánh dấu Đạt cho ${bank.name}?`} confirmLabel="Đạt" onClose={() => setDialog(null)} onConfirm={() => mark("passed")} />}
+      {dialog === "passed" && <ConfirmDialog open title="Đánh dấu Đạt" text={`Đánh dấu Đạt cho ${bank.name}?`} confirmLabel="Đạt" busy={refreshing} onClose={() => setDialog(null)} onConfirm={() => mark("passed")} />}
       {dialog === "failed" && (
-        <ConfirmDialog open title="Đánh dấu Không đạt" text={`Đánh dấu Không đạt cho ${bank.name}?`} confirmLabel="Không đạt" danger onClose={() => setDialog(null)} onConfirm={() => mark("failed")} />
+        <ConfirmDialog open title="Đánh dấu Không đạt" text={`Đánh dấu Không đạt cho ${bank.name}?`} confirmLabel="Không đạt" danger busy={refreshing} onClose={() => setDialog(null)} onConfirm={() => mark("failed")} />
       )}
       {dialog === "replace" && <ReplaceDialog bank={bank} onClose={() => setDialog(null)} />}
     </div>

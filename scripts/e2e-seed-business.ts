@@ -130,6 +130,7 @@ export async function seedBusiness(adminId: string) {
     { id: B.B_IDS.selfReplace, fullName: B.B_NAMES.selfReplace, n: 250, createdAt: new Date("2026-10-22T03:06:00Z"), banks: [{ bank: 1, status: "pending" }] },
     { id: B.B_IDS.slotGone, fullName: B.B_NAMES.slotGone, n: 251, createdAt: new Date("2026-10-22T03:07:00Z"), banks: [{ bank: 2, status: "pending" }] },
     { id: B.B_IDS.replaceTabs, fullName: B.B_NAMES.replaceTabs, n: 252, createdAt: new Date("2026-10-22T03:08:00Z"), banks: [{ bank: 1, status: "pending" }] },
+    { id: B.B_IDS.failThenPass, fullName: B.B_NAMES.failThenPass, n: 253, createdAt: new Date("2026-10-22T03:09:00Z"), banks: [{ bank: 1, status: "pending" }] },
   ];
 
   const [reviewer1, reviewer2] = staff;
