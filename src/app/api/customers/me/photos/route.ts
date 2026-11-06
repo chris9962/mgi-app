@@ -13,7 +13,9 @@ export async function POST(request: Request) {
   const parsed = PhotoTargetForm.safeParse({ customerBankId: form?.get("customerBankId"), slotId: form?.get("slotId") });
   if (!parsed.success) return zodFail(parsed.error);
   const file = form?.get("file");
-  if (!(file instanceof File) || !file.size) return Response.json({ message: "Chọn ảnh.", field: "file" }, { status: 400 });
+  if (!(file instanceof File)) return Response.json({ message: "Chọn ảnh.", field: "file" }, { status: 400 });
+  // Như putImage của mgst-app: học sinh đã chọn một file, chỉ là file hỏng, nên câu "Chọn ảnh." sai nghĩa.
+  if (!file.size) return Response.json({ message: "File rỗng.", field: "file" }, { status: 400 });
   const r = await uploadPhoto(auth.customer, parsed.data, new Uint8Array(await file.arrayBuffer()));
   return r.ok ? new Response(null, { status: 201 }) : failResponse(r);
 }
