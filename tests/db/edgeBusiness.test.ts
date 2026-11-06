@@ -3,8 +3,9 @@ import { and, eq, isNull, sql } from "drizzle-orm";
 import { cleanTestUsers, FAKE_WEBP, fakeStore, makeActor } from "./helpers";
 import { insertCustomer, setupProgram, type Program } from "./fixtures";
 import { db } from "../../src/server/db/client";
-import { customerBanks, proofPhotos, reviewEvents, smsMessages, userManagedBanks, vouchers } from "../../src/server/db/schema";
+import { customerBanks, proofPhotos, reviewEvents, smsMessages, userManagedBanks, users, vouchers } from "../../src/server/db/schema";
 import { loadSessionUser } from "../../src/server/auth/session";
+import { managerOptions } from "../../src/server/banks";
 import { listCustomers } from "../../src/server/customerList";
 import { listCustomerBanks, readCustomerBankFilters } from "../../src/server/customerBankList";
 import { EXPORT_LIMIT, exportCustomerBanks, exportCustomers, exportVouchers } from "../../src/server/exports";
@@ -174,4 +175,13 @@ describe("xuất Excel quá 20.000 dòng", () => {
       await db.execute(sql`delete from customers where school_id = ${big.schoolId}`);
     }
   }, 60_000);
+});
+
+describe("ô chọn người quản ở hộp Ngân hàng tìm theo Mã tài khoản", () => {
+  test("gõ mã hay một phần mã ra đúng người như ô tìm Tài khoản; nhãn dòng ghi mã như ô chọn nhân viên của mgst-app", async () => {
+    const [u] = await db.insert(users).values({ username: "zz_test_edgeb_maql", fullName: "Edgeb Người Có Mã", staffCode: "ZZT-MQL-5521", title: "Kế toán", passwordHash: "x", role: "staff" }).returning({ id: users.id });
+    for (const q of ["ZZT-MQL-5521", "mql-5521", "5521 co ma"]) expect([q, (await managerOptions(q)).map((o) => o.id)]).toEqual([q, [u.id]]);
+    expect(await managerOptions("zzt-mql-5521")).toEqual([{ id: u.id, label: "ZZT-MQL-5521 - Edgeb Người Có Mã - Kế toán" }]);
+    expect((await managerOptions("Edgeb Người Có Mã khongco")).length).toBe(0);
+  });
 });

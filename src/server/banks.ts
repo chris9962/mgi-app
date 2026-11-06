@@ -163,10 +163,11 @@ export async function saveGuide(actor: SessionUser, bankId: string, values: Guid
 
 export async function managerOptions(q: string): Promise<{ id: string; label: string }[]> {
   const rows = await db
-    .select({ id: users.id, fullName: users.fullName, title: users.title })
+    .select({ id: users.id, fullName: users.fullName, title: users.title, staffCode: users.staffCode })
     .from(users)
-    .where(and(eq(users.role, "staff"), eq(users.active, true), matchesEachTerm([users.fullName, users.username], q)))
+    .where(and(eq(users.role, "staff"), eq(users.active, true), matchesEachTerm([users.fullName, users.username, sql`coalesce(${users.staffCode}, '')`], q)))
     .orderBy(asc(users.fullName))
     .limit(20);
-  return rows.map((r) => ({ id: r.id, label: r.title ? `${r.fullName} - ${r.title}` : r.fullName }));
+  // Như ô chọn nhân viên của mgst-app: nhãn có mã để người gõ mã thấy vì sao dòng đó khớp.
+  return rows.map((r) => ({ id: r.id, label: [r.staffCode, r.fullName, r.title].filter(Boolean).join(" - ") }));
 }
