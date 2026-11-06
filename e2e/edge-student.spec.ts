@@ -11,6 +11,7 @@ import {
   apiSubmit,
   dbOp,
   device,
+  expectBoxSize,
   expectInsideScreen,
   expectNoSideScroll,
   fillInfo,
@@ -373,6 +374,17 @@ test.describe("B. B1 khai thông tin", () => {
       await expect(page.getByRole("heading", { name: "Không có ngân hàng nào phù hợp" })).toBeVisible();
     } finally {
       dbOp("reset", SCHOOL.quota);
+    }
+  });
+
+  test("B17 ô tick cạnh tên ngân hàng rất dài, có và không có dấu cách, cạnh tên ngắn: ô tick giữ 18 px", async ({ page }) => {
+    for (const school of [SCHOOL.long, SCHOOL.mixed]) {
+      await onDevice(page, device(school));
+      await page.goto("/");
+      const boxes = page.getByRole("group", { name: "Ngân hàng đã có tài khoản" }).getByRole("checkbox");
+      await expect(boxes).toHaveCount(2);
+      await expectBoxSize(boxes, 18, 18);
+      await expectNoSideScroll(page);
     }
   });
 

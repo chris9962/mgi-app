@@ -10,10 +10,12 @@ import {
   apiSubmit,
   dbOp,
   device,
+  expectBoxSize,
   expectInsideScreen,
   expectNoSideScroll,
   info,
   onDevice,
+  textLines,
   withEdgeData,
   watchDialogs,
   type ApiStudent,
@@ -162,6 +164,23 @@ test.describe("D. B3 mở tài khoản", () => {
     await page.evaluate(() => window.scrollTo({ top: document.documentElement.scrollHeight }));
     await expect.poll(async () => Math.round((await tabs.boundingBox())!.y)).toBe(0);
     expect(dialogs).toEqual([]);
+  });
+
+  test("D19 tab tên dài cạnh tab tên ngắn, hai tab tên dài: vòng tròn giữ 16 px, tên ngắn không bị ngắt giữa chữ", async ({ page, request }) => {
+    const mixed = await apiCreate(request, SCHOOL.mixed, info("Tab Dài Tab Ngắn"));
+    await apiPick(request, mixed, [BANK.longSpace, BANK.p3]);
+    await openAt(page, SCHOOL.mixed, mixed);
+    await expect(page.getByRole("tab")).toHaveCount(2);
+    await expectBoxSize(page.getByRole("tab").locator("span[aria-hidden]"), 16, 16);
+    expect(await textLines(tab(page, NAME.p3)), "tên ngắn xuống dòng").toBe(1);
+    await expectNoSideScroll(page);
+
+    const twoLong = await apiCreate(request, SCHOOL.long, info("Hai Tab Dài"));
+    await apiPick(request, twoLong, [BANK.longSpace, BANK.longWord]);
+    await openAt(page, SCHOOL.long, twoLong);
+    await expect(page.getByRole("tab")).toHaveCount(2);
+    await expectBoxSize(page.getByRole("tab").locator("span[aria-hidden]"), 16, 16);
+    await expectNoSideScroll(page);
   });
 
   test("D4 Sao chép khi trình duyệt cho ghi clipboard: báo Đã sao chép qua vùng aria-live, clipboard có đúng mã, 2 giây sau về như cũ", async ({ page, request, context }) => {

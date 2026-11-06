@@ -3,7 +3,7 @@ import { createHash } from "node:crypto";
 import { readFileSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
 import { join } from "node:path";
-import { expect, test, type APIRequestContext, type Page } from "@playwright/test";
+import { expect, test, type APIRequestContext, type Locator, type Page } from "@playwright/test";
 import QRCode from "qrcode";
 
 export const STUDENT = "http://bank.localhost:3100";
@@ -105,6 +105,29 @@ export async function expectInsideScreen(page: Page, selector: ReturnType<Page["
   for (const box of await selector.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().toJSON() as { left: number; right: number })))
     expect(box.right, "phần tử tràn mép phải").toBeLessThanOrEqual(width);
 }
+
+// Ô tick, vòng tròn đánh dấu phải giữ kích thước khi chữ bên cạnh dài: phần tử flex thiếu flex-none bị bóp hẹp.
+export async function expectBoxSize(items: Locator, width: number, height: number) {
+  const boxes = await items.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().toJSON() as { width: number; height: number }));
+  expect(boxes.length, "không thấy phần tử nào").toBeGreaterThan(0);
+  for (const box of boxes) {
+    expect(box.width, "bề ngang").toBeCloseTo(width, 0);
+    expect(box.height, "bề cao").toBeCloseTo(height, 0);
+  }
+}
+
+// Số dòng của chữ nằm thẳng trong phần tử, không tính chữ của thẻ con.
+export const textLines = (el: Locator) =>
+  el.evaluate((node) => {
+    const range = document.createRange();
+    const tops = new Set<number>();
+    for (const child of node.childNodes) {
+      if (child.nodeType !== Node.TEXT_NODE || !child.textContent?.trim()) continue;
+      range.selectNodeContents(child);
+      for (const rect of range.getClientRects()) tops.add(Math.round(rect.top));
+    }
+    return tops.size;
+  });
 
 // Hộp alert của trình duyệt chỉ hiện khi chữ người dùng nhập bị chạy như mã.
 export function watchDialogs(page: Page): string[] {

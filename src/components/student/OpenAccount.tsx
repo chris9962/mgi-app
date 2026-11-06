@@ -177,7 +177,8 @@ export function OpenAccount({ state, onChange }: { state: StudentState; onChange
     <>
       <AppHead school={state.school.name} title="Mở tài khoản" />
       <Steps current={3} />
-      <div role="tablist" aria-label="Ngân hàng đã chọn" className="sticky top-0 z-10 -mx-4 mb-4 flex gap-2 border-b border-line bg-bg px-4">
+      {/* Grid chia chỗ đều tới khi tab ngắn đủ chỗ, phần còn lại cho tab dài; flex bóp hai tab theo độ dài nên tên ngắn vỡ từng chữ. */}
+      <div role="tablist" aria-label="Ngân hàng đã chọn" className="sticky top-0 z-10 -mx-4 mb-4 grid grid-flow-col justify-start gap-2 border-b border-line bg-bg px-4">
         {banks.map((b, i) => (
           <button
             key={b.id}
@@ -194,7 +195,7 @@ export function OpenAccount({ state, onChange }: { state: StudentState; onChange
             onKeyDown={(e) => onTabKey(e, i)}
             className={clsx("-mb-px flex items-center gap-2 border-b-2 px-3 py-2.5 text-[15px] font-semibold", b.id === current.id ? "border-accent text-text" : "border-transparent text-text-2")}
           >
-            <span aria-hidden className={clsx("grid size-4 place-items-center rounded-full text-[10px] leading-none", complete(b) ? "border border-ok bg-ok-soft text-ok-ink" : "border border-field-border")}>
+            <span aria-hidden className={clsx("grid size-4 flex-none place-items-center rounded-full text-[10px] leading-none", complete(b) ? "border border-ok bg-ok-soft text-ok-ink" : "border border-field-border")}>
               {complete(b) ? "✓" : ""}
             </span>
             {b.name}

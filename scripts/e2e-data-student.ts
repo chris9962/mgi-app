@@ -12,6 +12,7 @@ export const SCHOOL = {
   noGuide: id("a006"),
   closing: id("a007"),
   stale: id("a008"),
+  mixed: id("a009"),
 } as const;
 
 export const BANK = {
@@ -64,6 +65,7 @@ export const NAME = {
   schoolNoGuide: `${HSB}Trường có ngân hàng chưa cài hướng dẫn`,
   schoolClosing: `${HSB}Trường đóng giữa chừng`,
   schoolStale: `${HSB}Trường đổi khung ảnh`,
+  schoolMixed: `${HSB}Trường có tên ngân hàng dài và ngắn`,
   bankLongSpace: `${HSB}Ngân hàng Thương mại Cổ phần Việt Nam Thịnh Vượng chi nhánh Thành phố Hồ Chí Minh`,
   bankLongWord: `${HSB}NGANHANGTHUONGMAICOPHANKYTHUONGVIETNAMTECHCOMBANKHOISOCHINH`,
   q1: `${HSB}Q1`,
