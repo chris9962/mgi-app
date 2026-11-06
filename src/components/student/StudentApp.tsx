@@ -52,7 +52,8 @@ async function resolveScreen(linkId?: string): Promise<Screen> {
   if (device.token) {
     const me = await studentApi<StudentState>("GET", "/api/customers/me");
     if (me.ok) return { kind: "profile", state: me.data };
-    if (me.status !== 401) return { kind: "error", message: me.message };
+    // Đọc hồ sơ chỉ hỏng vì mạng hoặc máy chủ chưa trả lời (502 lúc khởi động lại): câu mặc định "Không lưu được" sai nghĩa ở màn tải.
+    if (me.status !== 401) return { kind: "error", message: NETWORK };
     clearProfile(localStorage);
   }
   const school = await fetchSchool(device.schoolId);
