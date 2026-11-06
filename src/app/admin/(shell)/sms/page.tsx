@@ -87,7 +87,7 @@ export default async function SmsPage({ searchParams }: { searchParams: Promise<
                 {!rows.length && (
                   <tr>
                     <td colSpan={8} className="px-4 py-10 text-center text-text-3 mobile:text-left">
-                      {f.q ? "Không có tin khớp bộ lọc." : f.status === "failed" ? "Không có tin lỗi." : "Chưa có tin nào."}
+                      {f.q || (f.status !== "failed" && f.status !== "all") ? "Không có tin khớp bộ lọc." : f.status === "failed" ? "Không có tin lỗi." : "Chưa có tin nào."}
                     </td>
                   </tr>
                 )}
