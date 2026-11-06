@@ -13,6 +13,8 @@ describe("tháng", () => {
   test("kiểm dạng tháng và nhãn", () => {
     expect(isYearMonth("2026-11")).toBe(true);
     expect(isYearMonth("2026-13")).toBe(false);
+    expect(isYearMonth("1900-01")).toBe(true);
+    for (const v of ["0001-01", "0099-12", "1899-12"]) expect([v, isYearMonth(v)]).toEqual([v, false]);
     expect(monthLabel("2026-11")).toBe("Tháng 11/2026");
   });
 });

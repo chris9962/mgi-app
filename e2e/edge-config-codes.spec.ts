@@ -257,6 +257,21 @@ test("Mã: tháng 12/2026 bấm Tháng sau ra 01/2027, bấm Tháng trước v�
   await expect(page.getByText("Tháng 12/2026", { exact: true })).toBeVisible();
 });
 
+test("Mã: tháng trước 1900 trên URL bị bỏ như ngày, bấm Tháng sau ra tháng sau của tháng hiện tại", async ({ page }) => {
+  await apiLogin(page, "zz_e2e_admin");
+  const now = new Intl.DateTimeFormat("en-CA", { timeZone: "Asia/Ho_Chi_Minh", year: "numeric", month: "2-digit" }).format(new Date());
+  const [y, m] = now.split("-").map(Number);
+  const next = m === 12 ? `${y + 1}-01` : `${y}-${String(m + 1).padStart(2, "0")}`;
+  const label = (ym: string) => `Tháng ${ym.slice(5, 7)}/${ym.slice(0, 4)}`;
+  for (const month of ["0001-01", "0099-12", "1899-12"]) {
+    await open(page, `/banks/codes?month=${month}`);
+    await expect(page.getByText(label(now), { exact: true }), month).toBeVisible();
+  }
+  await page.getByRole("link", { name: "Tháng sau" }).click();
+  await expect(page).toHaveURL(new RegExp(`month=${next}`));
+  await expect(page.getByText(label(next), { exact: true })).toBeVisible();
+});
+
 test("Mã: form báo lỗi đúng ô: tên trống, thiếu cả mã text lẫn QR, số lượt và độ ưu tiên sai hoặc bỏ trống, link sai dạng, tên trùng cùng ngân hàng", async ({ page }) => {
   test.setTimeout(90_000);
   await apiLogin(page, "zz_e2e_admin");

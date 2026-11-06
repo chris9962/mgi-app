@@ -4,7 +4,8 @@ export function currentYearMonth(now = new Date()): string {
   return `${parts.find((p) => p.type === "year")!.value}-${parts.find((p) => p.type === "month")!.value}`;
 }
 
-export const isYearMonth = (v: string) => /^[0-9]{4}-(0[1-9]|1[0-2])$/.test(v);
+// Bỏ tháng trước 1900 như readDay: Date.UTC đọc năm dưới 100 thành 19xx, Tháng sau của 0001-01 ra 1901-02.
+export const isYearMonth = (v: string) => /^[0-9]{4}-(0[1-9]|1[0-2])$/.test(v) && v >= "1900-01";
 
 export function shiftMonth(ym: string, delta: number): string {
   const [y, m] = ym.split("-").map(Number);
