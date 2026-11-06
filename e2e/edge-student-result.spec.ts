@@ -51,14 +51,13 @@ test("F3, F6, F7 có voucher, một ngân hàng Đạt một Không đạt: kh�
   await expect(banks(page).getByText("Không đạt", { exact: true })).toHaveCount(1);
   await expect(page.getByText(`${NAME.bankLongWord} không đạt: nhân viên gọi cho phụ huynh để hướng dẫn.`)).toBeVisible();
   await expect(page.getByText(`${NAME.bankLongSpace} không đạt`)).toHaveCount(0);
-  if (pviAppUrl) {
-    const pvi = page.getByRole("region", { name: "App PVI" });
-    await expect(pvi.getByRole("img", { name: "QR mở app PVI" })).toBeVisible();
-    const open = pvi.getByRole("link", { name: "Mở app PVI" });
-    await expect(open).toHaveAttribute("href", pviAppUrl);
-    await expect(open).toHaveAttribute("target", "_blank");
-    await expectInsideScreen(page, open);
-  }
+  expect(pviAppUrl, "Cài đặt chưa có link app PVI").toMatch(/^https?:\/\//);
+  const pvi = page.getByRole("region", { name: "App PVI" });
+  await expect(pvi.getByRole("img", { name: "QR mở app PVI" })).toBeVisible();
+  const open = pvi.getByRole("link", { name: "Mở app PVI" });
+  await expect(open).toHaveAttribute("href", pviAppUrl);
+  await expect(open).toHaveAttribute("target", "_blank");
+  await expectInsideScreen(page, open);
   await expect(page.getByText(/voucher/i)).toHaveCount(0);
   await expect(page.getByText(/ZZE2E-HSB/)).toHaveCount(0);
   await expectNoSideScroll(page);
