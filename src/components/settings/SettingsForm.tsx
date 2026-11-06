@@ -46,10 +46,14 @@ export function SettingsForm({ initial }: { initial: SettingsValues }) {
               value={values.smsTemplate}
               onChange={(e) => set("smsTemplate")(e.target.value)}
               aria-invalid={errors.smsTemplate ? true : undefined}
-              aria-describedby="sms-count"
+              aria-describedby={errors.smsTemplate ? "sms-count sms-template-error" : "sms-count"}
               className={`${inputClass} font-mono text-[13px] leading-6`}
             />
-            {errors.smsTemplate && <span className="text-[13px] text-danger">{errors.smsTemplate}</span>}
+            {errors.smsTemplate && (
+              <span id="sms-template-error" className="text-[13px] text-danger">
+                {errors.smsTemplate}
+              </span>
+            )}
             <div className="flex flex-wrap gap-1.5">
               {SMS_FIELDS.map((f) => (
                 <button

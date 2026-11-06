@@ -19,7 +19,7 @@ async function restore(page: Page, before: Settings) {
   expect(r.status, JSON.stringify(r.body)).toBe(204);
 }
 
-test("Cài đặt: mẫu SMS 400 ký tự đếm 3 tin; mẫu có dấu, emoji, xuống dòng, tab, ký tự điều khiển, trống, biến lạ, ngoặc lẻ, thiếu MA_VOUCHER đều báo lỗi đúng nghĩa; lưu được rồi gõ sai thì không còn câu Đã lưu", async ({ page }) => {
+test("Cài đặt: mẫu SMS 400 ký tự đếm 3 tin; mẫu có dấu, emoji, xuống dòng, tab, ký tự điều khiển, trống, biến lạ, ngoặc lẻ, thiếu MA_VOUCHER đều báo lỗi đúng nghĩa, lỗi gắn vào ô; lưu được rồi gõ sai thì không còn câu Đã lưu", async ({ page }) => {
   await apiLogin(page, "zz_e2e_admin");
   const before = await current(page);
   try {
@@ -46,6 +46,7 @@ test("Cài đặt: mẫu SMS 400 ký tự đếm 3 tin; mẫu có dấu, emoji, 
       await save(page);
       await expect(page.getByText(msg, { exact: true }), JSON.stringify(bad)).toBeVisible();
       await expect(page.getByRole("status")).toHaveCount(0);
+      await expect(template(page), JSON.stringify(bad)).toHaveAccessibleDescription(new RegExp(`${msg.replace(/[{}]/g, "\\$&")}$`));
       const r = await api(page, "PATCH", "/api/admin/settings", { ...before, smsTemplate: bad });
       expect([bad, r.status, (r.body as { message?: string }).message]).toEqual([bad, 400, msg]);
     }
