@@ -217,7 +217,7 @@ test("Trang 4 ghi chú: ô nhập chặn ở 1.000 ký tự, API từ chối 1.0
   await expect(bank1(a).getByRole("region", { name: "Ghi chú nội bộ" }).locator("p")).toHaveText("Ghi chú lúc mất mạng");
 });
 
-test("Trang 4 tải ảnh thay thế: không chọn file, file 0 byte, file chữ đổi đuôi .jpg, file 21 MB, 23 MB báo dưới ô Ảnh; mất mạng báo ở dòng báo chung; chọn lại đúng ảnh đang chọn thì hộp thoại không đóng; tab khác vừa đánh dấu Đạt thì báo không thay được", async ({ browser }) => {
+test("Trang 4 tải ảnh thay thế: không chọn file, file 0 byte, file chữ đổi đuôi .jpg, file 21 MB, 23 MB báo dưới ô Ảnh, file trên 20 MB không gửi lên máy chủ; Nginx trả 413 cũng báo dưới ô Ảnh; mất mạng báo ở dòng báo chung; chọn lại đúng ảnh đang chọn thì hộp thoại không đóng; tab khác vừa đánh dấu Đạt thì báo không thay được", async ({ browser }) => {
   const a = await loginAs(browser, B.B_USER1);
   const b = await loginAs(browser, B.B_USER1);
   await open(b, detail(B.B_IDS.replace));
@@ -225,18 +225,32 @@ test("Trang 4 tải ảnh thay thế: không chọn file, file 0 byte, file ch�
   const dialog = b.getByRole("dialog", { name: "Tải ảnh thay thế" });
   const file = dialog.getByLabel("Ảnh", { exact: true });
   const upload = dialog.getByRole("button", { name: "Tải lên" });
-  for (const [label, input, message] of [
-    ["không chọn", null, "Chọn ảnh."],
-    ["0 byte", { name: "rong.jpg", mimeType: "image/jpeg", buffer: Buffer.alloc(0) }, "Chọn ảnh."],
-    ["chữ đổi đuôi", { name: "chu.jpg", mimeType: "image/jpeg", buffer: Buffer.from("đây không phải ảnh") }, "Chỉ nhận ảnh jpg, png, webp hoặc heic."],
-    ["21 MB", { name: "lon.jpg", mimeType: "image/jpeg", buffer: Buffer.concat([readFileSync(PHOTO), Buffer.alloc(21 * 1024 * 1024)]) }, "Ảnh lớn hơn 20 MB."],
-    ["23 MB, máy chủ chặn theo Content-Length", { name: "lon.jpg", mimeType: "image/jpeg", buffer: Buffer.concat([readFileSync(PHOTO), Buffer.alloc(23 * 1024 * 1024)]) }, "Ảnh lớn hơn 20 MB."],
+  const posts: string[] = [];
+  b.on("request", (r) => {
+    if (r.method() === "POST" && r.url().endsWith("/photos")) posts.push(r.url());
+  });
+  const big = (mb: number) => Buffer.concat([readFileSync(PHOTO), Buffer.alloc(mb * 1024 * 1024)]);
+  for (const [label, input, message, sent] of [
+    ["không chọn", null, "Chọn ảnh.", 0],
+    ["0 byte", { name: "rong.jpg", mimeType: "image/jpeg", buffer: Buffer.alloc(0) }, "Chọn ảnh.", 0],
+    ["chữ đổi đuôi", { name: "chu.jpg", mimeType: "image/jpeg", buffer: Buffer.from("đây không phải ảnh") }, "Chỉ nhận ảnh jpg, png, webp hoặc heic.", 1],
+    ["21 MB", { name: "lon.jpg", mimeType: "image/jpeg", buffer: big(21) }, "Ảnh lớn hơn 20 MB.", 0],
+    ["23 MB", { name: "lon.jpg", mimeType: "image/jpeg", buffer: big(23) }, "Ảnh lớn hơn 20 MB.", 0],
   ] as const) {
+    const before = posts.length;
     await file.setInputFiles(input ? [input] : []);
     await upload.click();
     await expect(dialog.getByText(message, { exact: true }), label).toBeVisible({ timeout: 30_000 });
     await expect(file, label).toHaveAttribute("aria-invalid", "true");
     await expect(dialog).toBeVisible();
+    expect([label, posts.length - before]).toEqual([label, sent]);
+  }
+
+  // Máy chủ vẫn là chốt thật: gọi thẳng API với file lớn thì nhận 400 gắn ô Ảnh, 23 MB bị chặn theo Content-Length.
+  const row = (await (await b.request.get(`/api/admin/customers/${B.B_IDS.replace}`)).json()).banks.find((x: { name: string }) => x.name === B.B_BANK1);
+  for (const mb of [21, 23]) {
+    const res = await b.request.post(`/api/admin/customer-banks/${row.id}/photos`, { headers: { Origin: ADMIN }, multipart: { slotId: row.slots[0].id, file: { name: "lon.jpg", mimeType: "image/jpeg", buffer: big(mb) } } });
+    expect([mb, res.status(), await res.json()]).toEqual([mb, 400, { message: "Ảnh lớn hơn 20 MB.", field: "file" }]);
   }
 
   await b.route("**/photos", (route) => route.abort());
@@ -244,6 +258,14 @@ test("Trang 4 tải ảnh thay thế: không chọn file, file 0 byte, file ch�
   await upload.click();
   await expect(dialog.getByRole("alert")).toHaveText("Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.");
   await expect(file).not.toHaveAttribute("aria-invalid", "true");
+  await b.unroute("**/photos");
+
+  // Production có Nginx đứng trước: request quá client_max_body_size bị trả trang HTML 413, không vào tới app.
+  await b.route("**/photos", (route) => route.fulfill({ status: 413, contentType: "text/html", body: "<html><body><center><h1>413 Request Entity Too Large</h1></center></body></html>" }));
+  await upload.click();
+  await expect(dialog.getByText("Ảnh lớn hơn 20 MB.", { exact: true })).toBeVisible();
+  await expect(file).toHaveAttribute("aria-invalid", "true");
+  await expect(dialog.getByRole("alert")).toHaveCount(0);
   await b.unroute("**/photos");
 
   await open(a, detail(B.B_IDS.replace));

@@ -9,7 +9,10 @@ import { Field, inputClass } from "@/components/ui/Field";
 import { Select } from "@/components/ui/Select";
 import { ConfirmDialog } from "@/components/users/ConfirmDialog";
 import { apiSend } from "@/lib/api";
+import { MAX_IMAGE_BYTES } from "@/lib/imageKey";
 import type { CustomerBankStatus } from "@/lib/studentState";
+
+const TOO_LARGE = "Ảnh lớn hơn 20 MB.";
 
 type Bank = { id: string; name: string; status: CustomerBankStatus; note: string; slots: { id: string; name: string }[]; photos: string[] };
 
@@ -22,11 +25,16 @@ function ReplaceDialog({ bank, onClose }: { bank: Bank; onClose: () => void }) {
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const form = new FormData(event.currentTarget);
-    if (!(form.get("file") instanceof File) || !(form.get("file") as File).size) return setErrors({ file: "Chọn ảnh." });
+    const file = form.get("file");
+    if (!(file instanceof File) || !file.size) return setErrors({ file: "Chọn ảnh." });
+    // Như imageProblem của mgst-app: chặn ở trình duyệt để báo ngay, máy chủ vẫn kiểm lại.
+    if (file.size > MAX_IMAGE_BYTES) return setErrors({ file: TOO_LARGE });
     setErrors({});
     setPending(true);
     try {
       const res = await fetch(`/api/admin/customer-banks/${bank.id}/photos`, { method: "POST", body: form });
+      // Nginx chặn request quá client_max_body_size trước khi vào app, trả trang HTML chứ không phải JSON.
+      if (res.status === 413) return setErrors({ file: TOO_LARGE });
       const data = res.ok ? null : await res.json().catch(() => null);
       if (!res.ok) return setErrors({ [data?.field ?? "form"]: data?.message ?? "Không tải được ảnh lên. Thử lại." });
       onClose();
