@@ -81,6 +81,7 @@ Mỗi ca ghi: thao tác hoặc dữ liệu vào, rồi kết quả đúng. Ca c�
    - TR6: nhiều khoảng trắng giữa hai từ vẫn ra. Ô chỉ có khoảng trắng thì như không tìm.
    - TR7: từ khoá 500 ký tự. Báo "Không có trường khớp từ khoá.", không lỗi.
    - TR8: đang ở trang 2, đổi từ khoá. Về trang 1.
+   - TR31: "anh nguyen" ra trường "Nguyễn Thị Anh". Một từ ở tên trường, một từ ở tên xã cũng ra. Ô tìm nhận tối đa 100 ký tự.
 4. Bộ lọc và URL
    - TR9: `page=0`, `-1`, `abc`, `1.5`, `999`. Trang hiện bình thường, số trang nằm trong khoảng có.
    - TR10: `q` lặp hai lần trên URL (`?q=a&q=b`). Trang hiện bình thường, không lỗi 500.
@@ -109,6 +110,7 @@ Mỗi ca ghi: thao tác hoặc dữ liệu vào, rồi kết quả đúng. Ca c�
    - TR27: tìm không khớp. Bảng ghi "Không có trường khớp từ khoá.", Xuất Excel ra file chỉ có đầu bảng.
 11. Xuất Excel
    - TR28: xuất theo từ khoá. File chỉ có trường khớp. Tên `=1+1`, `+84`, `-5`, `@SUM(A1)` là ô chữ, không phải công thức. Tên dài giữ đủ. SĐT giữ số 0 đầu.
+   - TR32: xuất với `q=%00` trên URL. Ra file, không lỗi 500. Test DB.
 12. Link
    - TR29: trình duyệt chặn clipboard. Bấm Chép link báo "Không chép được".
    - TR30: tải ảnh QR của trường tên đặc biệt. Tên file chỉ có chữ, số, gạch ngang.
@@ -123,6 +125,7 @@ Mỗi ca ghi: thao tác hoặc dữ liệu vào, rồi kết quả đúng. Ca c�
    - NH2: tên `ZZE2E <b>đậm</b> & "x"` hiện nguyên văn.
 3. Tìm kiếm
    - NH3: ô chọn người quản tìm không dấu và theo tên đăng nhập. Danh sách ngân hàng không có ô tìm vì ngắn, không phân trang.
+   - NH15: ô chọn người quản gõ "anh nguyen" ra "Nguyễn Thị Anh". Một từ ở họ tên, một từ ở tên đăng nhập cũng ra. Ô nhận tối đa 100 ký tự.
 4. Bộ lọc và URL: không áp dụng, trang không đọc tham số.
 5. Phân trang: không áp dụng, danh sách ngân hàng nhỏ, không phân trang.
 6. Ngày giờ: không áp dụng.
@@ -160,12 +163,14 @@ Mỗi ca ghi: thao tác hoặc dữ liệu vào, rồi kết quả đúng. Ca c�
    - MA4: gõ liền 6 ký tự. URL chỉ đổi một lần sau khi ngừng gõ 300 ms, ra đúng mã.
    - MA5: tìm không dấu theo tên hiển thị, tìm theo mã text. Ô chỉ có khoảng trắng không đưa `q` lên URL.
    - MA6: gõ rồi bấm sang trang khác trước 300 ms. Trang mới không bị kéo về Kho mã.
+   - MA22: nhiều từ khác thứ tự, một từ ở tên hiển thị, một từ ở mã text. Ô tìm và ô chọn trường nhận tối đa 100 ký tự. Ô chọn trường tìm nhiều từ.
 4. Bộ lọc và URL
    - MA7: kết hợp ngân hàng, từ khoá, ẩn mã đã ngừng. Đổi một lọc thì về trang 1, giữ các lọc khác. Đổi tháng giữ lọc.
    - MA8: `month=2026-13`, `month=abc` về tháng hiện tại. `bank` là uuid lạ hoặc ngân hàng ngoài phạm vi thì bỏ lọc. `page=0`, `abc`, `999` bình thường. `q` lặp không lỗi 500.
    - MA9: Quay lại của trình duyệt. Ô tìm, ô ngân hàng hiện đúng lọc của URL.
 5. Phân trang
    - MA10: 16 mã khớp. Trang 1 có 15, trang 2 có 1, meta ghi "16 mã".
+   - MA23: 16 mã cùng thứ tự ngân hàng, cùng độ ưu tiên, cùng tên. Mã xếp theo id, trang 1 và trang 2 không lặp, không sót mã. Test DB.
 6. Ngày giờ
    - MA11: tháng 12/2026 bấm Tháng sau ra 01/2027, tháng 01/2027 bấm Tháng trước ra 12/2026.
 7. Form mã
@@ -195,6 +200,7 @@ Mỗi ca ghi: thao tác hoặc dữ liệu vào, rồi kết quả đúng. Ca c�
    - TK2: họ tên `<script>` và `'` hiện nguyên văn ở bảng, tiêu đề, hộp thoại.
 3. Tìm kiếm
    - TK3: tìm không dấu, viết HOA, một phần tên đăng nhập. `_` và `%` là chữ thường, không phải ký tự đại diện. Ô chỉ khoảng trắng như không tìm. Không khớp ghi "Không có tài khoản khớp từ khoá.".
+   - TK19: "anh nguyen" ra "Nguyễn Thị Anh". Một từ ở họ tên, một từ ở tên đăng nhập cũng ra. Ô tìm nhận tối đa 100 ký tự.
 4. Bộ lọc và URL
    - TK4: `page=0`, `-1`, `abc`, `1.5`, `999` và `q` lặp. Không lỗi 500. `/users/abc`, `/users/<uuid lạ>` trả 404.
 5. Phân trang
@@ -284,3 +290,99 @@ Mọi test Cài đặt đặt lại đúng giá trị cũ trong `finally`.
 - API2: body không phải JSON, `active: "true"` (chuỗi) nhận 400, không 500.
 - API3: `/api/admin/uploads` thư mục lạ, không có file, file 0 byte, file không phải ảnh nhận 400. `/api/admin/images` khoá sai dạng hoặc khoá thư mục `proofs` nhận 404.
 - API4: `/api/admin/wards?province=abc` trả danh sách rỗng.
+
+## Kết quả (2026-11-06)
+
+### Test đã viết
+
+| Trang | Số ca | File test |
+| --- | --- | --- |
+| Đăng nhập | 15 | `e2e/edge-config-login.spec.ts` |
+| Khung trang, phân quyền | 11 | `e2e/edge-config-shell.spec.ts` |
+| Trường | 30 | `e2e/edge-config-schools.spec.ts` |
+| Ngân hàng, hướng dẫn | 17 | `e2e/edge-config-banks.spec.ts` |
+| Kho mã giới thiệu | 21 | `e2e/edge-config-codes.spec.ts` |
+| Tài khoản | 18 | `e2e/edge-config-users.spec.ts` |
+| Cá nhân | 9 | `e2e/edge-config-profile.spec.ts` |
+| Cài đặt, Vận hành | 12 | `e2e/edge-config-settings.spec.ts` |
+| API chung | 4 | `e2e/edge-config-api.spec.ts` |
+
+Ca thuần máy chủ chạy thêm ở `tests/db/edgeConfig.test.ts`: ghi cùng lúc, người quản đã khoá, ngân hàng và trường không có hoặc đã đóng, Quản lý với tài khoản Quản trị.
+
+Lượt sửa thứ hai thêm TR31, NH15, MA22, TK19 vào các file trên. TR32, MA23 và phần máy chủ của tìm nhiều từ nằm ở `tests/db/edgeConfig.test.ts`.
+
+### Lỗi đã sửa
+
+Mỗi dòng: điều người dùng thấy sau khi sửa, rồi commit.
+
+- Khung trang: họ tên có emoji ở từ cuối thì ô chữ tắt hiện đủ emoji, không hiện ô hỏng. `74b1db4`
+- Hộp thoại: tiêu đề và câu hỏi có tên liền một chữ dài thì xuống hàng trong hộp, nút Đóng không bị đẩy ra ngoài màn. `3951754`
+- Trường, Tài khoản, Kho mã: URL có hai tham số `q` thì trang dùng `q` đầu, không lỗi 500. `fab450a`
+- Trường, Tài khoản, Cá nhân: SĐT gõ có dấu cách hoặc dấu chấm lưu thành 10 số liền, không báo sai dạng. `fbcf3ab`
+- Ngân hàng: hai người cùng tạo một mã ngân hàng cùng lúc thì người sau thấy "Mã ngân hàng đã có.", không lỗi 500. `68cd418`
+- Ngân hàng: người quản đã bị khoá thì vẫn sửa được tên, độ ưu tiên; người quản giữ nguyên. `85cab0c`
+- Hướng dẫn: đọc, lưu hướng dẫn của ngân hàng không có trả 404, không trả hướng dẫn rỗng hay lỗi 500. `1c29cd6`
+- Ngân hàng, Kho mã: ô Độ ưu tiên, Số lượt bỏ trống thì báo lỗi ô, không lặng lẽ lưu 0. `7308bad`
+- Kho mã: API tạo, sửa mã với ngân hàng không có, trường không có hoặc đã đóng, hai người cùng tạo một tên đều báo lỗi đúng ô, không lỗi 500. `c8ba122`
+- Kho mã: sửa mã của ngân hàng đã tắt thì ô Ngân hàng hiện đúng ngân hàng của mã. `8c9ac8a`
+- Kho mã: bật "Ẩn mã đã ngừng" mà mọi mã đều đã ngừng thì bảng ghi "Không có mã khớp bộ lọc.". `3ec54c9`
+- Kho mã: gõ ô tìm rồi bấm sang trang khác ngay thì ở lại trang mới, không bị kéo về Kho mã. `874d617`
+- Kho mã: lọc trên URL đổi vì bấm link hay nút Quay lại thì ô tìm, ô ngân hàng, ô Ẩn mã đã ngừng hiện đúng lọc. `3033f49`
+- Tài khoản: Quản lý gọi API sửa, khoá, đặt lại mật khẩu của Quản trị nhận 403, không nhận 400. `e704298`
+- Tài khoản: hai người cùng tạo một tên đăng nhập hoặc một mã tài khoản cùng lúc thì người sau thấy báo trùng ở ô, không lỗi 500. `3b38161`
+- Tài khoản: trang của chính mình không còn nút Đặt lại mật khẩu, API từ chối; trước đây bấm thì tự bị đăng xuất. `03bb73d`
+- Thêm tài khoản: bấm Esc hoặc Huỷ lúc đang chờ máy chủ thì hộp không đóng, mật khẩu mới vẫn hiện. `42ff72b`
+- Tài khoản: họ tên, chức danh liền một chữ dài xuống hàng ở trang chi tiết, trang không cuộn ngang. `5089602`
+- Cá nhân: nhập sai rồi Huỷ, mở lại Sửa thông tin hay Đổi mật khẩu thì không còn lỗi cũ. `7e5ae63`
+- Cá nhân: họ tên, chức danh liền một chữ dài xuống hàng trong khung, không bị cắt ở màn điện thoại. `401ce32`
+- Cài đặt: lưu được rồi gõ sai và bấm Lưu thì câu "Đã lưu cấu hình." mất đi. `07c98a1`
+- Cài đặt: link Zalo, link app PVI dài quá sức chứa của QR không làm vỡ trang, ô QR ghi "Link quá dài". `7dee31b`
+- Cài đặt: link có dấu cách báo "Link không được có dấu cách", không báo nhầm "phải bắt đầu bằng https://". `490493c`
+- Cài đặt: mẫu SMS có xuống dòng báo "Mẫu SMS viết trên một dòng", không báo nhầm "viết không dấu". `af5fda6`
+- Cài đặt: xoá trống mẫu SMS rồi Lưu thì báo "Nhập mẫu SMS", không báo nhầm "viết không dấu". `30f7f4f`
+- Cài đặt: mẫu SMS thiếu `{MA_VOUCHER}` báo "Mẫu SMS phải có {MA_VOUCHER}", không lưu mẫu gửi tin không có mã. `23fbf65`
+- Trường: xuất Excel với ký tự NUL (`%00`) trên URL ra file, không lỗi 500. Ô chọn trường, ô chọn người quản, ô tìm trường của bộ lọc trang Ngân hàng cũng đọc từ khoá qua `readParam`. `32fd07d`
+- Kho mã: hai mã cùng độ ưu tiên, cùng tên ở hai ngân hàng cùng thứ tự không đổi chỗ giữa hai trang, bấm Sau không lặp hay sót mã. Trường, Tài khoản đã có `id` cuối. Danh sách Ngân hàng không phân trang. `b10677f`
+- Trường, Tài khoản, Kho mã, ô chọn người quản, ô chọn trường: gõ "anh nguyen" ra "Nguyễn Thị Anh", mỗi từ khớp một cột bất kỳ của trang. Máy chủ cắt từ khoá ở 100 ký tự và 8 từ. Ô tìm nhận tối đa 100 ký tự. `369a1eb`
+
+Test: `6ed26e4` (kiểu dữ liệu cho tsc), `eaea0c6` (test DB), `cb0bef5` (các file e2e còn lại).
+
+### Ruling
+
+- Ô số bỏ trống (Độ ưu tiên, Số lượt) báo lỗi ô. Chép `numberValue` của mgst-app: ô trống là lỗi, không thành 0.
+- SĐT bỏ dấu cách và dấu chấm trước khi kiểm. Chép luật SĐT ở form học sinh của mgi-bank. SĐT để trống ở Tài khoản, Cá nhân lưu là trống.
+- Link mở tài khoản của mã có dấu cách giữa vẫn lưu như mgst-app (MA20). mgst-app không chặn, sửa thì đổi luật đã có.
+- Link Zalo, link app PVI ở Cài đặt tối đa 500 ký tự (CD2). mgst-app không có trần. Chọn cách an toàn: web học sinh vẽ QR từ link này, QR mức M chứa tối đa 2.331 byte.
+- Link ở Cài đặt có dấu cách thì báo "Link không được có dấu cách" (CD11). mgst-app không có luật riêng.
+- Mẫu SMS có xuống dòng báo "Mẫu SMS viết trên một dòng" (CD4). mgst-app không có luật riêng. Tin SMS không dấu gửi một dòng.
+- Mẫu SMS phải có `{MA_VOUCHER}` (CD7). mgst-app không có luật riêng. Chọn cách an toàn: tin gửi đi không có mã thì học sinh không dùng được.
+- Tên trường trùng trường đã có vẫn lưu được (TR22). Hai xã có thể cùng có "THPT Nguyễn Du". Ô chọn trường luôn ghi kèm tên xã.
+- Tên trường, ngân hàng, mã, tài khoản không có trần độ dài mới. Màn hình xuống hàng hoặc cuộn trong khung.
+- Bộ đếm "Sắp bị khoá" ở trình duyệt về 0 khi tải lại trang, như mgst-app. Máy chủ vẫn đếm đủ 5 lần.
+- Mã đang gắn trường rồi trường mới đóng thì sửa mã vẫn giữ trường đó. Gắn thêm trường đã đóng hoặc không có thì bị từ chối ở ô Trường.
+- Ngân hàng có người quản đã bị khoá thì sửa vẫn giữ người đó. Giao thêm người đã khoá thì bị từ chối ở ô Người quản.
+- Không ai tự đặt lại mật khẩu của mình ở trang Tài khoản. Đổi mật khẩu của mình đi qua trang Cá nhân.
+- Quản lý thao tác với tài khoản Quản trị nhận 403. Luật "ngoài phạm vi trả 404" áp cho bản ghi ngoài phạm vi; tài khoản Quản trị vẫn hiện trong danh sách của Quản lý.
+- Ô tìm nhiều từ: mỗi từ phải khớp ít nhất một cột. Trường xét tên trường và tên xã. Tài khoản và ô chọn người quản xét họ tên và tên đăng nhập. Kho mã xét tên hiển thị và mã text. Chép `staffSearchWhere` của mgst-app.
+
+### Chờ
+
+Không có. Mọi file dùng chung cần sửa đều không có thay đổi dở của nhóm khác lúc sửa.
+
+### Chưa test
+
+- `/ops` "Chưa có số đo.": bảng `host_metrics` là số đo thật của DB local, không xoá được.
+- Tải ảnh thật lên S3 ở Ngân hàng (ảnh mẫu) và Kho mã (ảnh QR): test chỉ gửi file hỏng, máy chủ từ chối trước khi ghi S3. Ảnh thật sẽ để lại file trên bucket dev mà `e2e-clean` không dọn.
+- DN6 phần "tải lại trang thì bộ đếm ở trình duyệt về 0": ghi là ruling, không viết test.
+
+### Lần chạy cuối
+
+Chạy 2026-11-06 lúc 23:07 tới 23:14, trên `369a1eb`. Working tree lúc chạy có thay đổi dở của nhóm A và nhóm B.
+
+- `bun run test`: 232 pass, 0 fail.
+- `bunx tsc --noEmit`: 0 lỗi.
+- `bun run lint`: 0 lỗi, 2 cảnh báo `<img>` cũ ở `GuideDialog.tsx` và `CodeFormDialog.tsx`.
+- `bun test:db` trên DB tạm `zz_test_edge_c`: 253 pass, 0 fail.
+- `bun run e2e e2e/edge-config-` trên bản build: 68 pass, 0 fail, 2,6 phút.
+
+Lượt chạy trước đó của `bun test:db` có 1 lỗi nạp file ở `tests/db/customers.test.ts`: nhóm A viết test trước khi thêm hàm. Lượt sau nhóm A đã thêm hàm và cả bộ pass.
