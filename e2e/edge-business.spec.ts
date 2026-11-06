@@ -1,7 +1,7 @@
 import ExcelJS from "exceljs";
 import { expect, test, type Page } from "@playwright/test";
 import * as B from "../scripts/e2e-data-business";
-import { column, DESKTOP, insideViewport, loginAs, open, pageOverflow, PHONE, readExport } from "./edge-business-support";
+import { closeContexts, column, DESKTOP, insideViewport, loginAs, open, pageOverflow, PHONE, readExport } from "./edge-business-support";
 
 const q = (text: string) => `q=${encodeURIComponent(text)}`;
 const table = (page: Page) => page.getByRole("region", { name: "Hồ sơ học sinh" });
@@ -9,6 +9,8 @@ const bodyRows = (page: Page) => table(page).locator("tbody tr");
 const meta = (page: Page) => table(page).getByText(/^\d+ hồ sơ$/);
 const pager = (page: Page) => page.getByRole("navigation", { name: "Phân trang" });
 const EMPTY = "Không có hồ sơ khớp bộ lọc.";
+
+test.afterEach(closeContexts);
 
 test("Trang 3: tên 100 ký tự có dấu cách và tên liền không dấu cách, ở 1366 và 390 px không tràn ngang, ô tìm và các nút nằm trong màn hình", async ({ browser }) => {
   for (const device of [DESKTOP, PHONE]) {

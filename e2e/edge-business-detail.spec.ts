@@ -2,13 +2,15 @@ import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import * as B from "../scripts/e2e-data-business";
-import { ADMIN, DESKTOP, insideViewport, loginAs, open, overflowOf, pageOverflow, PHONE } from "./edge-business-support";
+import { ADMIN, closeContexts, DESKTOP, insideViewport, loginAs, open, overflowOf, pageOverflow, PHONE } from "./edge-business-support";
 
 const PHOTO = "public/brand/photo.jpg";
 const detail = (id: string) => `/customers/${id}`;
 const bank1 = (page: Page) => page.getByRole("region", { name: B.B_BANK1, exact: true });
 const bank2 = (page: Page) => page.getByRole("region", { name: B.B_BANK2, exact: true });
 const TAKEN = "Ngân hàng này đã có người đánh dấu. Tải lại trang để xem kết quả mới.";
+
+test.afterEach(closeContexts);
 
 async function bankRowId(page: Page, customerId: string, bankName: string): Promise<string> {
   const res = await page.request.get(`/api/admin/customers/${customerId}`);

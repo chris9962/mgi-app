@@ -2,13 +2,15 @@ import { randomUUID } from "node:crypto";
 import ExcelJS from "exceljs";
 import { expect, test, type Page } from "@playwright/test";
 import * as B from "../scripts/e2e-data-business";
-import { ADMIN, column, DESKTOP, insideViewport, loginAs, open, pageOverflow, PHONE, readExport } from "./edge-business-support";
+import { ADMIN, closeContexts, column, DESKTOP, insideViewport, loginAs, open, pageOverflow, PHONE, readExport } from "./edge-business-support";
 
 const q = (text: string) => `q=${encodeURIComponent(text)}`;
 const card = (page: Page, name: string) => page.getByRole("region", { name, exact: true });
 const rows = (page: Page, name: string) => card(page, name).locator("tbody tr");
 const meta = (page: Page, name: string, unit: string) => card(page, name).getByText(new RegExp(`^\\d+ ${unit}$`));
 const pager = (page: Page) => page.getByRole("navigation", { name: "Phân trang" });
+
+test.afterEach(closeContexts);
 
 test.describe("trang Ngân hàng nhóm Nghiệp vụ", () => {
   const NH = "Ngân hàng";

@@ -1,13 +1,20 @@
 import ExcelJS from "exceljs";
-import { expect, type Browser, type Locator, type Page } from "@playwright/test";
+import { expect, type Browser, type BrowserContext, type Locator, type Page } from "@playwright/test";
 
 export const PASSWORD = "e2e23test";
 export const ADMIN = "http://admin.localhost:3100";
 export const PHONE = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true };
 export const DESKTOP = { viewport: { width: 1366, height: 768 } };
 
+// Mỗi file spec gọi closeContexts sau từng test: context để lại thì phiên đăng nhập và route chặn còn sống tới hết file.
+const contexts = new Set<BrowserContext>();
+export const closeContexts = () => Promise.all([...contexts].map((c) => c.close()));
+
 export async function loginAs(browser: Browser, username: string, device: object = DESKTOP): Promise<Page> {
-  const page = await (await browser.newContext({ baseURL: ADMIN, ...device })).newPage();
+  const context = await browser.newContext({ baseURL: ADMIN, ...device });
+  contexts.add(context);
+  context.on("close", () => contexts.delete(context));
+  const page = await context.newPage();
   await page.goto("/login");
   await page.getByLabel("Tài khoản").fill(username);
   await page.getByLabel("Mật khẩu", { exact: true }).fill(PASSWORD);
