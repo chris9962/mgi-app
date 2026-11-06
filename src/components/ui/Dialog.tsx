@@ -42,13 +42,14 @@ export function Dialog({ open, title, onClose, footer, children, width = 480 }: 
         else onClose();
       }}
       style={{ width }}
-      className="m-auto max-w-[calc(100vw-32px)] rounded-2xl border border-line bg-card p-0 text-text shadow-xl backdrop:bg-black/40"
+      // Tên trường, tên ngân hàng liền một chữ dài hơn hộp: cho xuống hàng ở bất kỳ ký tự nào, không đẩy nút Đóng ra ngoài.
+      className="m-auto max-w-[calc(100vw-32px)] rounded-2xl border border-line bg-card p-0 text-text shadow-xl [overflow-wrap:anywhere] backdrop:bg-black/40"
     >
-      <div className="flex items-center justify-between border-b border-line px-5 py-4">
-        <h2 id={titleId} className="text-[17px] font-semibold">
+      <div className="flex items-center justify-between gap-3 border-b border-line px-5 py-4">
+        <h2 id={titleId} className="min-w-0 text-[17px] font-semibold">
           {title}
         </h2>
-        <button type="button" onClick={onClose} aria-label="Đóng" className="grid size-9 place-items-center rounded-lg border border-line text-text-2 hover:bg-surface">
+        <button type="button" onClick={onClose} aria-label="Đóng" className="grid size-9 flex-none place-items-center rounded-lg border border-line text-text-2 hover:bg-surface">
           <X size={16} aria-hidden />
         </button>
       </div>
