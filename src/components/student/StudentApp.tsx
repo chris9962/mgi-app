@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useEffectEvent, useState } from "react";
+import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { clearProfile, decideLink, isSchoolId, readDevice, saveSchool } from "@/lib/studentDevice";
 import { studentApi } from "@/lib/studentApi";
@@ -69,6 +69,7 @@ async function resolveScreen(linkId?: string): Promise<Screen> {
 export function StudentApp({ linkId }: { linkId?: string }) {
   const [screen, setScreen] = useState<Screen>({ kind: "loading" });
   const [scanning, setScanning] = useState(false);
+  const loads = useRef(0);
 
   // Đồng bộ với localStorage và máy chủ lúc mở web: máy giữ trường và token, máy chủ giữ hồ sơ.
   useEffect(() => {
@@ -79,9 +80,11 @@ export function StudentApp({ linkId }: { linkId?: string }) {
     };
   }, [linkId]);
 
+  // Lần tải cũ về muộn (trang hiện lại lúc mạng chậm rồi ảnh vừa nộp xong) không được đè màn của lần tải mới.
   const go = async (link?: string, notice?: string) => {
+    const load = ++loads.current;
     const next = await resolveScreen(link);
-    setScreen(next.kind === "profile" ? { ...next, notice } : next);
+    if (load === loads.current) setScreen(next.kind === "profile" ? { ...next, notice } : next);
   };
 
   // Học sinh qua app ngân hàng rồi quay lại web: tải lại hồ sơ để có link ảnh mới và trạng thái mới.

@@ -310,6 +310,37 @@ test.describe("D. B3 mở tài khoản", () => {
     expect(deletes).toBe(1);
   });
 
+  test("D17 trang ẩn rồi hiện lại lúc đang nộp ảnh: kết quả tải lại cũ về muộn không xoá ảnh vừa nộp", async ({ page, request }) => {
+    const s = await apiCreate(request, SCHOOL.photo, info("Chụp Bằng Camera Android"));
+    await apiPick(request, s, [BANK.p1, BANK.p3]);
+    await openAt(page, SCHOOL.photo, s);
+    await expect(page.getByRole("heading", { name: "Mở tài khoản" })).toBeVisible();
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    let markFetched = () => {};
+    const fetched = new Promise<void>((resolve) => (markFetched = resolve));
+    let first = true;
+    // Lần tải lại đầu lấy hồ sơ lúc chưa có ảnh rồi giữ lại, trả về sau lần tải lại của ảnh vừa nộp.
+    await page.route("**/api/customers/me", async (route) => {
+      if (!first) return route.continue();
+      first = false;
+      const old = await route.fetch();
+      markFetched();
+      await gate;
+      await route.fulfill({ response: old });
+    });
+    await page.evaluate(() => document.dispatchEvent(new Event("visibilitychange")));
+    await fetched;
+    await uploadIn(page, "Ảnh màn hình chính");
+    const late = page.waitForResponse((r) => new URL(r.url()).pathname === "/api/customers/me");
+    release();
+    await late;
+    await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
+    const panel = page.getByRole("tabpanel");
+    await expect(panel.getByLabel("Ảnh màn hình chính: chụp lại")).toBeAttached();
+    await expect(panel.getByLabel("Ảnh màn hình chính: chụp hoặc chọn ảnh")).toHaveCount(0);
+  });
+
   test("D11 còn khung trống thì Gửi kiểm tra khoá; đủ ảnh bấm đúp chỉ gửi một lần, vào màn kết quả", async ({ page, request }) => {
     const s = await apiCreate(request, SCHOOL.photo, info("Gửi Bấm Đúp"));
     await apiPick(request, s, [BANK.p1, BANK.p3]);
