@@ -53,7 +53,7 @@ export function Sidebar({ groups, fullName, title, mobileOpen = false, onMobileC
     };
   }, [menuOpen]);
 
-  // Ngăn trượt mở thì focus vào ngăn và nghe Esc; khoá cuộn trang nằm ở globals.css, chỉ áp dưới 900 px.
+  // Khoá cuộn trang không đặt ở đây mà ở globals.css theo khổ màn: xoay qua 900 px là tự hết khoá.
   useEffect(() => {
     if (!mobileOpen) return;
     closeButton.current?.focus();
