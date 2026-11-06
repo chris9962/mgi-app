@@ -96,6 +96,22 @@ test("điện thoại: ngăn mở thì Tab và Shift+Tab không ra nội dung b�
   expect(await outside()).toBeNull();
 });
 
+test("điện thoại: menu tài khoản mở trong ngăn thì Esc đầu chỉ đóng menu, Esc sau mới đóng ngăn", async ({ browser }) => {
+  const page = await loginAs(browser, "zz_e2e_admin", PHONE);
+  const more = bottomNav(page).getByRole("button", { name: "Thêm" });
+  await more.click();
+  const trigger = page.locator('#main-nav button[aria-controls="account-menu"]');
+  await trigger.click();
+  await expect(page.getByRole("link", { name: "Thông tin cá nhân" })).toBeVisible();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("link", { name: "Thông tin cá nhân" })).toHaveCount(0);
+  await expect(sidebar(page)).toBeVisible();
+  await expect(trigger).toBeFocused();
+  await page.keyboard.press("Escape");
+  await expect(sidebar(page)).toBeHidden();
+  await expect(more).toBeFocused();
+});
+
 test("điện thoại: đóng ngăn bằng Esc hay lớp phủ thì trang cuộn lại được", async ({ browser }) => {
   const page = await loginAs(browser, "zz_e2e_admin", PHONE);
   const more = bottomNav(page).getByRole("button", { name: "Thêm" });

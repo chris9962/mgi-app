@@ -32,10 +32,12 @@ export function Sidebar({ groups, fullName, title, mobileOpen = false, onMobileC
   const closeButton = useRef<HTMLButtonElement>(null);
 
   // Nghe phím Esc và bấm ra ngoài trên document khi menu mở; bỏ nghe khi menu đóng.
+  // Esc nghe ở pha capture và preventDefault: menu nằm trong ngăn trượt thì Esc đầu chỉ đóng menu, ngăn bỏ qua.
   useEffect(() => {
     if (!menuOpen) return;
     const onKey = (e: KeyboardEvent) => {
       if (e.key !== "Escape") return;
+      e.preventDefault();
       setMenuOpen(false);
       trigger.current?.focus();
     };
@@ -43,10 +45,10 @@ export function Sidebar({ groups, fullName, title, mobileOpen = false, onMobileC
       const target = e.target as Node;
       if (!panel.current?.contains(target) && !trigger.current?.contains(target)) setMenuOpen(false);
     };
-    document.addEventListener("keydown", onKey);
+    document.addEventListener("keydown", onKey, true);
     document.addEventListener("pointerdown", onPointer);
     return () => {
-      document.removeEventListener("keydown", onKey);
+      document.removeEventListener("keydown", onKey, true);
       document.removeEventListener("pointerdown", onPointer);
     };
   }, [menuOpen]);
@@ -56,7 +58,7 @@ export function Sidebar({ groups, fullName, title, mobileOpen = false, onMobileC
     if (!mobileOpen) return;
     closeButton.current?.focus();
     const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onMobileClose?.();
+      if (e.key === "Escape" && !e.defaultPrevented) onMobileClose?.();
     };
     document.addEventListener("keydown", onKey);
     document.body.style.overflow = "hidden";
