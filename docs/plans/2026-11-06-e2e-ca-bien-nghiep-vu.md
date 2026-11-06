@@ -18,8 +18,9 @@ Seed riêng ở `scripts/e2e-seed-business.ts`, gắn vào `scripts/e2e-seed.ts`
 - Hồ sơ chỉ có B2, hồ sơ có cả B1 và B2 kèm ảnh ở cả hai, hồ sơ chưa chọn ngân hàng, hai hồ sơ trùng tên và SĐT.
 - Các hồ sơ riêng cho từng ca đồng thời (hai tab hậu kiểm, hai tab sửa thông tin, thay ảnh, ghi chú, Gửi lại).
 - Hồ sơ riêng cho các ca review lần 1 tìm ra: "Biên Ảnh Cũ", "Biên Đạt Cùng Lúc", "Biên Không Đạt Trước", "Biên Bấm Đúp", "Biên Lỗi Dài" (cột Lỗi 500 ký tự liền), "Biên Bỏ Giao" (B2 chờ kiểm tra, tin SMS lỗi).
-- 17 hồ sơ "Biên Chờ Kiểm A" tới "Q" chờ kiểm tra ở B1: 16 hồ sơ ngày 15/10, hồ sơ Q ngày 14/10, nên lọc Chờ kiểm tra theo tên ra đúng 1 dòng ở trang 2. Hồ sơ A có thêm B2.
+- 17 hồ sơ "Biên Chờ Kiểm A" tới "Q" chờ kiểm tra ở B1: 16 hồ sơ ngày 15/10, hồ sơ Q ngày 14/10, nên lọc Chờ kiểm tra theo tên ra đúng 1 dòng ở trang 2. Hồ sơ A chỉ có B2.
 - Hai hồ sơ có tên, lớp, phụ huynh bắt đầu bằng `=`, `+`, `-`, `@` có voucher, để file Mã voucher có ô bắt đầu bằng ký tự công thức.
+- Hồ sơ riêng cho các ca review lần 2 tìm ra: "Biên Tải Rồi Đạt" (B1 chờ kiểm tra), "Biên Gỡ Khung" (B2 chờ kiểm tra), "Biên Cùng Khung" (B1 chờ kiểm tra). Ba hồ sơ dùng số điện thoại từ n = 250, vì 230 tới 246 đã là số của hồ sơ Chờ Kiểm.
 
 Tên hồ sơ không chứa chữ mà test cũ dùng để tìm (`xuat`, `kiem anh`, `ngo thi hau kiem`...). Tên ngân hàng và trường dài có dấu cách, nên trang Ngân hàng và Trường của nhóm C vẫn hiện được. Ca tên liền không dấu cách dùng hồ sơ, không dùng tên ngân hàng hay trường.
 
@@ -98,12 +99,16 @@ Không áp dụng ở Trang 3:
 | T4-24 | 13 | Route ảnh với id sai dạng, id không có | 404 |
 | T4-25 | 2 | Hai hồ sơ trùng tên và SĐT, một ở trường tên dài | Mỗi hồ sơ có link sang hồ sơ kia, ghi tên và trường |
 | T4-28 | 9 | Tab A tải ảnh thay thế; tab B đang mở trang cũ bấm Đạt | Tab B báo "Ảnh vừa được thay. Tải lại trang để xem ảnh mới.", không có voucher; tải lại trang thì thấy ảnh mới, Đạt được, đúng 1 voucher |
-| T4-29 | 7, 9 | Bấm Esc, Huỷ, nút Đóng lúc hộp Tải ảnh thay thế hay Ghi chú đang gửi | Huỷ bị khoá, hộp còn mở; máy chủ trả lời xong thì hộp đóng |
+| T4-29 | 7, 9 | Nhấn Esc 4 lần, bấm Huỷ lúc hộp Tải ảnh thay thế, Ghi chú, Sửa thông tin, Đạt, Không đạt đang gửi; máy chủ lưu xong, rồi lần khác máy chủ báo lỗi | Huỷ bị khoá, không có nút Đóng, hộp còn mở; lưu xong thì hộp đóng; báo lỗi thì câu báo hiện trong hộp, nút Đóng hiện lại, Huỷ đóng được |
 | T4-30 | 9 | Hai tab cùng bấm nút Đạt trong hộp xác nhận đúng một lúc | Một tab Đạt, tab kia báo đã có người đánh dấu; 1 voucher, 1 tin SMS |
 | T4-31 | 9 | Tab A bấm Không đạt; tab B đang mở trang cũ bấm Đạt | Tab B báo đã có người đánh dấu; tải lại trang thì Đạt được, đúng 1 voucher |
 | T4-32 | 7 | Bấm đúp nút Đạt trong hộp xác nhận | Chỉ một request |
 | T4-33 | 8, 9 | `zz_e2e_bien4` mở hộp Ghi chú, Tải ảnh thay thế, Sửa thông tin, Gửi lại SMS; quản trị bỏ giao B2; bấm gửi ở từng hộp | Ghi chú, Tải lên báo "Không tìm thấy ngân hàng của hồ sơ.", Sửa thông tin báo "Không tìm thấy hồ sơ.", Gửi lại báo "Không tìm thấy tin SMS.", đều ở dòng báo chung, không ô nào bị đánh dấu sai |
 | T4-34 | 9 | Quản trị gỡ khung ảnh lúc hộp Tải ảnh thay thế đang mở | "Không tìm thấy khung ảnh." dưới ô Khung ảnh |
+| T4-35 | 7, 9 | Hộp Đạt đang gửi: nhấn Esc 4 lần, lần khác trang gọi `dialog.close()` như Chrome tự đóng; máy chủ trả 409 | Hộp vẫn mở, câu báo 409 hiện trong hộp; Huỷ rồi bấm Đạt thì hộp mở lại |
+| T4-36 | 9, 13 | Mạng chậm (lượt tải lại trang trễ 5 giây): tự tải ảnh thay thế rồi bấm Đạt ngay | Đạt được, không báo "Ảnh vừa được thay"; đúng 1 voucher |
+| T4-37 | 9 | Quản trị gỡ khung ảnh lúc trang đang mở, ảnh của khung đó vẫn đang dùng; người kiểm bấm Đạt | Đạt được, đúng 1 voucher |
+| T4-38 | 9 | Hai tab cùng tải ảnh thay thế một khung; tab tải trước bấm Đạt | Người tải sau ghi đè; ảnh của người tải trước vẫn mở được; tab tải trước báo "Ảnh vừa được thay. Tải lại trang để xem ảnh mới."; tải lại trang thì thấy ảnh của người tải sau, Đạt được |
 
 Không áp dụng ở Trang 4:
 - Loại 3, 5: trang không có ô tìm, không phân trang.
@@ -160,11 +165,20 @@ Không áp dụng: loại 7, 9 (trang chỉ đọc), loại 12, 13.
 | SMS-08 | 9 | Hai tab cùng Gửi lại một tin | Tab sau báo "Tin này không ở trạng thái lỗi." ở dòng báo chung, ô SĐT không bị đánh dấu sai |
 | SMS-09 | 10 | `zz_e2e_bien3`; lọc Đã gửi khi không có tin đã gửi nào khớp; tìm không khớp | "Không có tin lỗi."; "Không có tin khớp bộ lọc." |
 | SMS-10 | 5, 9 | Đang ở trang 2 chỉ có một tin lỗi; Gửi lại tin đó | Trang tải lại về trang còn dòng, không hiện trang rỗng |
-| SMS-11 | 7, 9 | Bấm Esc, Huỷ, nút Đóng lúc hộp Gửi lại đang gửi | Huỷ bị khoá, hộp còn mở; máy chủ trả lời xong thì hộp đóng |
-| SMS-12 | 9 | Như SMS-08, rồi đóng hộp; lần khác mất mạng rồi đóng hộp | Đóng hộp thì bảng tải lại, dòng Lỗi cũ mất; mất mạng thì đóng hộp không tải lại trang |
+| SMS-11 | 7, 9 | Nhấn Esc 4 lần, bấm Huỷ lúc hộp Gửi lại đang gửi | Huỷ bị khoá, không có nút Đóng, hộp còn mở; máy chủ trả lời xong thì hộp đóng |
+| SMS-12 | 9 | Như SMS-08, rồi đóng hộp; lần khác mất mạng rồi đóng hộp, bật mạng, mở lại hộp | Đóng hộp thì bảng tải lại, dòng Lỗi cũ mất; mất mạng thì từ lúc bấm Huỷ không có lượt tải lại hay chuyển trang nào, bật mạng thì mở lại được hộp |
 | SMS-13 | 1, 14 | Tin có cột Lỗi 500 ký tự liền; khổ 1366x768 và 390x844 | Trang Tin SMS lỗi và chi tiết hồ sơ không cuộn ngang |
 
 Không áp dụng: loại 6 (cột Gửi lúc dùng chung hàm giờ Việt Nam với Trang 3, đã xét ở T3-22), loại 11 (trang không có Xuất Excel), loại 12, 13.
+
+## Ca của hộp thoại dùng chung
+
+Bản sửa M-new-1 ở `src/components/ui/Dialog.tsx` đổi mọi trang, nên nhóm B test thêm các hộp ngoài nghiệp vụ ở `e2e/edge-business-dialogs.spec.ts`.
+
+| Mã | Loại | Thao tác hoặc dữ liệu vào | Kết quả đúng |
+|---|---|---|---|
+| HT-01 | 7, 9 | Sửa tài khoản, Sửa trường, Sửa thông tin và Đổi mật khẩu ở Cá nhân: bấm lưu, máy chủ treo, nhấn Esc 4 lần, máy chủ trả 500 | Huỷ bị khoá, không có nút Đóng, hộp còn mở; câu "Không lưu được. Thử lại sau ít phút." hiện trong hộp, Huỷ đóng được |
+| HT-02 | 7 | Hộp xác nhận Đặt lại mật khẩu: lệnh xác nhận ném lỗi giữa chừng (máy chủ giả trả 204 không có mật khẩu) | Hộp mở khoá lại, Esc đóng được |
 
 ## Ca thuần logic máy chủ (test DB)
 
@@ -178,10 +192,11 @@ Không áp dụng: loại 6 (cột Gửi lúc dùng chung hàm giờ Việt Nam 
 | DB-06 | Xuất Excel Hồ sơ, Ngân hàng, Mã voucher khi bộ lọc khớp 20.001 dòng | 400 "Danh sách có 20001 dòng, quá 20000 dòng một file. Lọc bớt rồi xuất lại.", không dựng file |
 | DB-07 | Ảnh vừa được thay từ lúc mở trang, bấm Đạt; bấm Không đạt | Đạt nhận 409, dòng giữ Chờ kiểm tra, không có voucher, không ghi lịch sử; Không đạt vẫn ghi được |
 | DB-08 | Mã voucher tìm "bpt07 phan trang" | Mỗi từ khớp mã hoặc họ tên |
+| DB-09 | Ô chọn người quản ở hộp Ngân hàng tìm Mã tài khoản, một phần mã, mã kèm một từ của họ tên | Ra đúng người; nhãn "ZZT-MQL-5521 - Edgeb Người Có Mã - Kế toán" |
 
 ## Kết quả
 
-Test nằm ở `e2e/edge-business.spec.ts` (Trang 3), `e2e/edge-business-detail.spec.ts` (Trang 4), `e2e/edge-business-lists.spec.ts` (Ngân hàng, Mã voucher, Tin SMS lỗi), `tests/db/edgeBusiness.test.ts`, `tests/unit/edgeBusiness.test.ts`. Hàm dùng chung của các file e2e ở `e2e/edge-business-support.ts`.
+Test nằm ở `e2e/edge-business.spec.ts` (Trang 3), `e2e/edge-business-detail.spec.ts` (Trang 4), `e2e/edge-business-lists.spec.ts` (Ngân hàng, Mã voucher, Tin SMS lỗi), `e2e/edge-business-dialogs.spec.ts` (hộp thoại dùng chung ở trang khác), `tests/db/edgeBusiness.test.ts`, `tests/unit/edgeBusiness.test.ts`. Hàm dùng chung của các file e2e ở `e2e/edge-business-support.ts`.
 
 ### Lỗi tìm ra và đã sửa
 
@@ -203,6 +218,11 @@ Test nằm ở `e2e/edge-business.spec.ts` (Trang 3), `e2e/edge-business-detail.
 | T4-15 | Ảnh trên 22 MB ở production: Nginx trả 413 dạng HTML, hộp Tải ảnh thay thế báo "Không tải được ảnh lên. Thử lại." ở cuối hộp. Trình duyệt vẫn gửi cả file trên 20 MB lên máy chủ | cce6e38 |
 | T4-29, SMS-11 | Bấm Esc hay Huỷ lúc hộp Tải ảnh thay thế, Ghi chú, Gửi lại đang gửi: hộp đóng, người dùng tưởng đã huỷ, nhưng ảnh vẫn bị thay và tin vẫn gửi lại | 2de69e7 |
 | SMS-12 | Gửi lại bị từ chối vì tab khác vừa gửi: đóng hộp xong dòng vẫn ghi Lỗi, bấm Gửi lại lần nữa ra đúng câu báo cũ | f08c652 |
+| T4-35, T4-29, SMS-11, HT-01 (M-new-1) | Hộp đang gửi, người dùng nhấn Esc ba lần liền hay bấm Back trên Android: Chrome tự đóng hộp. Máy chủ trả lỗi sau đó thì câu báo bị ẩn theo hộp, bấm lại Đạt hay Tải ảnh thay thế không mở được hộp, phải tải lại trang | a338176, 112a285 |
+| T4-29, HT-01 | Sửa thông tin hồ sơ, Sửa trường, Sửa thông tin và Đổi mật khẩu ở Cá nhân: bấm Esc hay Huỷ lúc đang lưu thì hộp đóng, người dùng tưởng đã huỷ mà máy chủ vẫn lưu. Các hộp đã khoá thì nút Đóng ở góc vẫn hiện mà bấm không có tác dụng | 112a285 |
+| HT-02 | Hộp xác nhận: lệnh xác nhận ném lỗi thì hộp khoá mãi, Huỷ, Esc đều không đóng được tới khi tải lại trang | a5061f9 |
+| T4-36 (M-new-2) | Mạng chậm: người kiểm tự tải ảnh thay thế, hộp đóng ngay mà ảnh mới chưa hiện; bấm Đạt thì nhận "Ảnh vừa được thay" cho chính ảnh mình tải | eba0023 |
+| DB-09 (nhóm C) | Ô chọn người quản ở hộp Ngân hàng gõ Mã tài khoản ra 0 người, dù ô tìm Tài khoản gõ mã ra đúng người | f11ea3a |
 
 Thêm ca trong lúc viết test:
 - T4-26 (loại 7, 13): mất mạng khi lưu ghi chú và khi tải ảnh thay thế. Câu báo hiện ở dòng báo chung, ô nhập không bị đánh dấu sai; mạng có lại thì lưu được.
@@ -210,6 +230,7 @@ Thêm ca trong lúc viết test:
 - T4-15 thêm file 23 MB: máy chủ chặn theo Content-Length trước khi đọc file, đường chặn này trả lỗi không gắn ô.
 - T3-16 thêm `to=2026-13-01`: test này tìm ra lỗi 500 riêng, khác lỗi năm 0001.
 - Review lần 1 tìm ra 12 ca sót. Ca 1 thành T4-30, ca 2 thành T4-31, ca 3 thành T4-28 và DB-07, ca 4 thành T3-34, NH-11, VC-09, ca 5 thành DB-05, ca 6 thành VC-08, ca 7 thành T3-35 và NH-12, ca 8 thành SMS-13, ca 9 thành T4-33, ca 10 thành T4-34, ca 11 thành T4-32, ca 12 thành DB-06. Chỉ ca 3 fail vì code; các ca khác pass ngay.
+- Review lần 2 tìm ra 4 ca sót. Ca 1 nằm trong T4-29 (hộp Đạt, Không đạt đang gửi) và T4-35. Ca 2 thành T4-36, fail vì code (M-new-2). Ca 3 thành T4-37, pass ngay. Ca 4 thành T4-38 kèm ruling, pass ngay.
 
 Sửa ở test, người dùng không gặp lỗi:
 - 0021051 (M7): `loginAs` ghi lại context; mỗi file spec đóng context sau từng test.
@@ -217,6 +238,10 @@ Sửa ở test, người dùng không gặp lỗi:
 - a37ba01 (M5): seed voucher cho hai hồ sơ có ký tự công thức, VC-08 kiểm các ô đó là chữ. T4-19 đếm voucher ở trang Mã voucher.
 - 86f01ba (M2): `scripts/e2e-run.sh` chạy `next start` với `TZ=UTC`. Máy dev và container production đều ở +07, nên code lỡ dùng giờ của máy vẫn qua test nếu không ép UTC.
 - 5395041, 0d17aea, 021cf2a, fafee70, 842fceb, 11eb66b, 71390c8: test cho các ca sót, mỗi ca một commit. ed24bff sửa kiểu ở test DB-06 cho tsc.
+- c8d1f42 (M-new-3): SMS-12 ghi lại mọi lượt tải lại trang (`_rsc`, bỏ qua prefetch) và lượt chuyển trang từ lúc bấm Huỷ, bật mạng rồi mở lại hộp. Đã thử bỏ điều kiện `r.status` ở `ResendButton.tsx`: test fail ở `refreshes`.
+- c52e5f5 (M-new-4): `webServer` của `playwright.config.ts` chạy `next start` với `TZ=UTC` như `scripts/e2e-run.sh`.
+- 5c98839, d291773: test cho ca sót 3 (T4-37) và ca sót 4 (T4-38).
+- Test D20 của nhóm A (`e2e/edge-student-banks.spec.ts`) đổi bước bấm nút Đóng thành kiểm nút Đóng không có, vì hộp đang gửi ẩn nút này (a338176).
 
 ### Ruling
 
@@ -231,7 +256,12 @@ Sửa ở test, người dùng không gặp lỗi:
 - DB-04 (bị bỏ giao ngân hàng giữa phiên) test bằng test DB: e2e không đổi được quyền giữa chừng mà không đụng tài khoản của nhóm khác.
 - Ruling: Mã voucher tìm theo từng từ, thay ruling cũ "so cả chuỗi". Mỗi từ khớp mã hoặc họ tên, như `../mgst-app/src/server/banking.ts:464-476` và `matchesEachTerm` nhóm C dùng ở 369a1eb. Từ so với mã được viết hoa trước.
 - Ruling: bấm Đạt trên ảnh cũ. mgst-app không có luật cho ảnh. Luật gần nhất là duyệt tạm ứng lương (`../mgst-app/src/server/salaryAdvances.ts:527-529`): số tiền vừa đổi thì từ chối, người duyệt phải thấy đúng số mình duyệt. Trang gửi id các ảnh đang dùng lúc mở. Máy chủ so với ảnh đang dùng trong transaction đã khoá dòng hồ sơ; thay ảnh khoá cùng dòng đó, nên không ảnh nào lọt vào giữa. Khác thì trả 409 "Ảnh vừa được thay. Tải lại trang để xem ảnh mới.". Máy chủ chỉ so ảnh khi bấm Đạt: Đạt cấp voucher không đảo lại được, còn Không đạt sửa lại được thành Đạt. API không bắt buộc gửi `photos`; lệnh gọi không gửi thì máy chủ không so ảnh.
-- Ruling: chặn đóng hộp lúc đang gửi (M1). `Dialog` của mgi-bank không có prop `dismissible` như mgst-app. Hộp Tải ảnh thay thế, Ghi chú, Gửi lại tự bỏ qua `onClose` khi đang gửi và khoá nút Huỷ, như 42ff72b của nhóm C. Nút Đóng ở góc vẫn hiện nhưng không đóng hộp khi đang gửi.
+- Ruling (thay ruling M1 cũ, review lần 2 không đồng ý): `Dialog` có prop `dismissible` như `../mgst-app/src/components/ui/Dialog.tsx`. Mọi hộp gửi dữ liệu dùng `dismissible={!pending}`: đang gửi thì ẩn nút Đóng, Esc không đóng, nút Huỷ khoá. Các hàm `close` có điều kiện viết riêng ở từng hộp đã bỏ; nhánh lưu xong gọi đóng trực tiếp.
+- Ruling: Chrome tự đóng `<dialog>` không phát `cancel` ở lần Esc thứ ba liền và khi bấm Back trên Android. mgst-app không xử lý ca này. Khi hộp đang khoá, handler `close` của `Dialog` gọi lại `showModal()`, để thẻ khớp với state React và câu báo lỗi về sau vẫn hiện.
+- Ruling: lệnh xác nhận ném lỗi thì hộp xác nhận chỉ mở khoá lại, không hiện câu báo. Mọi lệnh xác nhận hiện có dùng `apiSend`, hàm này đã đổi lỗi mạng thành câu báo, nên chỉ lỗi lập trình mới đi vào nhánh này.
+- Ruling (M-new-2): hộp Tải ảnh thay thế đóng trong cùng `startTransition` với `router.refresh()`. Hộp còn mở và nút ghi "Đang tải ảnh" tới khi ảnh mới hiện; Huỷ, Esc vẫn khoá trong lúc đó.
+- Ruling (ca sót 4): hai tab cùng tải ảnh thay thế một khung thì người tải sau ghi đè, không báo lỗi, như ghi chú. Ảnh cũ giữ ở `proof_photos` với `replaced_at`, route ảnh vẫn mở được. Tab tải trước bấm Đạt thì nhận 409 "Ảnh vừa được thay" theo ruling ảnh cũ.
+- Ruling (nhóm C, phần máy chủ): ô chọn người quản tìm cả Mã tài khoản như `staffSearchWhere` của mgst-app. Nhãn dòng ghi "Mã - Họ tên - Chức danh", bỏ phần trống, như ô chọn nhân viên của mgst-app (`IdCardScanCard.tsx`, `DraftLimitCard.tsx`). Nhóm C đổi placeholder ở `BankFormDialog.tsx` thành "Gõ tên, tên đăng nhập hoặc mã tài khoản…" ở b77a9b2.
 - Ruling: Gửi lại bị từ chối (M6). Bảng tải lại lúc đóng hộp, không tải ngay, để người dùng còn đọc câu báo. Chỉ tải lại khi máy chủ đã trả lời và lỗi không thuộc ô SĐT nhận. Mất mạng thì không tải lại: `router.refresh()` lúc mất mạng chuyển sang trang lỗi của trình duyệt.
 - Ruling: kiểm ảnh ở trình duyệt (I1) chỉ chép phần dung lượng của `imageProblem` (`../mgst-app/src/lib/api/uploads.ts:35`). Phần loại file vẫn do máy chủ kiểm theo nội dung file, ô file đã có `accept` ảnh. File chữ đổi đuôi `.jpg` có `type` là `image/jpeg`, nên kiểm `type` ở trình duyệt không chặn được ca đó.
 - Ruling: T4-34 gỡ khung ảnh B2 bằng API Hướng dẫn ngân hàng (PUT kèm `seenSlotIds`), đúng việc quản trị làm ở trang Ngân hàng. T4-33 dùng `zz_e2e_bien4` quản cả B2 và B3: bỏ giao B2 thì người này vẫn vào được trang nghiệp vụ, nên API trả 404 chứ không phải 403.
@@ -241,7 +271,9 @@ Sửa ở test, người dùng không gặp lỗi:
 
 - Đã xong ở 32fd07d (nhóm C): Xuất Excel trang Trường với `q=%00` lỗi 500. Route `src/app/api/admin/schools/export/route.ts` đọc `q` bằng `searchParams.get`, không qua `readParam`, rồi `exportSchools` ghi `q` vào `audit_log.detail` (jsonb không nhận NUL). Nhóm C chuyển 4 route sang `readParam`.
 - Đã xong ở 369a1eb (nhóm C): ô tìm của Trường, Tài khoản, Kho mã và ô chọn người quản tìm cả chuỗi bằng `matchesPlain`, chưa tách từ như mgst-app. Nhóm C thêm `matchesEachTerm` ở `src/server/search.ts`, dùng lại `searchTerms` của nhóm B.
-- Hộp Sửa thông tin ở Trang 4 vẫn đóng được bằng Esc hay Huỷ lúc đang lưu. M1 chỉ nêu ba hộp Tải ảnh thay thế, Ghi chú, Gửi lại, nên lượt này chưa sửa.
+- Đã xong ở 112a285: hộp Sửa thông tin ở Trang 4 đóng được bằng Esc hay Huỷ lúc đang lưu.
+- Hộp Đạt, Không đạt đóng trước khi trang tải lại xong (`mark` ở `ReviewActions.tsx`), như ca M-new-2 trước khi sửa. Mạng chậm, người kiểm bấm Không đạt rồi bấm Đạt ngay thì trang còn trạng thái Chờ kiểm tra, máy chủ trả 409 "Ngân hàng này đã có người đánh dấu" cho chính thao tác của họ. Ca này tìm ra khi đọc code, chưa có test. Review chưa nêu ca này, lượt này chưa sửa.
+- Đã xong ở b77a9b2 (nhóm C): placeholder ô chọn người quản ghi "Gõ tên, tên đăng nhập hoặc mã tài khoản…". Nhóm C sửa ruling ô chọn người quản ở file kết quả nhóm C và thêm ca gõ mã vào NH15.
 - Web học sinh cũng không kiểm dung lượng ảnh ở trình duyệt (review nhóm B ghi ở I1). Việc này thuộc nhóm A.
 - M4 (chuyển `searchTerms` sang `src/lib/search.ts`): nhóm C làm.
 
@@ -254,17 +286,20 @@ Sửa ở test, người dùng không gặp lỗi:
 
 ### Kết quả các lệnh
 
-Chạy 2026-11-07 trên nhánh `dev`, sau commit ed24bff, sau khi sửa review lần 1.
+Chạy 2026-11-07 trên nhánh `dev`, sau commit f11ea3a, sau khi sửa review lần 2.
 
 | Lệnh | Kết quả |
 |---|---|
-| `bun run test` | 233 pass, 0 fail |
+| `bun run test` | 247 pass, 0 fail |
 | `bunx tsc --noEmit` | 0 lỗi |
 | `bun run lint` | 0 lỗi, 2 cảnh báo `no-img-element` có từ trước ở `GuideDialog.tsx` và `CodeFormDialog.tsx` |
-| `bun test:db` trên DB tạm `zz_test_edge_b2` | 264 pass, 0 fail |
-| `bun run e2e e2e/edge-business.spec.ts e2e/edge-business-detail.spec.ts e2e/edge-business-lists.spec.ts` | 46 pass, 0 fail |
-| `bun run e2e` toàn bộ project chromium, `next start` chạy với `TZ=UTC` | 245 pass, 0 fail, 10,5 phút |
+| `bun test:db` trên DB tạm `zz_test_final_x` | 268 pass, 0 fail |
+| `bun run e2e e2e/edge-business-detail.spec.ts` | 20 pass, 0 fail |
+| `bun run e2e` toàn bộ project chromium, `next start` chạy với `TZ=UTC` | 256 pass, 2 fail, 10,2 phút |
+| `bun run e2e e2e/edge-config-api.spec.ts e2e/edge-config-codes.spec.ts` sau de27bfd | 27 pass, 0 fail |
 
-Lượt toàn bộ với `TZ=UTC` không có test nào fail vì giờ, ở cả ba nhóm.
+Hai test fail ở lượt toàn bộ thuộc nhóm C, lúc nhóm C đang sửa dở. API5 (`edge-config-api.spec.ts:72`) chờ 400 cho Mã tài khoản chỉ có tab, máy chủ trả 204; nhóm C sửa test ở de27bfd. Test lọc Kho mã bằng nút Quay lại (`edge-config-codes.spec.ts:253`) thấy ô tìm trống; nhóm C sửa `CodeFilters.tsx` ở 27d9710. Lượt chạy lại hai spec này pass hết.
+
+Lượt trước, 2026-11-07 sau commit ed24bff, sau khi sửa review lần 1: `bun run test` 233 pass, `bun test:db` trên `zz_test_edge_b2` 264 pass, 3 spec nhóm B 46 pass, `bun run e2e` toàn bộ 245 pass.
 
 Lượt trước, 2026-11-06 sau commit ab3249d: `bun run test` 232 pass, `bun test:db` trên `zz_test_edge_b` 253 pass, 3 spec nhóm B 32 pass.
