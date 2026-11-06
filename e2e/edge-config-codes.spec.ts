@@ -18,7 +18,8 @@ test("Mã: tên hiển thị và mã text dài liền không làm trang cuộn n
   await apiLogin(page, "zz_e2e_admin");
   const bank = await createBank(page, "ZZCMADAI", "ZZE2E Mã dài", [], "0");
   await createCode(page, bank, LONG_WORD, { code: "X".repeat(80) });
-  await createSchool(page, LONG_WORD);
+  const school = LONG_WORD + "Mã";
+  await createSchool(page, school);
   for (const viewport of [{ width: 1366, height: 768 }, PHONE.viewport]) {
     await page.setViewportSize(viewport);
     await open(page, `/banks/codes?q=${encodeURIComponent("ZZE2E Dài")}`);
@@ -27,8 +28,10 @@ test("Mã: tên hiển thị và mã text dài liền không làm trang cuộn n
     expect(scroll).toBe(client);
     const d = await openAdd(page);
     await d.getByRole("combobox", { name: "Trường dùng mã này" }).fill("DàiDàiDài");
-    await d.getByRole("option", { name: new RegExp(escape(LONG_WORD)) }).first().click();
+    await d.getByRole("listbox").getByRole("option", { name: new RegExp(escape(school)) }).first().click();
     await expect(d.getByRole("list", { name: "Trường dùng mã này đã chọn" }).getByRole("listitem")).toHaveCount(1);
+    await d.getByRole("combobox", { name: "Trường dùng mã này" }).press("Escape");
+    await expect(d.getByRole("listbox")).toBeHidden();
     await expectDialogFits(page, d);
     await d.getByRole("button", { name: "Huỷ" }).click();
   }
@@ -61,7 +64,7 @@ test("Mã: tìm % và _ chỉ ra mã có đúng ký tự đó; tìm không dấu
 test("Mã: gõ liền sáu ký tự thì URL chỉ đổi một lần; gõ rồi bấm sang Danh sách ngân hàng trước 300 ms thì không bị kéo về Kho mã", async ({ page }) => {
   await apiLogin(page, "zz_e2e_admin");
   const bank = await createBank(page, "ZZCMAGO", "ZZE2E Mã gõ");
-  await createCode(page, bank, "ZZE2E Gõ nhanh");
+  await createCode(page, bank, "ZZE2E Gõnhanh");
   await open(page, "/banks/codes");
   const seen: string[] = [];
   page.on("framenavigated", (f) => {
@@ -86,21 +89,21 @@ test("Mã: lọc ngân hàng, từ khoá, Ẩn mã đã ngừng kết hợp; đ�
   const bank = await createBank(page, "ZZCMALOC", "ZZE2E Mã lọc");
   const other = await createBank(page, "ZZCMALOC2", "ZZE2E Mã lọc khác");
   const ids: string[] = [];
-  for (let i = 1; i <= 16; i++) ids.push(await createCode(page, bank, `ZZE2E Lọc ${String(i).padStart(2, "0")}`));
-  await createCode(page, other, "ZZE2E Lọc ngân hàng khác");
+  for (let i = 1; i <= 16; i++) ids.push(await createCode(page, bank, `ZZE2E Lọcx ${String(i).padStart(2, "0")}`));
+  await createCode(page, other, "ZZE2E Lọcx ngân hàng khác");
   expect((await api(page, "POST", `/api/admin/referral-codes/${ids[0]}/active`, { active: false })).status).toBe(204);
 
   await open(page, "/banks/codes");
   await bankFilter(page).selectOption(bank);
   await expect(page).toHaveURL(new RegExp(`bank=${bank}`));
-  await searchBox(page).fill("lọc");
-  await expect(page).toHaveURL(/q=l%E1%BB%8Dc/);
+  await searchBox(page).fill("lọcx");
+  await expect(page).toHaveURL(/q=l%E1%BB%8Dcx/);
   await expect(page.getByText("16 mã", { exact: true })).toBeVisible();
   await expect(rows(page)).toHaveCount(15);
   await page.getByRole("navigation", { name: "Phân trang" }).getByRole("link", { name: "Sau" }).click();
   await expect(page).toHaveURL(/page=2/);
   await expect(rows(page)).toHaveCount(1);
-  await expect(rows(page).first()).toContainText("ZZE2E Lọc 01");
+  await expect(rows(page).first()).toContainText("ZZE2E Lọcx 01");
 
   await page.getByLabel("Ẩn mã đã ngừng").check();
   await expect(page).toHaveURL(/hide=1/);
@@ -111,9 +114,9 @@ test("Mã: lọc ngân hàng, từ khoá, Ẩn mã đã ngừng kết hợp; đ�
 
   await page.getByRole("link", { name: "Tháng sau" }).click();
   await expect(page).toHaveURL(/hide=1/);
-  await expect(page).toHaveURL(/q=l%E1%BB%8Dc/);
+  await expect(page).toHaveURL(/q=l%E1%BB%8Dcx/);
   await expect(bankFilter(page)).toHaveValue(bank);
-  await expect(searchBox(page)).toHaveValue("lọc");
+  await expect(searchBox(page)).toHaveValue("lọcx");
 
   await bankFilter(page).selectOption("");
   await expect(page).not.toHaveURL(/bank=/);

@@ -15,23 +15,24 @@ test("Trường: tên dài có dấu cách, tên liền 120 ký tự, người l
   await apiLogin(page, "zz_e2e_admin");
   const spaced = "ZZE2E Trường " + "Trung học phổ thông chuyên ".repeat(9).trim();
   await createSchool(page, spaced, { contactName: "Người" + "Liênhệ".repeat(20) });
-  await createSchool(page, LONG_WORD);
+  const longName = LONG_WORD + "Trường";
+  await createSchool(page, longName);
   for (const viewport of [{ width: 1366, height: 768 }, PHONE.viewport]) {
     await page.setViewportSize(viewport);
     await searchFor(page, spaced);
     await expect(cellOf(page, spaced)).toBeVisible();
     await noPageScroll(page);
-    await searchFor(page, LONG_WORD);
-    await expect(cellOf(page, LONG_WORD)).toBeVisible();
+    await searchFor(page, longName);
+    await expect(cellOf(page, longName)).toBeVisible();
     await noPageScroll(page);
-    await page.getByRole("button", { name: `Sửa trường ${LONG_WORD}` }).click();
+    await page.getByRole("button", { name: `Sửa trường ${longName}` }).click();
     const edit = page.getByRole("dialog", { name: "Sửa trường" });
-    await expect(edit.getByLabel("Tên trường", { exact: true })).toHaveValue(LONG_WORD);
+    await expect(edit.getByLabel("Tên trường", { exact: true })).toHaveValue(longName);
     await expectDialogFits(page, edit);
     await edit.getByRole("button", { name: "Huỷ" }).click();
-    await page.getByRole("row", { name: new RegExp(LONG_WORD) }).getByRole("button", { name: "Đóng", exact: true }).click();
+    await page.getByRole("row", { name: new RegExp(longName) }).getByRole("button", { name: "Đóng", exact: true }).click();
     const confirm = page.getByRole("dialog", { name: "Đóng trường" });
-    await expect(confirm).toContainText(`Đóng ${LONG_WORD}?`);
+    await expect(confirm).toContainText(`Đóng ${longName}?`);
     await expectDialogFits(page, confirm);
     await expect(confirm.getByRole("button", { name: "Đóng", exact: true }).last()).toBeInViewport();
     await confirm.getByRole("button", { name: "Huỷ" }).click();
@@ -230,6 +231,11 @@ test("Trường: Enter ở ô tên gửi form; bấm Tạo hai lần lúc máy c
   await edit.getByRole("button", { name: "Huỷ" }).click();
   await page.getByRole("button", { name: "Sửa trường ZZE2E Bấm hai lần" }).click();
   await expect(edit.getByLabel("Tên trường", { exact: true })).toHaveValue("ZZE2E Bấm hai lần");
+  await edit.getByRole("button", { name: "Huỷ" }).click();
+
+  // Ruling: tên trùng trường đã có vẫn lưu được, hai xã có thể cùng có "THPT Nguyễn Du"; ô chọn trường luôn ghi kèm tên xã.
+  const dup = await api(page, "POST", "/api/admin/schools", { name: "ZZE2E Bấm hai lần", provinceCode: "80", wardCode: "25585", contactName: "B", contactPhone: "0903111333" });
+  expect(dup.status).toBe(201);
 });
 
 test("Trường: phân quyền: có quyền Trường mà không có Xuất Excel thì không thấy nút, API xuất 403; không có quyền Trường thì API 403; id sai dạng hoặc không có trả 404", async ({ browser }) => {
