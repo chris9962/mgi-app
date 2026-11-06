@@ -51,7 +51,7 @@ test.describe("C. B2 chọn ngân hàng", () => {
     await expect(page.getByText("Đã chọn 1/2.")).toBeVisible();
   });
 
-  test("C2, C5 còn 1 ngân hàng thì chọn sẵn; lượt được trả lại nên còn 2 thì bấm Tiếp tục tải lại danh sách 2 ngân hàng", async ({ page, request }) => {
+  test("C2, C5 còn 1 ngân hàng thì chọn sẵn; lượt được trả lại nên còn 2 thì bấm Tiếp tục tải lại danh sách 2 ngân hàng, câu Chọn đúng 2 ngân hàng hiện một lần", async ({ page, request }) => {
     dbOp("reset", SCHOOL.quota);
     const other = await apiCreate(request, SCHOOL.quota, info("Lấy Lượt Cuối"));
     await apiPick(request, other, [BANK.q1, BANK.q2]);
@@ -65,6 +65,8 @@ test.describe("C. B2 chọn ngân hàng", () => {
     expect((await request.delete(`${STUDENT}/api/customers/me/banks`, { headers: other.auth })).status()).toBe(204);
     await next(page).click();
     await expect(page.getByRole("heading", { name: "Chọn 2 ngân hàng" })).toBeVisible();
+    await expect(page.getByText(/Chọn đúng 2 ngân hàng/)).toHaveCount(1);
+    await expect(alertIn(page)).toHaveCount(0);
     await expect(page.getByRole("button", { name: NAME.q1 })).toBeEnabled();
     await expect(page.getByRole("button", { name: NAME.q2 })).toBeEnabled();
     await page.getByRole("button", { name: NAME.q1 }).click();

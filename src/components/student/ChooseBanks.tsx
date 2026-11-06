@@ -29,8 +29,8 @@ export function ChooseBanks({ state, notice, onDone }: { state: StudentState; no
     const r = await studentApi("POST", "/api/customers/me/banks", { bankIds: chosen });
     if (r.ok) return onDone();
     setPending(false);
-    // Số ngân hàng còn lượt đổi giữa chừng (hết lượt, hay được trả lượt nên phải chọn 2): tải lại danh sách để chọn lại.
-    if (r.status === 409 || r.field === "bankIds") return onDone(r.message);
+    // Số ngân hàng còn lượt đổi giữa chừng (hết lượt, hay được trả lượt nên phải chọn 2): tải lại danh sách để chọn lại; câu 400 đã có ở dòng gợi ý nên không nhắc lại.
+    if (r.status === 409 || r.field === "bankIds") return onDone(r.status === 409 ? r.message : undefined);
     setError(r.message);
   }
 
