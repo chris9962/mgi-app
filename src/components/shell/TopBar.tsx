@@ -15,7 +15,7 @@ export function TopBar({ title, back, actions }: { title: string; back?: { href:
           <span aria-hidden className="h-5 w-px bg-line" />
         </>
       )}
-      <h1 className="text-xl font-semibold mobile:min-w-0 mobile:truncate">{title}</h1>
+      <h1 className="min-w-0 text-xl font-semibold wrap-anywhere mobile:truncate">{title}</h1>
       {actions && <div className="ml-auto flex flex-wrap items-center gap-2 narrow:ml-0 narrow:w-full">{actions}</div>}
     </header>
   );

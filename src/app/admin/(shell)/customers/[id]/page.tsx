@@ -155,7 +155,8 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   return (
     <>
       <TopBar title={c.fullName} back={{ href: "/customers", label: "Hồ sơ học sinh" }} />
-      <main className="flex flex-col gap-4 p-6">
+      {/* Họ tên, phụ huynh, ghi chú không dấu cách vẫn xuống dòng, không đẩy trang cuộn ngang. */}
+      <main className="flex flex-col gap-4 p-6 wrap-anywhere">
         <Card title="Thông tin" icon={<UserRound size={17} aria-hidden />} action={customerTag(c.status)}>
           <InfoList items={info} />
           {c.canEdit && (
