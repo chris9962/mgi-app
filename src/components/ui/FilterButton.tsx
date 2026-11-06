@@ -49,7 +49,7 @@ export function FilterButton({ sections, onClear }: { sections: FilterSection[];
   }, [open]);
 
   return (
-    <div className="relative narrow:static">
+    <div className="relative mobile:static">
       <Button
         ref={trigger}
         variant="secondary"
@@ -67,12 +67,12 @@ export function FilterButton({ sections, onClear }: { sections: FilterSection[];
           </span>
         )}
       </Button>
-      {/* Màn hẹp: nút nằm hàng thứ hai, neo bảng vào nút thì tràn mép trái nên neo vào thanh tiêu đề.
+      {/* Dưới 900 px neo bảng vào thanh tiêu đề: neo vào nút thì bảng 520 px tràn mép trái khi nút không sát mép phải.
           Màn thấp (dock): bảng đứng ngay trên thanh đáy, cao tối đa phần màn còn lại, treo dưới nút thì nút Xong rơi ra sau thanh đáy. */}
       {open && (
         <div
           ref={panel}
-          className="absolute top-full right-0 z-20 mt-2 flex w-[min(520px,calc(100vw-32px))] flex-col overflow-hidden rounded-2xl border border-line bg-card shadow-lg narrow:right-4 narrow:left-4 narrow:w-auto dock:fixed dock:top-auto dock:right-4 dock:bottom-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom,0px)+8px)] dock:mt-0 dock:max-h-[calc(100svh-var(--bottom-nav-h)-env(safe-area-inset-bottom,0px)-16px)]"
+          className="absolute top-full right-0 z-20 mt-2 flex w-[min(520px,calc(100vw-32px))] flex-col overflow-hidden rounded-2xl border border-line bg-card shadow-lg mobile:right-4 narrow:left-4 narrow:w-auto dock:fixed dock:top-auto dock:right-4 dock:bottom-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom,0px)+8px)] dock:mt-0 dock:max-h-[calc(100svh-var(--bottom-nav-h)-env(safe-area-inset-bottom,0px)-16px)]"
         >
           {/* Màn hẹp không đủ chỗ cho cột mục lọc 160 px nên chuyển một cột như mgst-app. */}
           <div className="grid min-h-[220px] grid-cols-[160px_1fr] grid-rows-[minmax(0,1fr)] narrow:grid-cols-1 narrow:grid-rows-[auto_minmax(0,1fr)] dock:min-h-0 dock:flex-1">

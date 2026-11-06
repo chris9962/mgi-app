@@ -332,12 +332,14 @@ test("điện thoại thấp 375x548, 320x568 và nằm ngang 844x390: mở Bộ
   }
 });
 
-test("Bộ lọc dưới 900 px: màn cao thì bảng treo ngay dưới nút, màn thấp thì đứng trên thanh đáy, nút Xong luôn trên thanh đáy", async ({ browser }) => {
+test("Bộ lọc dưới 900 px: màn cao thì bảng treo ngay dưới nút, màn thấp thì đứng trên thanh đáy, bảng trọn trong màn, nút Xong luôn trên thanh đáy", async ({ browser }) => {
   const page = await loginAs(browser, "zz_e2e_admin", PHONE);
   for (const [width, height, docked] of [
     [375, 548, true],
     [844, 390, true],
     [390, 844, false],
+    [601, 900, false],
+    [640, 900, false],
     [820, 1180, false],
   ] as const) {
     await page.setViewportSize({ width, height });
@@ -350,7 +352,8 @@ test("Bộ lọc dưới 900 px: màn cao thì bảng treo ngay dưới nút, m�
     const navTop = (await box(bottomNav(page))).top;
     const done = await box(page.getByRole("button", { name: "Xong" }));
     const near = panel.top > button.bottom && panel.top - button.bottom <= 32;
-    expect({ width, height, docked: navTop - panel.bottom === 8, near, doneAboveNav: done.bottom <= navTop }).toEqual({ width, height, docked, near: !docked, doneAboveNav: true });
+    const inside = panel.left >= 16 && panel.right <= width - 16;
+    expect({ width, height, docked: navTop - panel.bottom === 8, near, inside, doneAboveNav: done.bottom <= navTop }).toEqual({ width, height, docked, near: !docked, inside: true, doneAboveNav: true });
   }
 });
 
