@@ -23,7 +23,7 @@ export type UserRow = {
 
 export type UserDetail = UserRow & { staffCode: string | null; phone: string | null };
 
-type Fail = { ok: false; message: string; field?: keyof UserFormValues; status: 400 | 404 | 409 };
+type Fail = { ok: false; message: string; field?: keyof UserFormValues; status: 400 | 403 | 404 | 409 };
 const fail = (message: string, status: Fail["status"] = 400, field?: Fail["field"]): Fail => ({ ok: false, message, status, field });
 
 async function decorate(rows: (typeof users.$inferSelect)[]): Promise<UserDetail[]> {
@@ -76,7 +76,7 @@ export async function getUser(id: string): Promise<UserDetail | null> {
 // Quản lý có mọi quyền như Quản trị, nhưng không đụng tới tài khoản Quản trị: nếu được thì Quản lý tự nâng mình lên Quản trị và luật "Hệ thống chỉ Quản trị" mất tác dụng.
 function guardAdmin(actor: SessionUser, targetRole: Role | null, nextRole: Role | null): Fail | null {
   if (actor.role === "admin") return null;
-  if (targetRole === "admin" || nextRole === "admin") return fail("Chỉ Quản trị thao tác được với tài khoản Quản trị.", 400);
+  if (targetRole === "admin" || nextRole === "admin") return fail("Chỉ Quản trị thao tác được với tài khoản Quản trị.", 403);
   return null;
 }
 
