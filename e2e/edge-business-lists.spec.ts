@@ -111,6 +111,18 @@ test.describe("trang Ngân hàng nhóm Nghiệp vụ", () => {
     expect([sheet.rows[row][cls], sheet.rows[row][parent], sheet.types[row][name], sheet.types[row][cls]]).toEqual(["=1+1", "+CHA BIEN CONG", ExcelJS.ValueType.String, ExcelJS.ValueType.String]);
     expect((await page.request.get("/api/admin/customer-banks/export?q=bien%00")).status()).toBe(200);
   });
+
+  test("xuất Excel lọc trọn ngày giờ Việt Nam: ngày 31/10 chỉ ra dòng 23:30, NGÀY ghi 31/10/2026 23:30, KIỂM LÚC ghi 31/10/2026 23:45", async ({ browser }) => {
+    const page = await loginAs(browser, "zz_e2e_admin");
+    for (const [day, name, created, reviewed] of [
+      ["2026-10-31", "BIEN GIO KHUYA", "31/10/2026 23:30", "31/10/2026 23:45"],
+      ["2026-11-01", "BIEN GIO SOM", "01/11/2026 00:30", "01/11/2026 00:45"],
+    ]) {
+      const sheet = await readExport(page, `/api/admin/customer-banks/export?${q("bien gio")}&from=${day}&to=${day}`);
+      const cols = ["HỌ TÊN", "NGÀY", "KIỂM LÚC"].map((h) => column(sheet, h));
+      expect([day, sheet.rows.slice(3).map((r) => cols.map((c) => r[c]))]).toEqual([day, [[name, created, reviewed]]]);
+    }
+  });
 });
 
 test.describe("Trang 12 Mã voucher", () => {
@@ -153,6 +165,18 @@ test.describe("Trang 12 Mã voucher", () => {
       await expect(rows(page, VC), day).toHaveCount(1);
       await expect(rows(page, VC), day).toContainText(code);
       await expect(rows(page, VC), day).toContainText(shown);
+    }
+  });
+
+  test("xuất Excel lọc trọn ngày cấp giờ Việt Nam: ngày 31/10 chỉ ra mã 23:45, NGÀY CẤP ghi 31/10/2026 23:45; ngày 01/11 chỉ ra mã 00:45", async ({ browser }) => {
+    const page = await loginAs(browser, "zz_e2e_admin");
+    for (const [day, code, issued] of [
+      ["2026-10-31", B.B_LATE_VOUCHER, "31/10/2026 23:45"],
+      ["2026-11-01", B.B_EARLY_VOUCHER, "01/11/2026 00:45"],
+    ]) {
+      const sheet = await readExport(page, `/api/admin/vouchers/export?${q("zzbien-bg")}&from=${day}&to=${day}`);
+      const cols = ["MÃ VOUCHER", "NGÀY CẤP"].map((h) => column(sheet, h));
+      expect([day, sheet.rows.slice(3).map((r) => cols.map((c) => r[c]))]).toEqual([day, [[code, issued]]]);
     }
   });
 

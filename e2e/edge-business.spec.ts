@@ -299,3 +299,15 @@ test("Trang 3 xuất Excel: đúng bộ lọc, không có dòng nào vẫn tải
 
   expect((await page.request.get("/api/admin/customers/export?q=bien%00")).status()).toBe(200);
 });
+
+test("Trang 3 xuất Excel lọc trọn ngày giờ Việt Nam: ngày 31/10 chỉ ra hồ sơ 23:30, GỬI LÚC ghi 31/10/2026 23:30, NGÀY CẤP ghi 31/10/2026 23:45; ngày 01/11 chỉ ra hồ sơ 00:30", async ({ browser }) => {
+  const page = await loginAs(browser, "zz_e2e_admin");
+  for (const [day, name, sent, issued] of [
+    ["2026-10-31", "BIEN GIO KHUYA", "31/10/2026 23:30", "31/10/2026 23:45"],
+    ["2026-11-01", "BIEN GIO SOM", "01/11/2026 00:30", "01/11/2026 00:45"],
+  ]) {
+    const sheet = await readExport(page, `/api/admin/customers/export?${q("bien gio")}&from=${day}&to=${day}`);
+    const cols = ["HỌ TÊN", "GỬI LÚC", "NGÀY CẤP"].map((h) => column(sheet, h));
+    expect([day, sheet.rows.slice(3).map((r) => cols.map((c) => r[c]))]).toEqual([day, [[name, sent, issued]]]);
+  }
+});
