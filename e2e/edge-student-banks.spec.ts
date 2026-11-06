@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 import { BANK, CODE, GUIDE_LONG, LONG_CODE, NAME, SCHOOL, SLOT } from "../scripts/e2e-data-student";
 import {
+  NETWORK,
   PHONE,
   PHOTO,
   STUDENT,
@@ -345,6 +346,27 @@ test.describe("D. B3 mở tài khoản", () => {
     release();
     await expect(page.getByRole("heading", { name: "Chọn 2 ngân hàng" })).toBeVisible();
     await expect(confirm).toHaveCount(0);
+  });
+
+  test("D21 hộp hỏi Quay lại báo mất mạng, Huỷ rồi mở lại: hộp không còn câu lỗi cũ", async ({ page, request }) => {
+    const s = await apiCreate(request, SCHOOL.photo, info("Mở Lại Hộp Hỏi"));
+    await apiPick(request, s, [BANK.p1, BANK.p3]);
+    await apiPhotos(request, s, [SLOT.p3]);
+    await openAt(page, SCHOOL.photo, s);
+    await page.route("**/api/customers/me/banks", (route) => (route.request().method() === "DELETE" ? route.abort("internetdisconnected") : route.continue()));
+    const back = page.getByRole("button", { name: "Quay lại chọn ngân hàng" });
+    const confirm = page.getByRole("dialog", { name: "Quay lại chọn ngân hàng" });
+    await back.click();
+    await confirm.getByRole("button", { name: "Quay lại", exact: true }).click();
+    await expect(confirm.getByRole("alert")).toHaveText(NETWORK);
+    await confirm.getByRole("button", { name: "Huỷ" }).click();
+    await expect(confirm).toHaveCount(0);
+    await page.unroute("**/api/customers/me/banks");
+    await back.click();
+    await expect(confirm).toBeVisible();
+    await expect(confirm.getByRole("alert")).toHaveCount(0);
+    await confirm.getByRole("button", { name: "Quay lại", exact: true }).click();
+    await expect(page.getByRole("heading", { name: "Chọn 2 ngân hàng" })).toBeVisible();
   });
 
   test("D15 hai tab ở B3: tab kia đã gửi kiểm tra, bấm Quay lại thì sang màn kết quả", async ({ page, request }) => {

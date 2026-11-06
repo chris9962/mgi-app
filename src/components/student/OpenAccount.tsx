@@ -233,15 +233,18 @@ export function OpenAccount({ state, onChange }: { state: StudentState; onChange
           Gửi kiểm tra
         </Button>
       </Bottom>
-      <ConfirmDialog
-        open={confirmBack}
-        title="Quay lại chọn ngân hàng"
-        text="Xoá ảnh đã nộp và quay lại chọn ngân hàng?"
-        confirmLabel="Quay lại"
-        danger
-        onConfirm={back}
-        onClose={() => setConfirmBack(false)}
-      />
+      {/* Chỉ dựng hộp khi mở, như các trang quản lý: mở lại thì không còn câu lỗi của lần trước. */}
+      {confirmBack && (
+        <ConfirmDialog
+          open
+          title="Quay lại chọn ngân hàng"
+          text="Xoá ảnh đã nộp và quay lại chọn ngân hàng?"
+          confirmLabel="Quay lại"
+          danger
+          onConfirm={back}
+          onClose={() => setConfirmBack(false)}
+        />
+      )}
     </>
   );
 }
