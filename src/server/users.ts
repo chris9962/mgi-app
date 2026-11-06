@@ -166,6 +166,8 @@ export async function setActive(actor: SessionUser, id: string, active: boolean,
 }
 
 export async function resetPassword(actor: SessionUser, id: string, ip?: string | null): Promise<{ ok: true; password: string } | Fail> {
+  // Đặt lại xoá mọi phiên của người đó, kể cả phiên đang bấm: người tự đặt lại bị đăng xuất. Mật khẩu của mình đổi ở trang Cá nhân.
+  if (actor.id === id) return fail("Không tự đặt lại mật khẩu của chính mình.");
   const target = await getUser(id);
   if (!target) return fail("Không tìm thấy tài khoản.", 404);
   const denied = guardAdmin(actor, target.role, null);

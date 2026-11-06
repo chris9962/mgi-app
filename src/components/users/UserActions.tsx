@@ -42,15 +42,17 @@ export function UserActions({ user, canManage, isSelf, canGrantAdmin, variant }:
             <Pencil size={16} aria-hidden />
             Sửa
           </Button>
-          <Button variant="secondary" onClick={() => setDialog("reset")}>
-            <KeyRound size={16} aria-hidden />
-            Đặt lại mật khẩu
-          </Button>
           {!isSelf && (
-            <Button variant={unlock ? "secondary" : "danger"} onClick={() => setDialog("lock")}>
-              {unlock ? <LockOpen size={16} aria-hidden /> : <Lock size={16} aria-hidden />}
-              {lockLabel}
-            </Button>
+            <>
+              <Button variant="secondary" onClick={() => setDialog("reset")}>
+                <KeyRound size={16} aria-hidden />
+                Đặt lại mật khẩu
+              </Button>
+              <Button variant={unlock ? "secondary" : "danger"} onClick={() => setDialog("lock")}>
+                {unlock ? <LockOpen size={16} aria-hidden /> : <Lock size={16} aria-hidden />}
+                {lockLabel}
+              </Button>
+            </>
           )}
         </div>
       )}
