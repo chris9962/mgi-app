@@ -359,10 +359,24 @@ test.describe("Tin SMS lỗi", () => {
     await a.getByRole("button", { name: `Gửi lại tin cho ${B.bPageName(3)}` }).click();
     await resendDialog(a).getByRole("button", { name: "Gửi lại" }).click();
     await expect(resendDialog(a).getByRole("alert")).toHaveText("Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.");
+    // toBeVisible ngay sau Huỷ qua trước khi trang kịp chuyển sang chrome-error://: ghi lại mọi lượt tải lại và chuyển trang từ lúc bấm Huỷ.
+    const refreshes: string[] = [];
+    const navigations: string[] = [];
+    a.on("request", (r) => {
+      if (/[?&]_rsc=/.test(r.url()) && !r.headers()["next-router-prefetch"]) refreshes.push(r.url());
+    });
+    a.on("framenavigated", (f) => {
+      if (f === a.mainFrame()) navigations.push(f.url());
+    });
     await resendDialog(a).getByRole("button", { name: "Huỷ" }).click();
     await expect(resendDialog(a)).toHaveCount(0);
-    await expect(a.getByRole("button", { name: `Gửi lại tin cho ${B.bPageName(3)}` })).toBeVisible();
     await a.context().setOffline(false);
+    await a.getByRole("button", { name: `Gửi lại tin cho ${B.bPageName(3)}` }).click();
+    await expect(resendDialog(a)).toBeVisible();
+    await resendDialog(a).getByRole("button", { name: "Huỷ" }).click();
+    expect(refreshes).toEqual([]);
+    expect(navigations).toEqual([]);
+    expect(a.url()).not.toMatch(/^chrome-error:/);
   });
 
   test("phạm vi và rỗng: Nhân viên không thấy và không Gửi lại được tin ngoài phạm vi; ngân hàng chưa có hồ sơ báo không có tin lỗi; lọc Đã gửi không khớp báo không có tin khớp bộ lọc", async ({ browser }) => {
