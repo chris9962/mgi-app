@@ -1,14 +1,23 @@
 import type { Page } from "@playwright/test";
-import { chapter, expect, login, loginAs, logout, openMenu, test } from "./support";
+import { ADMIN, chapter, expect, login, loginAs, logout, openMenu, test } from "./support";
 
 // Next tự gắn một role="alert" để đọc tên trang khi chuyển trang, nên lấy thông báo lỗi trong form.
 const formAlert = (page: Page) => page.locator('form [role="alert"]');
 
 test("Flow 1: đăng nhập, khoá sau 5 lần sai, Quản trị mở khoá", async ({ page }) => {
-  await test.step("Nhân viên gõ sai mật khẩu 5 lần", async () => {
+  await test.step("Nhân viên gõ sai mật khẩu 5 lần, lần 3 và 4 hiện hộp nhắc", async () => {
+    await page.goto(`${ADMIN}/login`);
+    await page.waitForLoadState("networkidle");
+    const warn = page.getByRole("dialog", { name: "Sắp bị khoá" });
     for (let i = 1; i <= 5; i++) {
-      await login(page, "zz_e2e_lock", `sai-lan-${i}`);
-      await expect(formAlert(page)).toBeVisible();
+      await page.getByLabel("Tài khoản").fill("zz_e2e_lock");
+      await page.getByLabel("Mật khẩu", { exact: true }).fill(`sai-lan-${i}`);
+      await page.getByRole("button", { name: "Đăng nhập" }).click();
+      if (i === 3 || i === 4) {
+        await expect(warn).toContainText(`Sai mật khẩu ${i} lần rồi`);
+        await warn.getByRole("button", { name: "Đã hiểu" }).click();
+        await expect(warn).toBeHidden();
+      } else await expect(formAlert(page)).toBeVisible();
     }
     await expect(formAlert(page)).toContainText("khoá 15 phút");
   });

@@ -26,3 +26,4 @@ export type SessionUser = {
 
 export const LOGIN_MAX_ATTEMPTS = 5;
 export const LOGIN_LOCK_MINUTES = 15;
+export const LOGIN_WARN_AFTER = 3;

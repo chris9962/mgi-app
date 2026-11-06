@@ -19,12 +19,24 @@ async function loginAs(page: Page, username: string, password = PASSWORD) {
 // Next tự gắn một role="alert" để đọc tên trang khi chuyển trang, nên lấy thông báo lỗi trong form.
 const formAlert = (page: Page) => page.locator('form [role="alert"]');
 
-test("sai mật khẩu 5 lần thì tài khoản bị khoá 15 phút", async ({ page }) => {
-  for (let i = 0; i < 5; i++) {
-    await login(page, "zz_e2e_lock", "sai-mat-khau");
-    await expect(formAlert(page)).toBeVisible();
+test("sai mật khẩu lần 3 và 4 thì hiện hộp nhắc, sai 5 lần thì tài khoản bị khoá 15 phút", async ({ page }) => {
+  await page.goto("/login");
+  await page.waitForLoadState("networkidle");
+  const warn = page.getByRole("dialog", { name: "Sắp bị khoá" });
+  for (let i = 1; i <= 5; i++) {
+    await page.getByLabel("Tài khoản").fill("zz_e2e_lock");
+    await page.getByLabel("Mật khẩu", { exact: true }).fill("sai-mat-khau");
+    await page.getByRole("button", { name: "Đăng nhập" }).click();
+    if (i === 3 || i === 4) {
+      await expect(warn).toContainText(`Sai mật khẩu ${i} lần rồi, 5 lần sẽ bị khoá tài khoản 15 phút.`);
+      await expect(warn.getByRole("button", { name: "Đã hiểu" })).toBeFocused();
+      await warn.getByRole("button", { name: "Đã hiểu" }).click();
+      await expect(warn).toBeHidden();
+    } else {
+      await expect(formAlert(page)).toContainText(i === 5 ? "khoá 15 phút" : "không đúng");
+      await expect(warn).toBeHidden();
+    }
   }
-  await expect(formAlert(page)).toContainText("khoá 15 phút");
   await login(page, "zz_e2e_lock");
   await expect(formAlert(page)).toContainText("khoá 15 phút");
 });
