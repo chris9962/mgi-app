@@ -10,15 +10,17 @@ import { requirePage } from "@/server/auth/current";
 import { listProvinces, listSchools, PAGE_SIZE } from "@/server/schools";
 import { studentLink } from "@/lib/links";
 import { can } from "@/lib/permissions";
+import { readParam, type Params } from "@/lib/urlParams";
 
 export const metadata = { title: "Trường" };
 
 const shortProvince = (name: string) => name.replace(/^(Tỉnh|Thành phố)\s+/, "");
 
-export default async function SchoolsPage({ searchParams }: { searchParams: Promise<{ q?: string; page?: string }> }) {
+export default async function SchoolsPage({ searchParams }: { searchParams: Promise<Params> }) {
   const user = await requirePage("schools");
-  const { q = "", page = "1" } = await searchParams;
-  const [{ rows, total, page: current }, provinces] = await Promise.all([listSchools({ q, page: Number(page) || 1 }), listProvinces()]);
+  const sp = await searchParams;
+  const q = readParam(sp, "q");
+  const [{ rows, total, page: current }, provinces] = await Promise.all([listSchools({ q, page: Number(readParam(sp, "page")) || 1 }), listProvinces()]);
   const href = (p: number) => `/schools?${new URLSearchParams({ ...(q ? { q } : {}), page: String(p) })}`;
 
   return (

@@ -9,6 +9,7 @@ import { Pager } from "@/components/ui/Pager";
 import { StatusTag } from "@/components/ui/StatusTag";
 import { canManageAnyBank } from "@/lib/permissions";
 import { currentYearMonth, isYearMonth } from "@/lib/month";
+import { readParam, type Params } from "@/lib/urlParams";
 import { requirePageWhere } from "@/server/auth/current";
 import { listBanks } from "@/server/banks";
 import { listCodes, PAGE_SIZE, type CodeRow } from "@/server/referralCodes";
@@ -33,15 +34,15 @@ function Usage({ used, quota }: { used: number; quota: number }) {
   );
 }
 
-export default async function CodesPage({ searchParams }: { searchParams: Promise<{ month?: string; q?: string; bank?: string; hide?: string; page?: string }> }) {
+export default async function CodesPage({ searchParams }: { searchParams: Promise<Params> }) {
   const user = await requirePageWhere(canManageAnyBank);
   const sp = await searchParams;
-  const month = sp.month && isYearMonth(sp.month) ? sp.month : currentYearMonth();
-  const q = sp.q ?? "";
-  const hideStopped = sp.hide === "1";
+  const month = isYearMonth(readParam(sp, "month")) ? readParam(sp, "month") : currentYearMonth();
+  const q = readParam(sp, "q");
+  const hideStopped = readParam(sp, "hide") === "1";
   const banks = await listBanks(user);
-  const bankId = banks.some((b) => b.id === sp.bank) ? sp.bank! : "";
-  const { rows, total, page } = await listCodes(user, { month, q, bankId, hideStopped, page: Number(sp.page) || 1 });
+  const bankId = banks.some((b) => b.id === readParam(sp, "bank")) ? readParam(sp, "bank") : "";
+  const { rows, total, page } = await listCodes(user, { month, q, bankId, hideStopped, page: Number(readParam(sp, "page")) || 1 });
   const query = (extra: Record<string, string>) => {
     const p = new URLSearchParams({ month, ...(q ? { q } : {}), ...(bankId ? { bank: bankId } : {}), ...(hideStopped ? { hide: "1" } : {}), ...extra });
     return `/banks/codes?${p}`;

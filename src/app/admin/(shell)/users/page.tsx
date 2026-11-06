@@ -6,15 +6,17 @@ import { AddUserButton } from "@/components/users/AddUserButton";
 import { UserActions } from "@/components/users/UserActions";
 import { bankText, formDefaults, permissionText, statusTag } from "@/components/users/userView";
 import { ROLE_LABEL } from "@/lib/types";
+import { readParam, type Params } from "@/lib/urlParams";
 import { requirePage } from "@/server/auth/current";
 import { listUsers, PAGE_SIZE } from "@/server/users";
 
 export const metadata = { title: "Tài khoản" };
 
-export default async function UsersPage({ searchParams }: { searchParams: Promise<{ q?: string; page?: string }> }) {
+export default async function UsersPage({ searchParams }: { searchParams: Promise<Params> }) {
   const actor = await requirePage("users");
-  const { q = "", page = "1" } = await searchParams;
-  const { rows, total, page: current } = await listUsers({ q, page: Number(page) || 1 });
+  const sp = await searchParams;
+  const q = readParam(sp, "q");
+  const { rows, total, page: current } = await listUsers({ q, page: Number(readParam(sp, "page")) || 1 });
   const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
   const from = total ? (current - 1) * PAGE_SIZE + 1 : 0;
   const to = Math.min(total, current * PAGE_SIZE);
