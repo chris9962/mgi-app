@@ -222,6 +222,7 @@ Test nằm ở `e2e/edge-business.spec.ts` (Trang 3), `e2e/edge-business-detail.
 | T4-29, HT-01 | Sửa thông tin hồ sơ, Sửa trường, Sửa thông tin và Đổi mật khẩu ở Cá nhân: bấm Esc hay Huỷ lúc đang lưu thì hộp đóng, người dùng tưởng đã huỷ mà máy chủ vẫn lưu. Các hộp đã khoá thì nút Đóng ở góc vẫn hiện mà bấm không có tác dụng | 112a285 |
 | HT-02 | Hộp xác nhận: lệnh xác nhận ném lỗi thì hộp khoá mãi, Huỷ, Esc đều không đóng được tới khi tải lại trang | a5061f9 |
 | T4-36 (M-new-2) | Mạng chậm: người kiểm tự tải ảnh thay thế, hộp đóng ngay mà ảnh mới chưa hiện; bấm Đạt thì nhận "Ảnh vừa được thay" cho chính ảnh mình tải | eba0023 |
+| T4-37 | Mạng chậm: hộp Không đạt đóng ngay mà trạng thái mới chưa hiện; bấm Đạt thì nhận "Ngân hàng này đã có người đánh dấu" cho chính thao tác của mình | 0734c76 |
 | DB-09 (nhóm C) | Ô chọn người quản ở hộp Ngân hàng gõ Mã tài khoản ra 0 người, dù ô tìm Tài khoản gõ mã ra đúng người | f11ea3a |
 
 Thêm ca trong lúc viết test:
@@ -272,9 +273,9 @@ Sửa ở test, người dùng không gặp lỗi:
 - Đã xong ở 32fd07d (nhóm C): Xuất Excel trang Trường với `q=%00` lỗi 500. Route `src/app/api/admin/schools/export/route.ts` đọc `q` bằng `searchParams.get`, không qua `readParam`, rồi `exportSchools` ghi `q` vào `audit_log.detail` (jsonb không nhận NUL). Nhóm C chuyển 4 route sang `readParam`.
 - Đã xong ở 369a1eb (nhóm C): ô tìm của Trường, Tài khoản, Kho mã và ô chọn người quản tìm cả chuỗi bằng `matchesPlain`, chưa tách từ như mgst-app. Nhóm C thêm `matchesEachTerm` ở `src/server/search.ts`, dùng lại `searchTerms` của nhóm B.
 - Đã xong ở 112a285: hộp Sửa thông tin ở Trang 4 đóng được bằng Esc hay Huỷ lúc đang lưu.
-- Hộp Đạt, Không đạt đóng trước khi trang tải lại xong (`mark` ở `ReviewActions.tsx`), như ca M-new-2 trước khi sửa. Mạng chậm, người kiểm bấm Không đạt rồi bấm Đạt ngay thì trang còn trạng thái Chờ kiểm tra, máy chủ trả 409 "Ngân hàng này đã có người đánh dấu" cho chính thao tác của họ. Ca này tìm ra khi đọc code, chưa có test. Review chưa nêu ca này, lượt này chưa sửa.
+- Đã xong ở 0734c76 (T4-37): hộp Đạt, Không đạt đóng trước khi trang tải lại xong (`mark` ở `ReviewActions.tsx`). Hộp nay khoá tới khi trạng thái mới hiện, như hộp Tải ảnh thay thế ở eba0023.
 - Đã xong ở b77a9b2 (nhóm C): placeholder ô chọn người quản ghi "Gõ tên, tên đăng nhập hoặc mã tài khoản…". Nhóm C sửa ruling ô chọn người quản ở file kết quả nhóm C và thêm ca gõ mã vào NH15.
-- Web học sinh cũng không kiểm dung lượng ảnh ở trình duyệt (review nhóm B ghi ở I1). Việc này thuộc nhóm A.
+- Không phải lỗi: web học sinh đã kiểm dung lượng ảnh ở trình duyệt (`src/components/student/PhotoSlot.tsx:15`, sau `compressImage`).
 - M4 (chuyển `searchTerms` sang `src/lib/search.ts`): nhóm C làm.
 
 ### Ca chưa test được
