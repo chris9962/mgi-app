@@ -12,12 +12,16 @@ export function ResendButton({ id, fullName, toPhone }: { id: string; fullName: 
   const [open, setOpen] = useState(false);
   const [errors, setErrors] = useState<{ toPhone?: string; form?: string }>({});
   const [pending, setPending] = useState(false);
+  const [stale, setStale] = useState(false);
 
   function close() {
     // Như dismissible={!pending} của mgst-app: tin đã gửi lại thì đóng hộp không huỷ được.
     if (pending) return;
     setOpen(false);
     setErrors({});
+    // Máy chủ vừa từ chối vì tin đã đổi ở tab khác: đóng hộp thì tải lại bảng, dòng Lỗi cũ không còn nút Gửi lại.
+    if (stale) router.refresh();
+    setStale(false);
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -26,7 +30,11 @@ export function ResendButton({ id, fullName, toPhone }: { id: string; fullName: 
     const r = await apiSend("POST", `/api/admin/sms/${id}/resend`, { toPhone: String(new FormData(event.currentTarget).get("toPhone") ?? "") });
     setPending(false);
     // Tab khác vừa gửi lại hay mất mạng không phải lỗi của SĐT: báo ở dòng chung, không đánh dấu ô sai.
-    if (!r.ok) return setErrors(r.field === "toPhone" ? { toPhone: r.message } : { form: r.message });
+    if (!r.ok) {
+      // Mất mạng thì không có status: tải lại lúc đó ra trang lỗi của trình duyệt.
+      if (r.status && r.field !== "toPhone") setStale(true);
+      return setErrors(r.field === "toPhone" ? { toPhone: r.message } : { form: r.message });
+    }
     close();
     router.refresh();
   }

@@ -279,7 +279,7 @@ test.describe("Tin SMS lỗi", () => {
     await expect(dialog).toHaveCount(0);
   });
 
-  test("hai tab cùng Gửi lại một tin: tab sau báo tin không còn lỗi ở dòng báo chung, ô SĐT không bị đánh dấu sai", async ({ browser }) => {
+  test("hai tab cùng Gửi lại một tin: tab sau báo tin không còn lỗi ở dòng báo chung, ô SĐT không bị đánh dấu sai; đóng hộp thì bảng tải lại, dòng Lỗi cũ mất; mất mạng thì đóng hộp không tải lại trang", async ({ browser }) => {
     const a = await loginAs(browser, "zz_e2e_admin");
     const b = await loginAs(browser, "zz_e2e_admin");
     for (const page of [a, b]) {
@@ -291,6 +291,20 @@ test.describe("Tin SMS lỗi", () => {
     await resendDialog(b).getByRole("button", { name: "Gửi lại" }).click();
     await expect(resendDialog(b).getByRole("alert")).toHaveText("Tin này không ở trạng thái lỗi.");
     await expect(resendDialog(b).getByLabel("SĐT nhận")).not.toHaveAttribute("aria-invalid", "true");
+    await resendDialog(b).getByRole("button", { name: "Huỷ" }).click();
+    await expect(resendDialog(b)).toHaveCount(0);
+    await expect(b.getByText("Không có tin khớp bộ lọc.")).toBeVisible();
+
+    // Tải lại trang lúc mất mạng là ra trang báo lỗi của trình duyệt: chỉ tải lại khi máy chủ đã trả lời.
+    await open(a, `/sms?${q(B.bPageName(3))}`);
+    await a.context().setOffline(true);
+    await a.getByRole("button", { name: `Gửi lại tin cho ${B.bPageName(3)}` }).click();
+    await resendDialog(a).getByRole("button", { name: "Gửi lại" }).click();
+    await expect(resendDialog(a).getByRole("alert")).toHaveText("Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.");
+    await resendDialog(a).getByRole("button", { name: "Huỷ" }).click();
+    await expect(resendDialog(a)).toHaveCount(0);
+    await expect(a.getByRole("button", { name: `Gửi lại tin cho ${B.bPageName(3)}` })).toBeVisible();
+    await a.context().setOffline(false);
   });
 
   test("phạm vi và rỗng: Nhân viên không thấy và không Gửi lại được tin ngoài phạm vi; ngân hàng chưa có hồ sơ báo không có tin lỗi; lọc Đã gửi không khớp báo không có tin khớp bộ lọc", async ({ browser }) => {
