@@ -35,7 +35,7 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
             {info.map(([k, v]) => (
               <div key={k} className="flex flex-col gap-0.5">
                 <dt className="text-[13px] text-text-2">{k}</dt>
-                <dd className="text-sm">{v}</dd>
+                <dd className="text-sm wrap-anywhere">{v}</dd>
               </div>
             ))}
           </dl>
