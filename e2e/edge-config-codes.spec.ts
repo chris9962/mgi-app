@@ -188,6 +188,24 @@ test("Mã: lọc ngân hàng, từ khoá, Ẩn mã đã ngừng kết hợp; đ�
   await expect(page.getByText("16 mã", { exact: true })).toBeVisible();
 });
 
+test("Mã: bật Ẩn mã đã ngừng, ở trang 2 còn một mã, ngừng mã đó thì bảng hiện trang có mã, thanh phân trang ghi đúng", async ({ page }) => {
+  test.setTimeout(90_000);
+  await apiLogin(page, "zz_e2e_admin");
+  const bank = await createBank(page, "ZZCMACUOI", "ZZE2E Mã trang cuối");
+  for (let i = 1; i <= 16; i++) await createCode(page, bank, `ZZE2E Cuốitrang ${String(i).padStart(2, "0")}`);
+  await open(page, `/banks/codes?${new URLSearchParams({ bank, q: "cuoitrang", hide: "1", page: "2" })}`);
+  await expect(rows(page)).toHaveCount(1);
+  await expect(rows(page).first()).toContainText("ZZE2E Cuốitrang 16");
+  await rows(page).first().getByRole("button", { name: "Ngừng" }).click();
+  await page.getByRole("dialog", { name: "Ngừng mã" }).getByRole("button", { name: "Ngừng" }).click();
+  await expect(rows(page)).toHaveCount(15);
+  const pager = page.getByRole("navigation", { name: "Phân trang" });
+  await expect(pager).toContainText("1–15 trên 15");
+  await expect(pager).toContainText("1 / 1");
+  await expect(pager.getByRole("link")).toHaveCount(0);
+  await expect(page.getByText("15 mã", { exact: true })).toBeVisible();
+});
+
 test("Mã: tham số URL lạ không lỗi 500: tháng sai về tháng hiện tại, ngân hàng lạ bỏ lọc, page lạ, q lặp", async ({ browser }) => {
   const admin = await asUser(browser, "zz_e2e_admin");
   const u = await createUser(admin, { fullName: "E2E C Mã phạm vi URL", username: "zz_e2e_c_maurl" });

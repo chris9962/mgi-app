@@ -279,6 +279,14 @@ test("Trường: phân quyền: có quyền Trường mà không có Xuất Exce
   expect(await api(admin, "GET", "/api/admin/wards?province=abc")).toEqual({ status: 200, body: [] });
 });
 
+test("Trường: phân quyền: có Xuất Excel mà không có quyền Trường thì trang Trường 404, API xuất trả 403", async ({ browser }) => {
+  const admin = await asUser(browser, "zz_e2e_admin");
+  const u = await createUser(admin, { fullName: "E2E C Chỉ xuất", username: "zz_e2e_c_chixuat", permissions: ["export_excel"] });
+  const staff = await asUser(browser, "zz_e2e_c_chixuat", u.password);
+  expect((await staff.goto("/schools"))?.status()).toBe(404);
+  expect((await api(staff, "GET", "/api/admin/schools/export")).status).toBe(403);
+});
+
 test("Trường: tab 1 đóng trường, tab 2 còn nút Đóng cũ bấm Đóng thì không lỗi, trường vẫn đóng", async ({ browser }) => {
   const one = await asUser(browser, "zz_e2e_admin");
   await createSchool(one, "ZZE2E Hai tab");
