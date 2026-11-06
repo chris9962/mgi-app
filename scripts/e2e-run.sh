@@ -18,7 +18,8 @@ if [ -n "$pids" ]; then
 fi
 
 # COOKIE_SECURE=false: cookie Secure trên http không đi kèm request API của Playwright.
-COOKIE_SECURE=false nohup bunx next start -p 3100 > "$LOG_DIR/mgi-bank-e2e-server.log" 2>&1 &
+# TZ=UTC: máy dev và container đều ở +07, code lỡ dùng giờ của máy thì test giờ Việt Nam vẫn pass nếu không ép UTC.
+COOKIE_SECURE=false TZ=UTC nohup bunx next start -p 3100 > "$LOG_DIR/mgi-bank-e2e-server.log" 2>&1 &
 for _ in $(seq 1 60); do
   [ "$(curl -s -o /dev/null -w '%{http_code}' --max-time 5 "$URL")" = "200" ] && break
   sleep 1
