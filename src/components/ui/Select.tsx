@@ -14,7 +14,7 @@ export function Select({ label, error, options, id, ...rest }: Props) {
   const selectId = id ?? auto;
   return (
     <Field id={selectId} label={label} error={error}>
-      <select id={selectId} aria-invalid={error ? true : undefined} className={inputClass} {...rest}>
+      <select id={selectId} aria-invalid={error ? true : undefined} aria-describedby={error ? `${selectId}-error` : undefined} className={inputClass} {...rest}>
         {options.map((o) => (
           <option key={o.value} value={o.value}>
             {o.label}

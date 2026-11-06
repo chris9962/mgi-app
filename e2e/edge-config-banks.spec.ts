@@ -127,6 +127,21 @@ test("Ngân hàng: người quản đã bị khoá thì sửa tên ngân hàng v
   expect(r).toEqual({ status: 400, body: { message: "Người quản phải là Nhân viên đang hoạt động.", field: "managerIds" } });
 });
 
+test("Ngân hàng: máy chủ báo lỗi ở ô Người quản thì lỗi gắn vào ô chọn người quản", async ({ page }) => {
+  await apiLogin(page, "zz_e2e_admin");
+  await open(page, "/banks");
+  await page.getByRole("button", { name: "Thêm ngân hàng" }).click();
+  const d = page.getByRole("dialog", { name: "Thêm ngân hàng" });
+  await d.getByLabel("Mã ngân hàng").fill("ZZCPICK");
+  await d.getByLabel("Tên ngân hàng").fill("ZZE2E Lỗi ô người quản");
+  await page.route(
+    (url) => url.pathname === "/api/admin/banks",
+    (route) => route.fulfill({ status: 400, contentType: "application/json", body: JSON.stringify({ message: "Người quản phải là Nhân viên đang hoạt động.", field: "managerIds" }) }),
+  );
+  await d.getByRole("button", { name: "Tạo ngân hàng" }).click();
+  await expect(d.getByRole("combobox", { name: "Người quản ngân hàng này" })).toHaveAccessibleDescription("Người quản phải là Nhân viên đang hoạt động.");
+});
+
 test("Ngân hàng: Nhân viên được giao chỉ sửa ngân hàng mình, không đổi được người quản; ngân hàng khác và id không có trả 404", async ({ browser }) => {
   const admin = await asUser(browser, "zz_e2e_admin");
   const u = await createUser(admin, { fullName: "E2E C Nhân viên ngân hàng", username: "zz_e2e_c_nhnv" });

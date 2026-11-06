@@ -63,8 +63,7 @@ export function BankFormDialog({ initial, canAssign, onClose }: { initial?: Bank
           <TextField name="sortOrder" label="Độ ưu tiên" inputMode="numeric" defaultValue={String(start.sortOrder)} error={errors.sortOrder} />
         </div>
         <TextField name="name" label="Tên ngân hàng" defaultValue={start.name} error={errors.name} />
-        {canAssign && <MultiSelect label="Người quản ngân hàng này" value={managers} onChange={setManagers} search={searchManagers} placeholder="Gõ tên hoặc tên đăng nhập…" />}
-        {errors.managerIds && <p className="text-sm text-danger">{errors.managerIds}</p>}
+        {canAssign && <MultiSelect label="Người quản ngân hàng này" value={managers} onChange={setManagers} search={searchManagers} placeholder="Gõ tên hoặc tên đăng nhập…" error={errors.managerIds} />}
         {formError && (
           <p role="alert" className="text-sm text-danger">
             {formError}

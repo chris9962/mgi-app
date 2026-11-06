@@ -318,7 +318,7 @@ test("Mã: API với ngân hàng không có, trường không có, trường đ�
     route.request().method() === "PATCH" ? route.fulfill({ status: 400, contentType: "application/json", body: JSON.stringify({ message: "Có trường đã đóng hoặc không còn.", field: "schoolIds" }) }) : route.continue(),
   );
   await d.getByRole("button", { name: "Lưu" }).click();
-  await expect(d.getByText("Có trường đã đóng hoặc không còn.", { exact: true })).toBeVisible();
+  await expect(d.getByRole("combobox", { name: "Trường dùng mã này" })).toHaveAccessibleDescription("Có trường đã đóng hoặc không còn.");
 });
 
 test("Mã: Nhân viên được giao một ngân hàng chỉ thấy mã ngân hàng đó; sửa, ngừng mã ngân hàng khác qua API nhận 404; mọi mã đã ngừng mà bật Ẩn thì ghi không có mã khớp", async ({ browser }) => {

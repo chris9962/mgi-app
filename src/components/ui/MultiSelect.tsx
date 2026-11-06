@@ -9,12 +9,13 @@ import { inputClass } from "./Field";
 export type Option = { id: string; label: string };
 
 // Chọn nhiều mục từ danh sách lớn dần: gõ để tìm ở máy chủ, mục đã chọn hiện thành thẻ có nút bỏ.
-export function MultiSelect({ label, value, onChange, search, placeholder = "Gõ để tìm…" }: {
+export function MultiSelect({ label, value, onChange, search, placeholder = "Gõ để tìm…", error }: {
   label: string;
   value: Option[];
   onChange: (value: Option[]) => void;
   search: (q: string) => Promise<Option[]>;
   placeholder?: string;
+  error?: string;
 }) {
   const id = useId();
   const listId = `${id}-list`;
@@ -88,6 +89,8 @@ export function MultiSelect({ label, value, onChange, search, placeholder = "Gõ
           aria-controls={listId}
           aria-autocomplete="list"
           aria-activedescendant={options?.[active] ? `${listId}-${active}` : undefined}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={error ? `${id}-error` : undefined}
           autoComplete="off"
           placeholder={placeholder}
           maxLength={SEARCH_MAX_LENGTH}
@@ -135,6 +138,11 @@ export function MultiSelect({ label, value, onChange, search, placeholder = "Gõ
           </ul>
         )}
       </div>
+      {error && (
+        <span id={`${id}-error`} className="text-[13px] text-danger">
+          {error}
+        </span>
+      )}
     </div>
   );
 }
