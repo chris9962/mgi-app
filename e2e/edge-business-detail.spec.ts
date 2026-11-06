@@ -320,6 +320,25 @@ test("Trang 4 tải ảnh thay thế: không chọn file, file 0 byte, file ch�
   await expect(dialog.getByRole("alert")).toHaveText("Ngân hàng đã Đạt, không thay được ảnh.", { timeout: 30_000 });
 });
 
+test("Trang 4 tải ảnh thay thế: khung ảnh bị gỡ lúc hộp đang mở thì báo không tìm thấy khung ảnh dưới ô Khung ảnh", async ({ browser }) => {
+  const page = await loginAs(browser, "zz_e2e_admin");
+  await open(page, detail(B.B_IDS.only2));
+  await bank2(page).getByRole("button", { name: "Tải ảnh thay thế" }).click();
+  const dialog = page.getByRole("dialog", { name: "Tải ảnh thay thế" });
+  await dialog.getByLabel("Ảnh", { exact: true }).setInputFiles(PHOTO);
+
+  // Người quản ngân hàng thay khung ảnh bằng khung mới: khung cũ bị gỡ, hộp đang mở vẫn giữ id khung cũ.
+  const guide = await (await page.request.get(`/api/admin/banks/${B.B_BANK2_ID}/guide`)).json();
+  const saved = await page.request.put(`/api/admin/banks/${B.B_BANK2_ID}/guide`, { headers: { Origin: ADMIN }, data: { steps: guide.steps, seenSlotIds: guide.slots.map((s: { id: string }) => s.id), slots: [{ name: guide.slots[0].name, sampleKey: null, checkName: false, checkCode: false }] } });
+  expect(saved.status()).toBe(204);
+
+  await dialog.getByRole("button", { name: "Tải lên" }).click();
+  await expect(dialog.getByText("Không tìm thấy khung ảnh.", { exact: true })).toBeVisible();
+  await expect(dialog.getByLabel("Khung ảnh")).toHaveAttribute("aria-invalid", "true");
+  await expect(dialog.getByLabel("Ảnh", { exact: true })).not.toHaveAttribute("aria-invalid", "true");
+  await expect(dialog.getByRole("alert")).toHaveCount(0);
+});
+
 test("Trang 4 hai tab: tab A đánh dấu Đạt, tab B bấm Đạt hay Không đạt đều báo đã có người đánh dấu; tab B đang sửa thông tin thì báo hồ sơ đã có voucher", async ({ browser }) => {
   const a = await loginAs(browser, B.B_USER1);
   const b = await loginAs(browser, "zz_e2e_admin");
