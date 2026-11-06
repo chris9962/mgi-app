@@ -1,10 +1,9 @@
 import { z } from "zod";
+import { CONTROL_CHAR_MESSAGE, noControlChar } from "./controlChars";
 
 const PHONE = "SĐT phải có 10 số, bắt đầu bằng 0.";
 // Học sinh thấy câu lỗi của máy chủ: mọi câu phải là tiếng Việt, không để câu mặc định tiếng Anh của zod lọt ra.
 const BAD = "Dữ liệu không hợp lệ.";
-// NUL làm Postgres báo lỗi 500; ký tự điều khiển khác không có chỗ trong họ tên hay lớp.
-const CONTROL = /[\u0000-\u001f\u007f]/;
 
 const uuid = () => z.uuid({ error: BAD });
 
@@ -23,7 +22,7 @@ const name = (message: string) =>
         .string()
         .min(1, message)
         .max(100, "Tối đa 100 ký tự")
-        .refine((v) => !CONTROL.test(v), "Có ký tự không hợp lệ"),
+        .refine(noControlChar, CONTROL_CHAR_MESSAGE),
     );
 
 const info = {
@@ -36,7 +35,7 @@ const info = {
         .string()
         .min(1, "Nhập lớp")
         .max(20, "Tối đa 20 ký tự")
-        .refine((v) => !CONTROL.test(v), "Có ký tự không hợp lệ"),
+        .refine(noControlChar, CONTROL_CHAR_MESSAGE),
     ),
   phone,
   parentName: name("Nhập họ và tên phụ huynh"),

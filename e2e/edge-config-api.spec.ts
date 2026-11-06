@@ -69,7 +69,7 @@ test("API: tải ảnh thư mục lạ, không có file, file 0 byte, file khôn
   }
 });
 
-test("API: ký tự NUL và ký tự điều khiển ở mọi ô chữ của form trả 400 kèm ô lỗi, không lỗi 500; đăng nhập với tên có NUL trả 401", async ({ browser }) => {
+test("API: ký tự NUL, ký tự điều khiển, nửa cặp surrogate ở mọi ô chữ của form trả 400 kèm ô lỗi, không lỗi 500; đăng nhập với tên có NUL trả 401", async ({ browser }) => {
   test.setTimeout(120_000);
   const admin = await asUser(browser, "zz_e2e_admin");
   const bankId = await createBank(admin, "ZZCNUL", "ZZE2E Ký tự lạ");
@@ -99,7 +99,7 @@ test("API: ký tự NUL và ký tự điều khiển ở mọi ô chữ của fo
     [admin, "POST", "/api/admin/users", user, ["fullName", "staffCode", "phone", "username", "title"]],
     [admin, "PATCH", `/api/admin/users/${target.id}`, userEdit, ["fullName", "staffCode", "phone", "username", "title"]],
     [self, "PATCH", "/api/admin/profile", { fullName: "E2E C Ký tự lạ", phone: "" }, ["fullName", "phone"]],
-    [admin, "PATCH", "/api/admin/settings", settings, ["zaloUrl", "pviAppUrl"]],
+    [admin, "PATCH", "/api/admin/settings", settings, ["smsTemplate", "zaloUrl", "pviAppUrl"]],
   ];
   const withChar = (base: Record<string, unknown>, path: string, ch: string) => {
     const body = structuredClone(base) as Record<string, unknown>;
@@ -111,7 +111,8 @@ test("API: ký tự NUL và ký tự điều khiển ở mọi ô chữ của fo
     return body;
   };
   try {
-    for (const ch of ["\u0000", "\u0001", "\u007f"]) {
+    // \ud83c là nửa đầu của 🎓: JSON vẫn gửi được, cột jsonb của audit_log thì từ chối.
+    for (const ch of ["\u0000", "\u0001", "\u007f", "\ud83c"]) {
       for (const [page, method, url, base, paths] of cases) {
         for (const path of paths) {
           const r = await api(page, method, url, withChar(base, path, ch));
@@ -124,7 +125,7 @@ test("API: ký tự NUL và ký tự điều khiển ở mọi ô chữ của fo
     expect((await api(admin, "PATCH", "/api/admin/settings", before)).status).toBe(204);
   }
   const anon = await newPage(browser);
-  for (const username of ["zz_e2e_admin\u0000", "\u0000", "zz_e2e\u0001admin"]) {
+  for (const username of ["zz_e2e_admin\u0000", "\u0000", "zz_e2e\u0001admin", "zz_e2e_admin\ud83c"]) {
     const r = await api(anon, "POST", "/api/admin/login", { username, password: PASSWORD });
     expect([400, 401], JSON.stringify(username)).toContain(r.status);
   }

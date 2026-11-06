@@ -166,7 +166,7 @@ test("Trang 4 Sửa thông tin: ô trống, chỉ khoảng trắng, quá dài, S
   expect(patches.length).toBe(2);
 });
 
-test("Trang 4 ghi chú: ô nhập chặn ở 1.000 ký tự, API từ chối 1.001 ký tự và ký tự điều khiển, cắt khoảng trắng đầu cuối; hai tab cùng sửa thì người lưu sau ghi đè; mất mạng báo ở dòng báo chung", async ({ browser }) => {
+test("Trang 4 ghi chú: ô nhập chặn ở 1.000 ký tự, API từ chối 1.001 ký tự, ký tự điều khiển và nửa cặp surrogate ở ghi chú và Sửa thông tin, cắt khoảng trắng đầu cuối; hai tab cùng sửa thì người lưu sau ghi đè; mất mạng báo ở dòng báo chung", async ({ browser }) => {
   const a = await loginAs(browser, "zz_e2e_admin");
   const b = await loginAs(browser, "zz_e2e_admin");
   await open(a, detail(B.B_IDS.note));
@@ -178,6 +178,14 @@ test("Trang 4 ghi chú: ô nhập chặn ở 1.000 ký tự, API từ chối 1.0
   expect([res.status(), (await res.json()).message]).toEqual([400, "Ghi chú tối đa 1000 ký tự"]);
   res = await put("có \u0001 ký tự điều khiển");
   expect([res.status(), (await res.json()).message]).toEqual([400, "Có ký tự không hợp lệ"]);
+  // \ud83c là nửa đầu của một emoji: JSON gửi được, cột jsonb của audit_log thì từ chối.
+  res = await put("nửa emoji \ud83c");
+  expect([res.status(), (await res.json()).message]).toEqual([400, "Có ký tự không hợp lệ"]);
+  const edit = { fullName: "Biên Ghi Chú", className: "10A1", phone: "0912345678", parentName: "Phụ Huynh", parentPhone: "0987654321" };
+  for (const field of ["fullName", "className", "parentName"] as const) {
+    const r = await a.request.patch(`/api/admin/customers/${B.B_IDS.note}`, { headers: { Origin: ADMIN }, data: { ...edit, [field]: `${edit[field]}\ud83c` } });
+    expect([field, r.status(), await r.json()]).toEqual([field, 400, { message: "Có ký tự không hợp lệ", field }]);
+  }
   expect((await put("   cắt hai đầu   ")).status()).toBe(204);
   expect((await (await a.request.get(`/api/admin/customers/${B.B_IDS.note}`)).json()).banks[0].note).toBe("cắt hai đầu");
 
