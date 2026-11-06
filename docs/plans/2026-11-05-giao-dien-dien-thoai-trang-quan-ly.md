@@ -81,3 +81,35 @@ Làm ngày 2026-11-05 trên nhánh `dev`. Commit của kế hoạch này: `5fe36
 - Menu tài khoản mở trong ngăn trượt: bấm Esc đóng cả menu lẫn ngăn.
 - Trang chi tiết có tên quá dài: tiêu đề xuống hàng riêng thì vạch ngăn sau nút quay lại nằm lẻ ở cuối hàng trên. Dữ liệu hiện có chưa gặp.
 - Ở dev server, huy hiệu của Next đè nút Thêm khi mở bằng điện thoại.
+
+### Sửa theo review lần 1
+
+Reviewer đọc bản `5a994a1`: không có lỗi Critical, có 3 lỗi Important. Coordinator nâng thêm 6 lỗi Minor vì chúng gặp thật khi dùng điện thoại. Mỗi mục một commit, kèm test e2e fail trước khi sửa.
+
+1. Important, `566ec46`. Ngăn mở thì nội dung và thanh đáy `inert`: Tab không rơi vào chỗ bị ngăn che, trình đọc màn hình chỉ đọc ngăn. Đóng ngăn dùng `flushSync` rồi mới focus nút Thêm, vì thanh đáy còn inert tới lúc React vẽ lại.
+2. Important, `07d54e1`. Dưới 900 px bảng Bộ lọc đứng ngay trên thanh đáy, cao tối đa phần màn còn lại, phần giá trị cuộn bên trong. Test ở 375x548 và 844x390.
+3. Important, `2c9e3d6`. Dưới 600 px lời báo lỗi xuất Excel neo vào thanh tiêu đề, không neo vào nút. Test ở 360 px (Hồ sơ học sinh) và 390 px (Trường).
+4. `36ff933`. Menu tài khoản trong ngăn: Esc đầu chỉ đóng menu, Esc sau mới đóng ngăn và focus nút Thêm. Menu nghe Esc ở pha capture và gọi `preventDefault`.
+5. `d7dcd18`. Ngăn đóng khi chuyển trang bằng nút Quay lại. Trạng thái mở suy ra từ đường dẫn lúc bấm Thêm, không dùng effect.
+6. `30a9534`. Khoá cuộn chuyển từ JavaScript sang CSS, chỉ áp dưới 900 px. AppShell nghe media query: lên bố cục máy tính thì bỏ trạng thái ngăn.
+7. `cd31eda`. Biến `--bottom-nav-h` (57 px) dùng chung cho thanh đáy, phần chừa đáy của nội dung và bảng Bộ lọc. Nhãn một hàng, mục rộng theo nhãn.
+8. `4eddfb4`. Dưới 900 px `body:has(dialog[open])` khoá cuộn như mgst-app. Trước đây lăn ở lớp phủ là trang phía sau trôi 600 px.
+9. `75c072d`. Seed thêm tài khoản `zz_e2e_noperm` và hồ sơ "Phạm Thị Khổ Hẹp". Test tràn ngang luôn đo trang chi tiết hồ sơ. Thêm test "ngăn đóng thì Tab không vào ngăn" và "đóng ngăn thì hết khoá cuộn". Bỏ init script ẩn `nextjs-portal`.
+
+Comment của effect ngăn trượt trong Sidebar viết lại thành lý do ở `d7820b9`. Comment của FilterButton viết lại trong `07d54e1`.
+
+Ruling của lượt sửa:
+
+- Dưới 900 px bảng Bộ lọc là khối cố định trên thanh đáy, không treo dưới nút nữa. mgst-app nhờ Radix né mép màn hình nhưng không né thanh đáy, nên không có cách để chép. Treo dưới nút thì phải đo chiều cao thanh tiêu đề bằng JavaScript. Sai thì trên màn cao, bảng nằm xa nút Bộ lọc.
+- Mục thanh đáy rộng theo nhãn (`flex-auto`), không chia đều như mgst-app. Chia đều thì ở 320 px chữ "Hồ sơ học sinh" bị cắt. Sai thì các icon cách nhau lệch vài px.
+- Hồ sơ cho test trang chi tiết nằm trong seed, test không dựng hồ sơ qua web học sinh. Seed nhanh hơn và không phụ thuộc web học sinh.
+- Test inert đọc cây trợ năng của Chromium qua CDP, vì bộ chọn role của Playwright không xét `inert`.
+- Lên khổ máy tính thì bỏ hẳn trạng thái ngăn. Xoay lại về điện thoại thì ngăn không tự mở lại.
+
+Test sau lượt sửa: `bun run test` 226/226, `bun test:db` 225/225 trên DB tạm `zz_test_mobile` (đã xoá), `bun run e2e` 40/40 (`e2e/mobile.spec.ts` có 18 test), `bunx tsc --noEmit` sạch. `bun run lint` có một lỗi ở `e2e/flows/support.ts`: file chưa commit của agent làm video e2e. Bỏ thư mục `e2e/flows` thì lint sạch, còn 2 cảnh báo `<img>` có sẵn.
+
+Việc để lại sau review lần 1:
+
+- Trong "Việc để lại" ở trên, ba mục đã xong: khoá cuộn khi xoay máy (mục 6), Esc ở menu tài khoản (mục 4), huy hiệu dev server (commit `9c88d32`).
+- Trang chi tiết có tên quá dài: vạch ngăn sau nút quay lại vẫn có thể nằm lẻ cuối hàng trên.
+- `env(safe-area-inset-bottom)` bằng 0 khi thẻ viewport thiếu `viewport-fit=cover`, nên thanh đáy chưa chừa vùng cử chỉ của iPhone. mgst-app cũng vậy.
