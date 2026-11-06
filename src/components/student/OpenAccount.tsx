@@ -14,7 +14,7 @@ import { PhotoSlot } from "./PhotoSlot";
 const complete = (b: StudentBank) => b.slots.every((s) => s.photo);
 
 function CodeBox({ bank }: { bank: StudentBank }) {
-  const [copied, setCopied] = useState(false);
+  const [copy, setCopy] = useState<"idle" | "copied" | "failed">("idle");
   if (!bank.referralCode && !bank.qrUrl && !bank.openUrl) return null;
   return (
     <div className="flex gap-3 rounded-2xl border border-line bg-card p-3">
@@ -30,12 +30,20 @@ function CodeBox({ bank }: { bank: StudentBank }) {
             <Button
               variant="secondary"
               onClick={async () => {
-                await navigator.clipboard?.writeText(bank.referralCode).catch(() => undefined);
-                setCopied(true);
+                // Như CopyButton của mgst-app: trình duyệt trong app Zalo hay trang http không có clipboard, không được báo đã chép.
+                try {
+                  await navigator.clipboard.writeText(bank.referralCode);
+                  setCopy("copied");
+                } catch {
+                  setCopy("failed");
+                }
               }}
             >
-              {copied ? "Đã sao chép" : "Sao chép"}
+              {copy === "copied" ? "Đã sao chép" : "Sao chép"}
             </Button>
+            <span role="status" className="text-[13px] text-danger">
+              {copy === "failed" && "Không sao chép được"}
+            </span>
           </>
         )}
         {bank.openUrl && (
