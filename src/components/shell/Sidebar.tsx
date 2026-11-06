@@ -16,7 +16,8 @@ const initials = (name: string) =>
     .split(/\s+/)
     .filter(Boolean)
     .slice(-2)
-    .map((w) => w[0]?.toUpperCase())
+    // Array.from tách theo ký tự thật: w[0] của emoji chỉ là nửa cặp surrogate, hiện thành ô hỏng.
+    .map((w) => Array.from(w)[0]?.toUpperCase())
     .join("");
 
 type Props = { groups: MenuGroup[]; fullName: string; title: string; mobileOpen?: boolean; onMobileClose?: () => void };
