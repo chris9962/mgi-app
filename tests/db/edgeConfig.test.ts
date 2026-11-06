@@ -3,7 +3,7 @@ import { eq } from "drizzle-orm";
 import { TEST_NAME, TEST_PREFIX, cleanTestUsers, makeActor } from "./helpers";
 import { db } from "../../src/server/db/client";
 import { settings, users } from "../../src/server/db/schema";
-import { createBank, getGuide, managerOptions, saveGuide, updateBank } from "../../src/server/banks";
+import { createBank, getGuide, managerOptions, saveGuide, setBankActive, updateBank } from "../../src/server/banks";
 import { createCode, listCodes, updateCode } from "../../src/server/referralCodes";
 import { createSchool, listSchools, searchSchoolOptions, setSchoolActive } from "../../src/server/schools";
 import { createUser, listUsers, resetPassword, setActive, updateUser } from "../../src/server/users";
@@ -86,6 +86,18 @@ describe("ca biên cấu hình: dữ liệu đã đổi hoặc không có", () =
     expect((await setSchoolActive(admin, school.id, false)).ok).toBe(true);
     expect((await updateCode(admin, code.id, codeForm(bank.id, "Gắn trường sửa", [school.id]))).ok).toBe(true);
     expect(await createCode(admin, codeForm(bank.id, "Gắn trường đóng", [school.id]))).toMatchObject({ ok: false, field: "schoolIds" });
+  });
+});
+
+describe("ca biên cấu hình: ngân hàng đã tắt", () => {
+  test("tạo mã cho ngân hàng đã tắt trả 400 ở ô ngân hàng; mã đã có của ngân hàng đó vẫn sửa được", async () => {
+    const bank = await createBank(admin, bankForm("ZZTTAT", "Ngân hàng tắt"));
+    if (!bank.ok) throw new Error(bank.message);
+    const code = await createCode(admin, codeForm(bank.id, "Mã có trước"));
+    if (!code.ok) throw new Error(code.message);
+    expect((await setBankActive(admin, bank.id, false)).ok).toBe(true);
+    expect(await createCode(admin, codeForm(bank.id, "Mã sau khi tắt"))).toEqual({ ok: false, status: 400, field: "bankId", message: "Ngân hàng đã tắt." });
+    expect((await updateCode(admin, code.id, codeForm(bank.id, "Mã có trước sửa"))).ok).toBe(true);
   });
 });
 

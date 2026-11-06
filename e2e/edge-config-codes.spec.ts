@@ -360,6 +360,26 @@ test("Mã: mã của ngân hàng đã tắt mở hộp Sửa thì ô Ngân hàng
   await expect(d.getByLabel("Ngân hàng").locator("option:checked")).toHaveText("ZZE2E Mã ngân hàng tắt");
 });
 
+test("Mã: tạo mã cho ngân hàng vừa tắt, bằng API hay ở tab còn mở hộp Thêm mã, báo Ngân hàng đã tắt. ở ô Ngân hàng", async ({ browser }) => {
+  const one = await asUser(browser, "zz_e2e_admin");
+  const off = await createBank(one, "ZZCMAVTAT", "ZZE2E Mã ngân hàng vừa tắt", [], "0");
+  expect((await api(one, "POST", `/api/admin/banks/${off}/active`, { active: false })).status).toBe(204);
+  const body = { bankId: off, displayName: "ZZE2E Mã cho ngân hàng tắt", code: "ZZC-TAT", qrKey: null, openUrl: "", monthlyQuota: "5", priority: "0", schoolIds: [] };
+  expect(await api(one, "POST", "/api/admin/referral-codes", body)).toEqual({ status: 400, body: { message: "Ngân hàng đã tắt.", field: "bankId" } });
+
+  const live = await createBank(one, "ZZCMAVTAT2", "ZZE2E Mã ngân hàng sắp tắt", [], "0");
+  const two = await one.context().newPage();
+  await open(two, "/banks/codes");
+  await two.getByRole("button", { name: "Thêm mã" }).click();
+  const d = two.getByRole("dialog", { name: "Thêm mã giới thiệu" });
+  await d.getByLabel("Ngân hàng").selectOption(live);
+  await d.getByLabel("Tên hiển thị").fill("ZZE2E Mã hai tab tắt");
+  await d.getByLabel("Mã text (Mã giới thiệu)").fill("ZZC-HAITAB");
+  expect((await api(one, "POST", `/api/admin/banks/${live}/active`, { active: false })).status).toBe(204);
+  await d.getByRole("button", { name: "Tạo mã" }).click();
+  await expect(d.getByLabel("Ngân hàng")).toHaveAccessibleDescription("Ngân hàng đã tắt.");
+});
+
 test("Mã: link có dấu cách giữa lưu như mgst-app; ảnh QR là file văn bản đổi đuôi thì báo lỗi, ô ảnh không giữ ảnh", async ({ page }) => {
   await apiLogin(page, "zz_e2e_admin");
   const bank = await createBank(page, "ZZCMALINK", "ZZE2E Mã link", [], "0");

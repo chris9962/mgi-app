@@ -125,8 +125,10 @@ async function nameTaken(bankId: string, displayName: string, exceptId?: string)
 const record = (v: CodeFormValues) => ({ displayName: v.displayName, code: v.code, qrKey: v.qrKey, openUrl: v.openUrl, monthlyQuota: v.monthlyQuota, priority: v.priority });
 
 export async function createCode(actor: SessionUser, values: CodeFormValues, ip?: string | null): Promise<{ ok: true; id: string } | Fail> {
-  const [bank] = await db.select({ id: banks.id }).from(banks).where(eq(banks.id, values.bankId));
+  const [bank] = await db.select({ id: banks.id, active: banks.active }).from(banks).where(eq(banks.id, values.bankId));
   if (!bank || !canManageBank(actor, values.bankId)) return fail("Không tìm thấy ngân hàng.", 404, "bankId");
+  // Hộp Thêm mã chỉ liệt kê ngân hàng đang bật; ngân hàng vừa tắt ở tab khác thì máy chủ chặn theo cùng luật.
+  if (!bank.active) return fail("Ngân hàng đã tắt.", 400, "bankId");
   if (await nameTaken(values.bankId, values.displayName)) return NAME_TAKEN;
   if (!(await schoolsOk(values.schoolIds))) return SCHOOLS_BAD;
   return db
