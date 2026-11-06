@@ -16,7 +16,12 @@ function useFormState() {
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState("");
   const [pending, setPending] = useState(false);
-  return { errors, setErrors, formError, setFormError, pending, setPending };
+  // Trạng thái nằm ngoài hộp thoại nên còn sau khi Huỷ: mở lại thì xoá lỗi lần trước.
+  const reset = () => {
+    setErrors({});
+    setFormError("");
+  };
+  return { errors, setErrors, formError, setFormError, pending, setPending, reset };
 }
 
 export function EditInfoRow({ fullName, phone }: { fullName: string; phone: string }) {
@@ -30,7 +35,7 @@ export function EditInfoRow({ fullName, phone }: { fullName: string; phone: stri
     const raw = { fullName: f.get("fullName"), phone: f.get("phone") };
     const parsed = InfoForm.safeParse(raw);
     if (!parsed.success) return s.setErrors(Object.fromEntries(parsed.error.issues.map((i) => [String(i.path[0]), i.message])));
-    s.setErrors({});
+    s.reset();
     s.setPending(true);
     const r = await apiSend("PATCH", "/api/admin/profile", raw);
     s.setPending(false);
@@ -41,7 +46,14 @@ export function EditInfoRow({ fullName, phone }: { fullName: string; phone: stri
 
   return (
     <>
-      <button type="button" className={`${rowClass} font-semibold text-accent`} onClick={() => setOpen(true)}>
+      <button
+        type="button"
+        className={`${rowClass} font-semibold text-accent`}
+        onClick={() => {
+          s.reset();
+          setOpen(true);
+        }}
+      >
         Sửa thông tin
         <ChevronRight size={16} aria-hidden />
       </button>
@@ -103,7 +115,14 @@ export function ChangePasswordRow() {
 
   return (
     <>
-      <button type="button" className={rowClass} onClick={() => setOpen(true)}>
+      <button
+        type="button"
+        className={rowClass}
+        onClick={() => {
+          s.reset();
+          setOpen(true);
+        }}
+      >
         Đổi mật khẩu
         <span className="flex items-center gap-2 text-text-3">
           {done && <span className="text-ok-ink">Đã đổi</span>}
