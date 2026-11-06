@@ -98,7 +98,7 @@ export async function listCodes(
     .innerJoin(banks, eq(banks.id, referralCodes.bankId))
     .leftJoin(users, eq(users.id, referralCodes.createdBy))
     .where(where)
-    .orderBy(desc(referralCodes.active), asc(banks.sortOrder), desc(referralCodes.priority), asc(referralCodes.displayName))
+    .orderBy(desc(referralCodes.active), asc(banks.sortOrder), desc(referralCodes.priority), asc(referralCodes.displayName), asc(referralCodes.id))
     .limit(PAGE_SIZE)
     .offset((safePage - 1) * PAGE_SIZE);
   const links = rows.length ? await db.select().from(referralCodeSchools).where(inArray(referralCodeSchools.referralCodeId, rows.map((r) => r.id))) : [];

@@ -1,7 +1,7 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { TEST_NAME, TEST_PREFIX, cleanTestUsers, makeActor } from "./helpers";
 import { createBank, getGuide, saveGuide, updateBank } from "../../src/server/banks";
-import { createCode, updateCode } from "../../src/server/referralCodes";
+import { createCode, listCodes, updateCode } from "../../src/server/referralCodes";
 import { createSchool, setSchoolActive } from "../../src/server/schools";
 import { createUser, resetPassword, setActive, updateUser } from "../../src/server/users";
 import { SESSION_COOKIE, createSession } from "../../src/server/auth/session";
@@ -118,5 +118,22 @@ describe("ca biên cấu hình: từ khoá có ký tự NUL trên URL", () => {
       expect([path, nul.status]).toEqual([path, 200]);
       expect(await nul.json()).toEqual(await (await route(await get(`${path}?q=`))).json());
     }
+  });
+});
+
+describe("ca biên cấu hình: thứ tự Kho mã", () => {
+  test("16 mã cùng thứ tự ngân hàng, cùng độ ưu tiên, cùng tên: xếp theo id, hai trang không lặp, không sót mã nào", async () => {
+    const ids: string[] = [];
+    for (let i = 0; i < 16; i++) {
+      const bank = await createBank(admin, bankForm(`ZZTORD${i}`, `Thứ tự ${i}`));
+      if (!bank.ok) throw new Error(bank.message);
+      const code = await createCode(admin, codeForm(bank.id, "Mã trùng thứ tự"));
+      if (!code.ok) throw new Error(code.message);
+      ids.push(code.id);
+    }
+    const list = (page: number) => listCodes(admin, { month: "2026-11", q: "zztest ma trung thu tu", bankId: "", hideStopped: false, page });
+    const [one, two] = [await list(1), await list(2)];
+    expect([one.rows.length, two.rows.length]).toEqual([15, 1]);
+    expect([...one.rows, ...two.rows].map((r) => r.id)).toEqual(ids.toSorted());
   });
 });
