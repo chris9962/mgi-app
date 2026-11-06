@@ -4,6 +4,11 @@ import { createBank, getGuide, saveGuide, updateBank } from "../../src/server/ba
 import { createCode, updateCode } from "../../src/server/referralCodes";
 import { createSchool, setSchoolActive } from "../../src/server/schools";
 import { createUser, resetPassword, setActive, updateUser } from "../../src/server/users";
+import { SESSION_COOKIE, createSession } from "../../src/server/auth/session";
+import { GET as schoolExportRoute } from "../../src/app/api/admin/schools/export/route";
+import { GET as schoolOptionsRoute } from "../../src/app/api/admin/schools/options/route";
+import { GET as managerOptionsRoute } from "../../src/app/api/admin/users/options/route";
+import { GET as filterSchoolsRoute } from "../../src/app/api/admin/customer-banks/schools/route";
 import { BankForm, GuideForm } from "../../src/lib/bankForm";
 import { CodeForm } from "../../src/lib/codeForm";
 import { SchoolForm } from "../../src/lib/schoolForm";
@@ -92,5 +97,26 @@ describe("ca biên cấu hình: tài khoản", () => {
   test("SĐT có dấu cách, dấu chấm lưu thành 10 số liền", async () => {
     expect(userForm("edge_phone", { phone: "0903 111.222" }).phone).toBe("0903111222");
     expect(userForm("edge_phone", { phone: "   " }).phone).toBeNull();
+  });
+});
+
+describe("ca biên cấu hình: từ khoá có ký tự NUL trên URL", () => {
+  const SITE = `http://${process.env.ADMIN_HOST ?? "admin.localhost"}:3100`;
+  const get = async (path: string) => new Request(`${SITE}${path}`, { headers: { Origin: SITE, Cookie: `${SESSION_COOKIE}=${(await createSession(admin.id)).token}` } });
+
+  test("Xuất Excel trang Trường với q=%00 trả file, không lỗi 500", async () => {
+    for (const q of ["%00", "a%00b", "zztest%00"]) expect([q, (await schoolExportRoute(await get(`/api/admin/schools/export?q=${q}`))).status]).toEqual([q, 200]);
+  });
+
+  test("ô chọn trường, ô chọn người quản, ô tìm trường của bộ lọc: q=%00 như ô trống", async () => {
+    for (const [route, path] of [
+      [schoolOptionsRoute, "/api/admin/schools/options"],
+      [managerOptionsRoute, "/api/admin/users/options"],
+      [filterSchoolsRoute, "/api/admin/customer-banks/schools"],
+    ] as const) {
+      const nul = await route(await get(`${path}?q=%00`));
+      expect([path, nul.status]).toEqual([path, 200]);
+      expect(await nul.json()).toEqual(await (await route(await get(`${path}?q=`))).json());
+    }
   });
 });
