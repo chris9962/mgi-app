@@ -1,6 +1,6 @@
 "use client";
 
-import { usePathname } from "next/navigation";
+import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import { BottomNav } from "./BottomNav";
@@ -12,12 +12,13 @@ import { Sidebar } from "./Sidebar";
 const MOBILE = "(max-width: 900px)";
 
 export function AppShell({ groups, fullName, title, children }: { groups: MenuGroup[]; fullName: string; title: string; children: ReactNode }) {
-  const pathname = usePathname();
+  // So cả chuỗi lọc: Quay lại từ ?status=new về trang không lọc cũng là chuyển trang.
+  const location = `${usePathname()}?${useSearchParams()}`;
   // Ngăn chỉ mở trên trang lúc bấm Thêm: chuyển trang kiểu nào (cả nút Quay lại) cũng đóng, không cần effect.
   const [openedAt, setOpenedAt] = useState<string | null>(null);
   // Bỏ hẳn trạng thái ngay lúc render khi đã sang trang khác: khung không mount lại, giữ đường dẫn cũ thì về lại trang đó ngăn tự mở.
-  if (openedAt !== null && openedAt !== pathname) setOpenedAt(null);
-  const menuOpen = openedAt === pathname;
+  if (openedAt !== null && openedAt !== location) setOpenedAt(null);
+  const menuOpen = openedAt === location;
   const more = useRef<HTMLButtonElement>(null);
 
   // Màn rộng qua 900 px thì sidebar thành cột cố định: bỏ trạng thái ngăn, không thì nội dung còn inert và Esc còn đòi focus nút Thêm đã ẩn.
@@ -46,7 +47,7 @@ export function AppShell({ groups, fullName, title, children }: { groups: MenuGr
       <div className="flex min-w-0 flex-1 flex-col mobile:pb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom,0px))] mobile:[&>main]:p-4" inert={menuOpen}>
         {children}
       </div>
-      <BottomNav items={bottomNavItems(groups)} menuOpen={menuOpen} onOpenMenu={() => setOpenedAt(pathname)} moreRef={more} />
+      <BottomNav items={bottomNavItems(groups)} menuOpen={menuOpen} onOpenMenu={() => setOpenedAt(location)} moreRef={more} />
     </div>
   );
 }

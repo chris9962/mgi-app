@@ -152,6 +152,22 @@ test("điện thoại: ngăn đã đóng vì Quay lại thì không tự mở l�
   expect([await inertCount(page), await bodyOverflow(page)]).toEqual([0, "visible"]);
 });
 
+test("điện thoại: Quay lại chỉ đổi chuỗi lọc trên URL cũng đóng ngăn, trang hết khoá cuộn", async ({ browser }) => {
+  const page = await loginAs(browser, "zz_e2e_admin", PHONE);
+  await page.goto("/customers");
+  await page.waitForLoadState("networkidle");
+  await page.getByRole("button", { name: "Bộ lọc" }).click();
+  await page.getByRole("radio", { name: "Mới", exact: true }).check();
+  await expect(page).toHaveURL(/\/customers\?status=new$/);
+  await page.getByRole("button", { name: "Xong" }).click();
+  await bottomNav(page).getByRole("button", { name: "Thêm" }).click();
+  await expect(sidebar(page)).toBeVisible();
+  await page.goBack();
+  await expect(page).toHaveURL(/\/customers$/);
+  await expect(sidebar(page)).toBeHidden();
+  expect([await inertCount(page), await bodyOverflow(page)]).toEqual([0, "visible"]);
+});
+
 test("ngăn đang mở mà màn rộng quá 900 px thì ngăn đóng, trang hết khoá cuộn, Esc không cướp focus", async ({ browser }) => {
   const page = await loginAs(browser, "zz_e2e_admin", PHONE);
   await page.goto("/customers");
