@@ -39,6 +39,7 @@ export function CodeFilters({ month, banks, ...initial }: Filters & { month: str
 
   const go = (next: Filters) => {
     if (timer.current) clearTimeout(timer.current);
+    timer.current = null;
     const target = { ...next, q: next.q.trim() };
     if (!same(target, synced)) setSent(target);
     const p = new URLSearchParams({ month, ...(next.q.trim() ? { q: next.q.trim() } : {}), ...(next.bankId ? { bank: next.bankId } : {}), ...(next.hideStopped ? { hide: "1" } : {}) });
@@ -70,6 +71,10 @@ export function CodeFilters({ month, banks, ...initial }: Filters & { month: str
             setQ(value);
             if (timer.current) clearTimeout(timer.current);
             timer.current = setTimeout(() => go({ ...current, q: value }), 300);
+          }}
+          // Bấm link làm ô mất focus trước khi link chuyển trang: tải ngay lúc này thì lượt của link đi sau và thắng, mạng chậm cũng không bị kéo về Kho mã.
+          onBlur={() => {
+            if (timer.current) go(current);
           }}
         />
       </div>

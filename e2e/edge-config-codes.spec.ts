@@ -106,6 +106,27 @@ test("Mã: gõ liền sáu ký tự thì URL chỉ đổi một lần; gõ rồi
   await expect(page).toHaveURL(/\/banks$/);
 });
 
+test("Mã: gõ ô tìm rồi bấm sang Danh sách ngân hàng lúc mạng chậm thì ở lại trang ngân hàng, không bị kéo về Kho mã", async ({ page }) => {
+  await apiLogin(page, "zz_e2e_admin");
+  await page.clock.install();
+  await open(page, "/banks/codes");
+  await page.route(
+    (url) => url.pathname === "/banks",
+    async (route) => {
+      await new Promise((r) => setTimeout(r, 900));
+      await route.continue();
+    },
+  );
+  await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 1000);
+  await searchBox(page).fill("ZZE2E");
+  await page.getByRole("link", { name: "Danh sách ngân hàng" }).click();
+  await page.clock.runFor(400);
+  await expect(page).toHaveURL(/\/banks$/);
+  await expect(page.getByRole("button", { name: "Thêm ngân hàng" })).toBeVisible();
+  await page.clock.runFor(1000);
+  await expect(page).toHaveURL(/\/banks$/);
+});
+
 test("Mã: lọc ngân hàng, từ khoá, Ẩn mã đã ngừng kết hợp; đổi một lọc về trang 1 và giữ lọc khác; đổi tháng giữ lọc; 16 mã thì trang 1 có 15, trang 2 có 1", async ({ page }) => {
   test.setTimeout(90_000);
   await apiLogin(page, "zz_e2e_admin");
