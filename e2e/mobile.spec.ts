@@ -332,6 +332,28 @@ test("điện thoại thấp 375x548, 320x568 và nằm ngang 844x390: mở Bộ
   }
 });
 
+test("Bộ lọc dưới 900 px: màn cao thì bảng treo ngay dưới nút, màn thấp thì đứng trên thanh đáy, nút Xong luôn trên thanh đáy", async ({ browser }) => {
+  const page = await loginAs(browser, "zz_e2e_admin", PHONE);
+  for (const [width, height, docked] of [
+    [375, 548, true],
+    [844, 390, true],
+    [390, 844, false],
+    [820, 1180, false],
+  ] as const) {
+    await page.setViewportSize({ width, height });
+    await page.goto("/customers");
+    await page.waitForLoadState("networkidle");
+    const trigger = page.getByRole("button", { name: "Bộ lọc" });
+    const button = await box(trigger);
+    await trigger.click();
+    const panel = await box(page.getByRole("navigation", { name: "Mục lọc" }).locator("xpath=../.."));
+    const navTop = (await box(bottomNav(page))).top;
+    const done = await box(page.getByRole("button", { name: "Xong" }));
+    const near = panel.top > button.bottom && panel.top - button.bottom <= 32;
+    expect({ width, height, docked: navTop - panel.bottom === 8, near, doneAboveNav: done.bottom <= navTop }).toEqual({ width, height, docked, near: !docked, doneAboveNav: true });
+  }
+});
+
 test("điện thoại 360 và 390 px: báo lỗi xuất Excel nằm trọn trong màn hình", async ({ browser }) => {
   const page = await loginAs(browser, "zz_e2e_admin", PHONE);
   await page.route("**/api/admin/*/export**", (route) => route.fulfill({ status: 400, json: { message: "Quá số dòng xuất được một lần, lọc bớt rồi xuất lại." } }));

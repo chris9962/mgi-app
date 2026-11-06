@@ -3,7 +3,7 @@ import Link from "next/link";
 import type { ReactNode } from "react";
 
 export function TopBar({ title, back, actions }: { title: string; back?: { href: string; label: string }; actions?: ReactNode }) {
-  // relative: ở màn hẹp lời báo lỗi xuất Excel neo vào thanh tiêu đề để rộng hết màn hình, không neo vào nút.
+  // relative: ở màn hẹp bảng Bộ lọc và lời báo lỗi xuất Excel neo vào thanh tiêu đề để rộng hết màn hình, không neo vào nút.
   return (
     <header className="relative flex min-h-[68px] flex-wrap items-center gap-3 border-b border-line bg-bg px-6 py-3 mobile:px-4">
       {back && (

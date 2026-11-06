@@ -106,6 +106,8 @@
 /* Ngưỡng chép _breakpoints.scss của mgst-app: tới 900 px là bố cục điện thoại, tới 600 px là màn hẹp. Khai narrow sau để thắng mobile. */
 @custom-variant mobile (@media (max-width: 900px));
 @custom-variant narrow (@media (max-width: 600px));
+/* Màn điện thoại thấp: bảng Bộ lọc treo dưới nút cần tới khoảng 765 px chiều cao (thanh tiêu đề 3 hàng, bảng 544 px, thanh đáy), thấp hơn thì đứng trên thanh đáy. Khai sau narrow để thắng. */
+@custom-variant dock (@media (max-width: 900px) and (max-height: 780px));
 
 /* Cao thanh đáy (56 px hàng nút + 1 px viền), một số cho thanh, phần chừa đáy của nội dung và bảng Bộ lọc. */
 :root {
