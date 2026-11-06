@@ -1,6 +1,6 @@
 import { requireApi } from "@/server/auth/current";
 import { ipFrom } from "@/server/audit";
-import { badRequest, isUuid, notFound } from "@/server/http/responses";
+import { isUuid, notFound } from "@/server/http/responses";
 import { failResponse } from "@/server/http/zod";
 import { replacePhoto } from "@/server/review";
 import { MAX_IMAGE_BYTES } from "@/server/storage";
@@ -12,7 +12,7 @@ export async function POST(request: Request, { params }: { params: Promise<{ id:
   if (!auth.ok) return auth.response;
   const { id } = await params;
   if (!isUuid(id)) return notFound();
-  if (bodyTooLarge(request)) return badRequest("Ảnh lớn hơn 20 MB.");
+  if (bodyTooLarge(request)) return Response.json({ message: "Ảnh lớn hơn 20 MB.", field: "file" }, { status: 400 });
   const form = await request.formData().catch(() => null);
   const slotId = String(form?.get("slotId") ?? "");
   const file = form?.get("file");
