@@ -1,11 +1,33 @@
-import { inArray, like, or } from "drizzle-orm";
+import { and, asc, eq, inArray, like, or } from "drizzle-orm";
 import { db, pool } from "../src/server/db/client";
 import * as s from "../src/server/db/schema";
+import { DEFAULTS as SETTING_DEFAULTS, KEY as SETTING_KEYS } from "../src/server/settings";
 import { deleteImage } from "../src/server/storage";
+import type { SettingsValues } from "../src/lib/sms";
 
 export const E2E_PREFIX = "zz_e2e_";
 export const E2E_NAME = "ZZE2E ";
 export const E2E_PASSWORD = "e2e23test";
+
+// Flow Cài đặt lưu vào cài đặt thật của DB local: trả về giá trị trước lần lưu đầu của tài khoản e2e (ghi trong audit), giá trị mặc định thì xoá dòng như lúc chưa ai lưu.
+async function restoreSettings(users: string[]) {
+  const rows = await db.select({ key: s.settings.key }).from(s.settings).where(inArray(s.settings.updatedBy, users));
+  if (!rows.length) return;
+  const [first] = await db
+    .select({ detail: s.auditLog.detail })
+    .from(s.auditLog)
+    .where(and(inArray(s.auditLog.userId, users), eq(s.auditLog.action, "save_settings")))
+    .orderBy(asc(s.auditLog.createdAt), asc(s.auditLog.id))
+    .limit(1);
+  const before = (first?.detail as { before?: Partial<SettingsValues> } | null)?.before ?? {};
+  for (const field of Object.keys(SETTING_KEYS) as (keyof SettingsValues)[]) {
+    const key = SETTING_KEYS[field];
+    if (!rows.some((r) => r.key === key)) continue;
+    const value = before[field] ?? SETTING_DEFAULTS[field];
+    if (value === SETTING_DEFAULTS[field]) await db.delete(s.settings).where(eq(s.settings.key, key));
+    else await db.update(s.settings).set({ value, updatedBy: null }).where(eq(s.settings.key, key));
+  }
+}
 
 // Dọn theo thứ tự khoá ngoại: mã, ngân hàng, trường do e2e tạo rồi mới tới tài khoản e2e.
 export async function cleanE2e() {
@@ -64,6 +86,7 @@ export async function cleanE2e() {
   }
   await db.delete(s.schools).where(like(s.schools.name, `${E2E_NAME}%`));
   if (!users.length) return;
+  await restoreSettings(users);
   await db.delete(s.auditLog).where(inArray(s.auditLog.userId, users));
   await db.delete(s.users).where(inArray(s.users.id, users));
 }

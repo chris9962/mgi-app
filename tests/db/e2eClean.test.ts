@@ -1,9 +1,12 @@
 import { describe, expect, test } from "bun:test";
 import { randomUUID } from "node:crypto";
-import { count, eq, like } from "drizzle-orm";
+import { count, eq, inArray, like } from "drizzle-orm";
 import { db } from "../../src/server/db/client";
-import { bankPhotoSlots, banks, customerBanks, customers, proofPhotos, referralCodes, schools, users } from "../../src/server/db/schema";
-import { hashToken } from "../../src/server/auth/session";
+import { bankPhotoSlots, banks, customerBanks, customers, proofPhotos, referralCodes, schools, settings, users } from "../../src/server/db/schema";
+import { hashToken, loadSessionUser } from "../../src/server/auth/session";
+import { getSettings, saveSettings } from "../../src/server/settings";
+import { DEFAULT_PVI_APP_URL, DEFAULT_SMS_TEMPLATE } from "../../src/lib/sms";
+import { cleanTestUsers, makeActor } from "./helpers";
 import { newKey } from "../../src/server/storage";
 import { cleanE2e, E2E_NAME, E2E_PREFIX } from "../../scripts/e2e-clean";
 
@@ -56,6 +59,32 @@ describe("scripts/e2e-clean.ts", () => {
       expect((await db.select({ key: proofPhotos.s3Key }).from(proofPhotos).where(eq(proofPhotos.id, ids.photo!))).map((r) => r.key)).toEqual([ids.key!]);
     } finally {
       await removeProfile(ids);
+    }
+  });
+
+  test("cài đặt do tài khoản e2e lưu trở lại như trước lượt e2e: dòng mặc định thì xoá, dòng riêng thì giữ giá trị cũ", async () => {
+    expect(await e2eRows()).toEqual({ schools: 0, banks: 0, codes: 0, users: 0 });
+    const keys = ["sms_template", "zalo_url", "pvi_app_url"];
+    const saved = await db.select().from(settings).where(inArray(settings.key, keys));
+    await db.delete(settings).where(inArray(settings.key, keys));
+    try {
+      const owner = await makeActor("clean_owner", "admin");
+      const own = { smsTemplate: DEFAULT_SMS_TEMPLATE, zaloUrl: "https://zalo.me/0911000111", pviAppUrl: DEFAULT_PVI_APP_URL };
+      expect((await saveSettings(owner, own)).ok).toBe(true);
+      const [row] = await db.insert(users).values({ username: `${E2E_PREFIX}settings`, fullName: "E2E Cài đặt", passwordHash: "x", role: "admin" }).returning({ id: users.id });
+      const e2e = (await loadSessionUser(row.id))!;
+      expect((await saveSettings(e2e, { smsTemplate: "ZZE2E {HO_TEN} {MA_VOUCHER}", zaloUrl: "https://zalo.me/0900000001", pviAppUrl: "https://pvi.example/e2e" })).ok).toBe(true);
+      expect((await saveSettings(e2e, { smsTemplate: "ZZE2E lan hai {MA_VOUCHER}", zaloUrl: "https://zalo.me/0900000002", pviAppUrl: "https://pvi.example/e2e2" })).ok).toBe(true);
+
+      await cleanE2e();
+
+      expect(await getSettings()).toEqual(own);
+      expect((await db.select({ key: settings.key, updatedBy: settings.updatedBy }).from(settings).where(inArray(settings.key, keys))).sort((a, b) => a.key.localeCompare(b.key))).toEqual([{ key: "zalo_url", updatedBy: null }]);
+      expect((await e2eRows()).users).toBe(0);
+    } finally {
+      await db.delete(settings).where(inArray(settings.key, keys));
+      if (saved.length) await db.insert(settings).values(saved);
+      await cleanTestUsers();
     }
   });
 });

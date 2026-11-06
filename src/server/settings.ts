@@ -6,8 +6,8 @@ import { can } from "@/lib/permissions";
 import { DEFAULT_PVI_APP_URL, DEFAULT_SMS_TEMPLATE, type SettingsValues } from "@/lib/sms";
 import type { SessionUser } from "@/lib/types";
 
-const KEY = { smsTemplate: "sms_template", zaloUrl: "zalo_url", pviAppUrl: "pvi_app_url" } as const;
-const DEFAULTS: SettingsValues = { smsTemplate: DEFAULT_SMS_TEMPLATE, zaloUrl: "", pviAppUrl: DEFAULT_PVI_APP_URL };
+export const KEY = { smsTemplate: "sms_template", zaloUrl: "zalo_url", pviAppUrl: "pvi_app_url" } as const;
+export const DEFAULTS: SettingsValues = { smsTemplate: DEFAULT_SMS_TEMPLATE, zaloUrl: "", pviAppUrl: DEFAULT_PVI_APP_URL };
 
 export async function getSettings(): Promise<SettingsValues> {
   const rows = await db.select().from(settings).where(inArray(settings.key, Object.values(KEY)));
