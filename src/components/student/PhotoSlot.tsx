@@ -7,18 +7,19 @@ import { MAX_IMAGE_BYTES } from "@/lib/imageKey";
 import { studentApi } from "@/lib/studentApi";
 import type { StudentPhotoSlot } from "@/lib/studentState";
 
-async function upload(customerBankId: string, slotId: string, file: File): Promise<string | null> {
+// stale: khung đã bị bỏ hoặc hồ sơ đã rời B3 ở máy chủ.
+async function upload(customerBankId: string, slotId: string, file: File): Promise<{ message: string; stale?: boolean } | null> {
   const compressed = await compressImage(file);
-  if (!compressed && !contentTypeOf(file)) return "Không mở được ảnh này. Chọn ảnh khác.";
+  if (!compressed && !contentTypeOf(file)) return { message: "Không mở được ảnh này. Chọn ảnh khác." };
   const body: Blob = compressed ?? file;
-  if (body.size > MAX_IMAGE_BYTES) return "Ảnh lớn hơn 20 MB.";
+  if (body.size > MAX_IMAGE_BYTES) return { message: "Ảnh lớn hơn 20 MB." };
   const form = new FormData();
   form.append("customerBankId", customerBankId);
   form.append("slotId", slotId);
   form.append("file", body, file.name);
   const saved = await studentApi("POST", "/api/customers/me/photos", form);
   if (saved.ok) return null;
-  return saved.status === 0 ? "Không tải được ảnh lên. Kiểm tra mạng rồi thử lại." : saved.message;
+  return { message: saved.status === 0 ? "Không tải được ảnh lên. Kiểm tra mạng rồi thử lại." : saved.message, stale: saved.status === 404 || saved.status === 409 };
 }
 
 export function PhotoSlot({
@@ -49,8 +50,10 @@ export function PhotoSlot({
     let message: string | null = null;
     // Lỗi bất ngờ (trình duyệt, máy chủ trả dữ liệu lạ) không được để khung đứng mãi ở "Đang tải ảnh".
     try {
-      message = await upload(customerBankId, slot.id, file);
-      if (!message) await onSaved();
+      const failed = await upload(customerBankId, slot.id, file);
+      message = failed?.message ?? null;
+      // Khung bị bỏ hay hồ sơ đã đổi ở máy chủ: tải lại để khung biến mất thay vì báo lỗi mãi.
+      if (!failed || failed.stale) await onSaved();
     } catch {
       message = "Không tải được ảnh lên. Thử lại.";
     } finally {
