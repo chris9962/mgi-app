@@ -45,11 +45,15 @@ test("đăng nhập trên điện thoại: tên viết hoa có khoảng trắng 
 
   await open(page, "/login");
   const warn = page.getByRole("dialog", { name: "Sắp bị khoá" });
-  for (const [i, name] of ["ZZ_E2E_C_DN", " zz_e2e_c_dn ", "zz_e2e_c_dn"].entries()) {
+  const wrongPassword = async (name: string) => {
     await fillLogin(page, name, "sai-mat-khau");
     await page.getByRole("button", { name: "Đăng nhập" }).click();
-    if (i < 2) await expect(formAlert(page)).toHaveText("Tên đăng nhập hoặc mật khẩu không đúng.");
+  };
+  for (const name of ["ZZ_E2E_C_DN", " zz_e2e_c_dn "]) {
+    await wrongPassword(name);
+    await expect(formAlert(page), name).toHaveText("Tên đăng nhập hoặc mật khẩu không đúng.");
   }
+  await wrongPassword("zz_e2e_c_dn");
   await expect(warn).toContainText("Sai mật khẩu 3 lần rồi, 5 lần sẽ bị khoá tài khoản 15 phút.");
   await expectDialogFits(page, warn);
   await warn.getByRole("button", { name: "Đã hiểu" }).click();

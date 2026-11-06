@@ -78,10 +78,12 @@ test("phân quyền: menu theo từng vai và quyền, mở thẳng URL ngoài m
     const page = await asUser(browser, username, password);
     await open(page, "/profile");
     expect([username, await menuHrefs(page)]).toEqual([username, allowed]);
-    if (!allowed.length) await expect(sidebar(page).getByRole("button", { expanded: true })).toHaveCount(0);
     for (const path of all.filter((p) => !allowed.includes(p))) expect([username, path, (await page.goto(path))?.status()]).toEqual([username, path, 404]);
     await page.context().close();
   }
+  const noPerm = await asUser(browser, "zz_e2e_noperm");
+  await open(noPerm, "/profile");
+  await expect(sidebar(noPerm).getByRole("button", { expanded: true })).toHaveCount(0);
 });
 
 test("phân quyền: gỡ quyền Trường giữa phiên thì hộp thoại đang mở báo không có quyền, tải lại thì mất mục Trường và trang trả 404", async ({ browser }) => {

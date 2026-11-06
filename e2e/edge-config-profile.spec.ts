@@ -78,11 +78,15 @@ test("Cá nhân: sai mật khẩu hiện tại báo ở ô, sai 5 lần thì bá
   const p = page.getByRole("dialog", { name: "Đổi mật khẩu" });
   await p.getByLabel("Mật khẩu mới", { exact: true }).fill("moi-moi");
   await p.getByLabel("Nhập lại mật khẩu mới").fill("moi-moi");
-  for (let i = 1; i <= 5; i++) {
+  const wrongCurrent = async (i: number) => {
     await p.getByLabel("Mật khẩu hiện tại").fill(`sai-${i}`);
     await p.getByRole("button", { name: "Đổi mật khẩu" }).click();
-    if (i < 5) await expect(p.getByLabel("Mật khẩu hiện tại"), String(i)).toHaveAccessibleDescription("Mật khẩu hiện tại không đúng.");
+  };
+  for (let i = 1; i <= 4; i++) {
+    await wrongCurrent(i);
+    await expect(p.getByLabel("Mật khẩu hiện tại"), String(i)).toHaveAccessibleDescription("Mật khẩu hiện tại không đúng.");
   }
+  await wrongCurrent(5);
   await expect(p.getByRole("alert")).toContainText("khoá 15 phút");
   const other = await newPage(browser);
   expect((await api(other, "POST", "/api/admin/login", { username: "zz_e2e_c_cnsai", password: u.password })).body).toMatchObject({ message: expect.stringContaining("khoá 15 phút") });
