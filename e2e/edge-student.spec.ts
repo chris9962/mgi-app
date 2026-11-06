@@ -129,6 +129,24 @@ test.describe("A. Mở link và chọn trường", () => {
     await expect(page.getByRole("heading", { name: "Thông tin" })).toBeVisible();
   });
 
+  test("A17 mất mạng lần đầu mở link trường: Thử lại vào B1 của trường đó; máy có hồ sơ trường khác thì Thử lại hỏi đổi trường", async ({ page, request }) => {
+    let calls = 0;
+    await page.route("**/api/schools/**", (r) => (calls++ === 0 ? r.abort("internetdisconnected") : r.continue()));
+    await page.goto(`/t/${SCHOOL.photo}`);
+    await expect(page.getByRole("heading", { level: 1, name: "Không tải được" })).toBeVisible();
+    await page.getByRole("button", { name: "Thử lại" }).click();
+    await expect(page.getByRole("heading", { name: "Thông tin" })).toBeVisible();
+    await expect(page.getByText(NAME.schoolPhoto)).toBeVisible();
+
+    const s = await apiCreate(request, SCHOOL.long, info("Mở Link Lúc Mất Mạng"));
+    await onDevice(page, device(SCHOOL.long, s));
+    calls = 0;
+    await page.goto(`/t/${SCHOOL.photo}`);
+    await expect(page.getByRole("heading", { level: 1, name: "Không tải được" })).toBeVisible();
+    await page.getByRole("button", { name: "Thử lại" }).click();
+    await expect(page.getByRole("region", { name: "Đổi trường" })).toContainText(`Link vừa mở là của ${NAME.schoolPhoto}.`);
+  });
+
   test("A10 đường dẫn lạ ở tên miền học sinh trả 404, không 500", async ({ page, request }) => {
     for (const path of [`/t/${SCHOOL.photo}/thua`, "/abc", "/admin", "/student", "/t/"]) {
       const res = await page.goto(path);

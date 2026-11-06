@@ -14,7 +14,8 @@ import { QrScanner } from "./QrScanner";
 
 type Screen =
   | { kind: "loading" }
-  | { kind: "error"; message: string }
+  // link: id trường của link hay QR chưa kiểm xong; Thử lại phải kiểm lại đúng trường đó.
+  | { kind: "error"; message: string; link?: string }
   | { kind: "noSchool" }
   | { kind: "closed"; school: StudentSchool }
   | { kind: "ask"; current: StudentSchool; next: StudentSchool }
@@ -33,13 +34,13 @@ async function resolveScreen(linkId?: string): Promise<Screen> {
   const device = readDevice(localStorage);
   if (linkId !== undefined) {
     const linked = isSchoolId(linkId) ? await fetchSchool(linkId) : null;
-    if (linked === "error") return { kind: "error", message: NETWORK };
+    if (linked === "error") return { kind: "error", message: NETWORK, link: linkId };
     // Cắt URL về / để lần sau mở web là vào đúng trường và bước đang dở.
     history.replaceState(null, "", "/");
     const decision = decideLink({ linkId, linkFound: Boolean(linked), storedId: device.schoolId, hasProfile: Boolean(device.token) });
     if (decision.kind === "ask" && linked) {
       const current = await fetchSchool(device.schoolId!);
-      if (current === "error") return { kind: "error", message: NETWORK };
+      if (current === "error") return { kind: "error", message: NETWORK, link: linkId };
       if (current) return { kind: "ask", current, next: linked };
     }
     if (decision.kind !== "keep") {
@@ -106,7 +107,7 @@ export function StudentApp({ linkId }: { linkId?: string }) {
         <>
           <EndBlock main title="Không tải được" hint={screen.message} />
           <Bottom>
-            <Button large block onClick={() => go()}>
+            <Button large block onClick={() => go(screen.link)}>
               Thử lại
             </Button>
           </Bottom>
