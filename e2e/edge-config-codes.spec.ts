@@ -88,21 +88,26 @@ test("Mã: gõ liền sáu ký tự thì URL chỉ đổi một lần; gõ rồi
   await apiLogin(page, "zz_e2e_admin");
   const bank = await createBank(page, "ZZCMAGO", "ZZE2E Mã gõ");
   await createCode(page, bank, "ZZE2E Gõnhanh");
+  await page.clock.install();
   await open(page, "/banks/codes");
   const seen: string[] = [];
   page.on("framenavigated", (f) => {
     if (f === page.mainFrame()) seen.push(new URL(f.url()).searchParams.get("q") ?? "");
   });
+  await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 1000);
   await searchBox(page).pressSequentially("gõnhan", { delay: 40 });
+  await page.clock.runFor(299);
+  expect(seen.filter(Boolean)).toEqual([]);
+  await page.clock.runFor(1);
   await expect(page).toHaveURL(/q=g%C3%B5nhan/);
   await expect(rows(page)).toHaveCount(1);
-  await page.waitForTimeout(600);
+  await page.clock.runFor(600);
   expect([...new Set(seen.filter(Boolean))]).toEqual(["gõnhan"]);
 
   await searchBox(page).fill("ZZE2E");
   await page.getByRole("link", { name: "Danh sách ngân hàng" }).click();
   await expect(page).toHaveURL(/\/banks$/);
-  await page.waitForTimeout(1000);
+  await page.clock.runFor(1000);
   await expect(page).toHaveURL(/\/banks$/);
 });
 
