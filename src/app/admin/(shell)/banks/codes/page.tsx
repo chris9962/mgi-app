@@ -48,6 +48,8 @@ export default async function CodesPage({ searchParams }: { searchParams: Promis
     return `/banks/codes?${p}`;
   };
   const activeBanks = banks.filter((b) => b.active).map((b) => ({ id: b.id, name: b.name }));
+  // Hộp Sửa khoá ô ngân hàng nhưng vẫn phải có ngân hàng đã tắt của mã trong danh sách, không thì ô hiện nhầm ngân hàng đầu.
+  const allBanks = banks.map((b) => ({ id: b.id, name: b.name }));
 
   return (
     <>
@@ -63,7 +65,7 @@ export default async function CodesPage({ searchParams }: { searchParams: Promis
       <main className="p-6">
         <BankTabs current="codes" />
         <Card title="Kho mã giới thiệu" icon={<Ticket size={17} aria-hidden />} meta={`${total} mã`} pad={false}>
-          <CodeFilters month={month} q={q} bankId={bankId} hideStopped={hideStopped} banks={banks.map((b) => ({ id: b.id, name: b.name }))} />
+          <CodeFilters month={month} q={q} bankId={bankId} hideStopped={hideStopped} banks={allBanks} />
           <div className="table-scroll">
             <table className="w-full text-left text-sm">
               <thead className="text-xs font-semibold tracking-wide text-text-2 uppercase">
@@ -96,7 +98,7 @@ export default async function CodesPage({ searchParams }: { searchParams: Promis
                     <td className="px-4 py-3">
                       <CodeActions
                         active={c.active}
-                        banks={activeBanks}
+                        banks={allBanks}
                         code={{
                           id: c.id,
                           bankId: c.bankId,
