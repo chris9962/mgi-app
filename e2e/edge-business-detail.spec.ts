@@ -303,10 +303,19 @@ test("Trang 4 tải ảnh thay thế: không chọn file, file 0 byte, file ch�
   await expect(dialog.getByRole("alert")).toHaveCount(0);
   await b.unroute("**/photos");
 
+  // Chọn lại đúng ảnh đang chọn hay huỷ hộp chọn file thì Chrome phát `cancel` từ ô file; phát thẳng sự kiện đó, không chờ Chrome tự phát.
+  await file.evaluate(async (el) => {
+    el.dispatchEvent(new Event("cancel", { bubbles: true }));
+    await new Promise(requestAnimationFrame);
+  });
+  await expect(dialog, "cancel từ ô file").toBeVisible();
+  await b.keyboard.press("Escape");
+  await expect(dialog, "Esc").toHaveCount(0);
+
   await open(a, detail(B.B_IDS.replace));
   await markPassed(a);
+  await b.getByRole("button", { name: "Tải ảnh thay thế" }).click();
   await file.setInputFiles(PHOTO);
-  await expect(dialog, "chọn lại đúng ảnh đang chọn").toBeVisible();
   await upload.click();
   await expect(dialog.getByRole("alert")).toHaveText("Ngân hàng đã Đạt, không thay được ảnh.", { timeout: 30_000 });
 });
