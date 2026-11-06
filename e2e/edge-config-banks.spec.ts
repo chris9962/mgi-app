@@ -303,3 +303,35 @@ test("Hướng dẫn: ảnh mẫu 23 MB báo Ảnh lớn hơn 20 MB. ở ô ản
   await expect.poll(() => uploads.length).toBe(1);
   await expect(two).toHaveAccessibleDescription(TOO_LARGE);
 });
+
+test("Hướng dẫn: đang tải ảnh mẫu của một khung thì nút đổi ảnh của mọi khung bị khoá, Lưu chờ tải xong, khung giữ đúng ảnh vừa tải", async ({ page }) => {
+  await apiLogin(page, "zz_e2e_admin");
+  await createBank(page, "ZZCHAILAN", "ZZE2E Ảnh hai lần");
+  await open(page, "/banks");
+  await page.getByRole("button", { name: "Hướng dẫn mở tài khoản ZZE2E Ảnh hai lần" }).click();
+  const g = guideDialog(page);
+  await g.getByLabel("Tên ảnh 1").fill("Ảnh một");
+  await g.getByRole("button", { name: "Thêm ảnh" }).click();
+  await g.getByLabel("Tên ảnh 2").fill("Ảnh hai");
+  // Máy chủ trả chậm theo từng lượt: ảnh chọn trước tải xong sau thì khung khác mất ảnh hoặc Lưu mở lại khi còn ảnh đang tải.
+  let release = () => {};
+  const gate = new Promise<void>((r) => (release = r));
+  const key = "samples/2026-11-07/0b7c2f4e-6a1d-4c3b-9e8f-1a2b3c4d5e6f.webp";
+  await page.route((url) => url.pathname === "/api/admin/uploads", async (route) => {
+    await gate;
+    await route.fulfill({ json: { key } });
+  });
+  const one = g.getByRole("button", { name: "Đổi ảnh mẫu của Ảnh một", exact: true });
+  const two = g.getByRole("button", { name: "Đổi ảnh mẫu của Ảnh hai", exact: true });
+  await pickFile(page, one, { name: "mot.jpg", mimeType: "image/jpeg", buffer: Buffer.from("ảnh một") });
+  await expect(one).toHaveText("…");
+  await expect(two).toBeDisabled();
+  await expect(one).toBeDisabled();
+  await expect(g.getByRole("button", { name: "Lưu" })).toBeDisabled();
+  release();
+  await expect(one.locator("img")).toHaveAttribute("src", `/api/admin/images?key=${encodeURIComponent(key)}`);
+  await expect(two).toBeEnabled();
+  await expect(two.locator("img")).toHaveCount(0);
+  await expect(g.getByRole("button", { name: "Lưu" })).toBeEnabled();
+  await g.getByRole("button", { name: "Huỷ" }).click();
+});

@@ -129,11 +129,13 @@ export function CodeFormDialog({ banks, initial, onClose }: { banks: { id: strin
                 if (file) void pickQr(file);
               }}
             />
+            {/* Khoá lúc đang tải: ảnh chọn trước tải xong sau thì ảnh QR là ảnh trước mà link là link của ảnh sau. */}
             <button
               type="button"
               onClick={() => fileInput.current?.click()}
+              disabled={uploading}
               aria-describedby={qrError ? qrErrorId : undefined}
-              className="flex min-h-[72px] items-center justify-center gap-2 overflow-hidden rounded-[10px] border border-dashed border-field-border bg-surface text-sm text-text-2 hover:border-accent"
+              className="flex min-h-[72px] items-center justify-center gap-2 overflow-hidden rounded-[10px] border border-dashed border-field-border bg-surface text-sm text-text-2 hover:border-accent disabled:cursor-not-allowed disabled:opacity-60"
             >
               {uploading ? (
                 "Đang tải ảnh…"

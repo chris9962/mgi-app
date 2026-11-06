@@ -494,3 +494,26 @@ test("Mã: ảnh QR 23 MB báo Ảnh lớn hơn 20 MB. ở ô Ảnh QR, không g
   await expect.poll(() => uploads.length).toBe(1);
   await expect(qr).toHaveAccessibleDescription(TOO_LARGE);
 });
+
+test("Mã: đang tải ảnh QR thì nút chọn ảnh QR bị khoá, không chọn được ảnh thứ hai; tải xong ô ảnh giữ đúng ảnh vừa tải", async ({ page }) => {
+  await apiLogin(page, "zz_e2e_admin");
+  await createBank(page, "ZZCQRHAI", "ZZE2E Ảnh QR hai lần", [], "0");
+  await open(page, "/banks/codes");
+  const d = await openAdd(page);
+  // Máy chủ trả chậm: ảnh chọn trước tải xong sau thì ảnh QR là ảnh trước, link là link của ảnh sau.
+  let release = () => {};
+  const gate = new Promise<void>((r) => (release = r));
+  const key = "qr/2026-11-07/0b7c2f4e-6a1d-4c3b-9e8f-1a2b3c4d5e6f.webp";
+  await page.route((url) => url.pathname === "/api/admin/uploads", async (route) => {
+    await gate;
+    await route.fulfill({ json: { key } });
+  });
+  await pickFile(page, d.getByRole("button", { name: "Chọn ảnh QR" }), { name: "qr.png", mimeType: "image/png", buffer: Buffer.from("ảnh một") });
+  const busy = d.getByRole("button", { name: "Đang tải ảnh…" });
+  await expect(busy).toBeDisabled();
+  await expect(d.getByRole("button", { name: "Tạo mã" })).toBeDisabled();
+  release();
+  await expect(d.getByRole("img", { name: "Ảnh QR đã chọn" })).toHaveAttribute("src", `/api/admin/images?key=${encodeURIComponent(key)}`);
+  await expect(d.getByRole("button", { name: "Ảnh QR đã chọn" })).toBeEnabled();
+  await d.getByRole("button", { name: "Huỷ" }).click();
+});

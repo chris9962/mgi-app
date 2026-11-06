@@ -122,16 +122,18 @@ export function GuideDialog({ bankId, bankName, onClose }: { bankId: string; ban
         />
         {slots?.map((s, i) => (
           <div key={s.key} className="flex items-start gap-2.5">
+            {/* Mỗi lần chỉ tải một ảnh: uploading chỉ giữ một khung, ảnh thứ hai đang tải mà Lưu đã mở thì khung đó mất ảnh. */}
             <button
               type="button"
               aria-label={`Đổi ảnh mẫu của ${s.name || `ảnh ${i + 1}`}`}
               aria-describedby={photoError?.key === s.key ? photoErrorId(s.key) : undefined}
               title="Đổi ảnh mẫu"
+              disabled={uploading !== null}
               onClick={() => {
                 uploadFor.current = s.key;
                 fileInput.current?.click();
               }}
-              className="grid h-[52px] w-10 flex-none place-items-center overflow-hidden rounded-md border border-line bg-surface text-text-3 hover:border-accent"
+              className="grid h-[52px] w-10 flex-none place-items-center overflow-hidden rounded-md border border-line bg-surface text-text-3 hover:border-accent disabled:cursor-not-allowed disabled:opacity-60"
             >
               {uploading === s.key ? "…" : s.sampleKey ? <img src={`/api/admin/images?key=${encodeURIComponent(s.sampleKey)}`} alt="" className="size-full object-cover" /> : <ImagePlus size={16} aria-hidden />}
             </button>
