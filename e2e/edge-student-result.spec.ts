@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { BANK, NAME, SCHOOL } from "../scripts/e2e-data-student";
-import { PHONE, apiCreate, apiPhotos, apiPick, apiSubmit, dbOp, device, expectInsideBox, expectInsideScreen, expectNoSideScroll, info, onDevice, withEdgeData, type ApiStudent } from "./edge-student-support";
+import { PHONE, apiCreate, apiPhotos, apiPick, apiSubmit, dbOp, device, expectInsideBox, expectInsideScreen, expectNoSideScroll, info, onDevice, withEdgeData, withZalo, type ApiStudent } from "./edge-student-support";
 
 // Máy đặt múi giờ khác Việt Nam: màn kết quả vẫn phải hiện giờ Việt Nam.
 test.use({ ...PHONE, timezoneId: "America/New_York" });
@@ -66,4 +66,24 @@ test("F3, F6, F7 có voucher, một ngân hàng Đạt một Không đạt: kh�
   await page.reload();
   await expect(banks(page).getByText("Không đạt", { exact: true })).toHaveCount(1);
   await expect(page.getByRole("button", { name: "Gửi kiểm tra" })).toHaveCount(0);
+});
+
+test("F8 khối Zalo ở màn hết lượt, màn không có ngân hàng phù hợp và màn kết quả: nằm gọn trong khổ 390 px", async ({ page, request }) => {
+  await withZalo(page, `https://zalo.me/g/${"zzhsbnhomzalohotrohocsinh".repeat(4)}`);
+  const screens: [string, ApiStudent, string][] = [
+    [SCHOOL.empty, await apiCreate(request, SCHOOL.empty, info("Zalo Hết Lượt")), "Ngân hàng đã hết lượt trong tháng này"],
+    [SCHOOL.photo, await apiCreate(request, SCHOOL.photo, info("Zalo Đủ Ngân Hàng"), [BANK.p1, BANK.p3, BANK.p4]), "Không có ngân hàng nào phù hợp"],
+    [SCHOOL.long, await submitted(request, "Zalo Màn Kết Quả"), "Zalo Màn Kết Quả - 12A1CHUYENTOANTINHOC"],
+  ];
+  for (const [school, s, heading] of screens) {
+    await onDevice(page, device(school, s));
+    await page.goto("/");
+    await expect(page.getByRole("heading", { name: heading })).toBeVisible();
+    const zalo = page.getByRole("link", { name: /Zalo/ });
+    await expect(zalo.getByRole("img", { name: "QR kết bạn Zalo" })).toBeVisible();
+    await expect(zalo).toHaveAttribute("target", "_blank");
+    await expectInsideScreen(page, zalo);
+    await expectInsideBox(zalo, ":scope > *");
+    await expectNoSideScroll(page);
+  }
 });

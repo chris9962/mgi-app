@@ -125,6 +125,22 @@ test.describe("C. B2 chọn ngân hàng", () => {
     await expect(alertIn(page)).toHaveCount(0);
     expect(posts).toBe(1);
   });
+
+  test("C8 trường đóng lúc học sinh ở B2: bấm Tiếp tục thì thấy Trường đã đóng, không giữ chỗ", async ({ page, request }) => {
+    const s = await apiCreate(request, SCHOOL.closing, info("Đóng Lúc Chọn Ngân Hàng"));
+    await openAt(page, SCHOOL.closing, s);
+    await page.getByRole("button", { name: NAME.p1 }).click();
+    await page.getByRole("button", { name: NAME.p3 }).click();
+    dbOp("school", SCHOOL.closing, "closed");
+    try {
+      await next(page).click();
+      await expect(page.getByRole("heading", { level: 1, name: "Trường đã đóng" })).toBeVisible();
+      await expect(page.getByText(NAME.schoolClosing)).toBeVisible();
+      expect((await s.me()).banks).toEqual([]);
+    } finally {
+      dbOp("school", SCHOOL.closing, "open");
+    }
+  });
 });
 
 test.describe("D. B3 mở tài khoản", () => {
@@ -373,6 +389,35 @@ test.describe("D. B3 mở tài khoản", () => {
     const panel = page.getByRole("tabpanel");
     await expect(panel.getByLabel("Ảnh màn hình chính: chụp lại")).toBeAttached();
     await expect(panel.getByLabel("Ảnh màn hình chính: chụp hoặc chọn ảnh")).toHaveCount(0);
+  });
+
+  test("D18 link ảnh mẫu, ảnh đã nộp, ảnh QR hết hạn trả 403: khung vẫn ghi Đã gửi, khung giữ kích thước, trang không cuộn ngang", async ({ page, request }) => {
+    const s = await apiCreate(request, SCHOOL.photo, info("Link Ảnh Hết Hạn"));
+    await apiPick(request, s, [BANK.p1, BANK.p3]);
+    await apiPhotos(request, s, [SLOT.p1Transfer]);
+    const denied: string[] = [];
+    // Link S3 ký sẵn hết hạn thì S3 trả 403 dạng XML.
+    await page.route(
+      (url) => url.origin !== STUDENT,
+      (route) => {
+        if (route.request().resourceType() !== "image") return route.continue();
+        denied.push(route.request().url());
+        return route.fulfill({ status: 403, contentType: "application/xml", body: "<Error><Code>AccessDenied</Code></Error>" });
+      },
+    );
+    await openAt(page, SCHOOL.photo, s);
+    const panel = page.getByRole("tabpanel");
+    const qr = panel.getByRole("img", { name: `QR mã giới thiệu ${NAME.p1}` });
+    await expect(qr).toBeAttached();
+    await expect.poll(() => denied.length).toBeGreaterThanOrEqual(3);
+    const main = panel.getByRole("listitem").filter({ hasText: "Ảnh màn hình chính" });
+    await expect(main.getByText("Đã gửi")).toBeVisible();
+    await expect(main.getByText("Chụp lại")).toBeVisible();
+    await expect(main.getByText("Ảnh mẫu", { exact: true })).toBeVisible();
+    await expectBoxSize(qr, 96, 96);
+    for (const box of [main.locator("label"), main.getByRole("button", { name: "Xem ảnh mẫu Ảnh màn hình chính" })]) expect((await box.boundingBox())!.height).toBeCloseTo(160, 0);
+    await expectInsideScreen(page, panel.getByRole("button", { name: "Sao chép" }));
+    await expectNoSideScroll(page);
   });
 
   test("D11 còn khung trống thì Gửi kiểm tra khoá; đủ ảnh bấm đúp chỉ gửi một lần, vào màn kết quả", async ({ page, request }) => {

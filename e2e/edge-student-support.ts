@@ -146,6 +146,15 @@ export const textLines = (el: Locator) =>
     return tops.size;
   });
 
+// Link Zalo mặc định rỗng nên khối Zalo không hiện: chèn link vào hồ sơ trả về thay vì ghi Cài đặt thật của DB local.
+export async function withZalo(page: Page, url: string) {
+  await page.route("**/api/customers/me", async (route) => {
+    const res = await route.fetch();
+    if (!res.ok()) return route.fulfill({ response: res });
+    await route.fulfill({ response: res, json: { ...(await res.json()), zaloUrl: url } });
+  });
+}
+
 // Hộp alert của trình duyệt chỉ hiện khi chữ người dùng nhập bị chạy như mã.
 export function watchDialogs(page: Page): string[] {
   const seen: string[] = [];

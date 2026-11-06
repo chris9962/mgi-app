@@ -105,13 +105,13 @@ export async function seedStudentEdge() {
     { id: CODE.longWord, bankId: BANK.longWord, code: "HSB-WORD-01", openUrl: null, schools: [SCHOOL.long] },
     { id: CODE.q1, bankId: BANK.q1, code: "HSB-Q1-01", openUrl: null, schools: [SCHOOL.quota], quota: 1 },
     { id: CODE.q2, bankId: BANK.q2, code: "HSB-Q2-01", openUrl: null, schools: [SCHOOL.quota] },
-    { id: CODE.p1, bankId: BANK.p1, code: "HSB-P1-01", openUrl: null, schools: [SCHOOL.photo, SCHOOL.closing] },
+    { id: CODE.p1, bankId: BANK.p1, code: "HSB-P1-01", openUrl: null, schools: [SCHOOL.photo, SCHOOL.closing], qr: true },
     { id: CODE.p2, bankId: BANK.p2, code: "HSB-P2-01", openUrl: null, schools: [SCHOOL.noGuide] },
     { id: CODE.p3, bankId: BANK.p3, code: "HSB-P3-01", openUrl: null, schools: [SCHOOL.photo, SCHOOL.noGuide, SCHOOL.closing, SCHOOL.stale, SCHOOL.mixed] },
     { id: CODE.p4, bankId: BANK.p4, code: "HSB-P4-01", openUrl: null, schools: [SCHOOL.photo] },
     { id: CODE.stale, bankId: BANK.stale, code: "HSB-STALE-01", openUrl: null, schools: [SCHOOL.stale] },
   ];
-  await db.insert(s.referralCodes).values(codes.map((c) => ({ id: c.id, bankId: c.bankId, displayName: `${HSB}${c.code}`, code: c.code, openUrl: c.openUrl, monthlyQuota: c.quota ?? 1000 })));
+  await db.insert(s.referralCodes).values(codes.map((c) => ({ id: c.id, bankId: c.bankId, displayName: `${HSB}${c.code}`, code: c.code, openUrl: c.openUrl, qrKey: c.qr ? sample.key : null, monthlyQuota: c.quota ?? 1000 })));
   await db.insert(s.referralCodeSchools).values(codes.flatMap((c) => c.schools.map((schoolId) => ({ referralCodeId: c.id, schoolId }))));
 }
 
