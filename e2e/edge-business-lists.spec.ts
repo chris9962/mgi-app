@@ -168,13 +168,28 @@ test.describe("Trang 12 Mã voucher", () => {
     await expect(card(reviewer, VC).getByRole("link")).toHaveCount(0);
   });
 
-  test("xuất Excel: đúng bộ lọc, không có dòng nào vẫn tải được, từ khoá có NUL không lỗi", async ({ browser }) => {
+  test("xuất Excel: đúng bộ lọc, không có dòng nào vẫn tải được, tên, lớp, phụ huynh bắt đầu bằng = + - @ là chữ, từ khoá có NUL không lỗi", async ({ browser }) => {
     const page = await loginAs(browser, "zz_e2e_admin");
     const sheet = await readExport(page, `/api/admin/vouchers/export?${q("bien phan trang")}`);
     expect(sheet.rows.length - 3).toBe(16);
     expect(sheet.types[3][column(sheet, "MÃ VOUCHER")]).toBe(ExcelJS.ValueType.String);
     const empty = await readExport(page, `/api/admin/vouchers/export?${q("zz khong co ai bien")}`);
     expect([empty.rows.length, empty.rows[1][0]]).toEqual([3, "0"]);
+
+    const all = await readExport(page, `/api/admin/vouchers/export?${q("bien")}`);
+    const [code, name, cls, parent] = ["MÃ VOUCHER", "HỌ TÊN", "LỚP", "PHỤ HUYNH"].map((h) => column(all, h));
+    const cell = (row: number, col: number) => ({ value: all.rows[row][col], type: all.types[row][col] });
+    const text = ExcelJS.ValueType.String;
+    const formula = all.rows.findIndex((r) => r[code] === B.B_FORMULA_VOUCHER);
+    const minus = all.rows.findIndex((r) => r[code] === B.B_MINUS_VOUCHER);
+    expect([formula > 2, minus > 2]).toEqual([true, true]);
+    expect([cell(formula, name), cell(formula, cls), cell(formula, parent), cell(minus, name), cell(minus, parent)]).toEqual([
+      { value: "=1+2 BIEN CONG THUC", type: text },
+      { value: "=1+1", type: text },
+      { value: "+CHA BIEN CONG", type: text },
+      { value: "-BIEN TRU", type: text },
+      { value: "@ME BIEN CONG", type: text },
+    ]);
     expect((await page.request.get("/api/admin/vouchers/export?q=bien%00")).status()).toBe(200);
   });
 });

@@ -89,8 +89,9 @@ export async function seedBusiness(adminId: string) {
     { id: B.B_IDS.xss, fullName: B.B_XSS, n: 203, parentName: B.B_IMG, banks: [{ bank: 1, status: "pending", note: "<b>đậm</b>\nDòng hai 😀" }] },
     { id: B.B_IDS.quotes, fullName: B.B_QUOTES, n: 204, banks: [{ bank: 1, status: "selected" }] },
     { id: B.B_IDS.emoji, fullName: B.B_EMOJI, n: 205, banks: [{ bank: 1, status: "selected" }] },
-    { id: B.B_IDS.formula, fullName: B.B_FORMULA, n: 206, className: B.B_FORMULA_CLASS, parentName: B.B_FORMULA_PARENT, banks: [{ bank: 1, status: "selected" }] },
-    { id: B.B_IDS.minus, fullName: B.B_MINUS, n: 207, parentName: B.B_MINUS_PARENT, banks: [{ bank: 1, status: "selected" }] },
+    // Có voucher để file Mã voucher cũng có ô bắt đầu bằng = + - @.
+    { id: B.B_IDS.formula, fullName: B.B_FORMULA, n: 206, className: B.B_FORMULA_CLASS, parentName: B.B_FORMULA_PARENT, banks: [{ bank: 1, status: "passed" }], voucher: { code: B.B_FORMULA_VOUCHER, issuedAt: new Date("2026-10-27T03:00:00Z") } },
+    { id: B.B_IDS.minus, fullName: B.B_MINUS, n: 207, parentName: B.B_MINUS_PARENT, banks: [{ bank: 1, status: "passed" }], voucher: { code: B.B_MINUS_VOUCHER, issuedAt: new Date("2026-10-27T03:01:00Z") } },
     { id: B.B_IDS.only2, fullName: B.B_NAMES.only2, n: 208, banks: [{ bank: 2, status: "pending" }], sms: { status: "failed", at: new Date("2026-10-25T03:00:00Z") } },
     { id: B.B_IDS.both, fullName: B.B_NAMES.both, n: 209, banks: [{ bank: 1, status: "pending" }, { bank: 2, status: "pending" }] },
     { id: B.B_IDS.none, fullName: B.B_NAMES.none, n: 210 },

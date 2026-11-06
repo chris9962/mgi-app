@@ -49,6 +49,8 @@ export const B_LATE = "Biên Giờ Khuya";
 export const B_EARLY = "Biên Giờ Sớm";
 export const B_LATE_VOUCHER = "ZZBIEN-BGK-10A1-AAAA";
 export const B_EARLY_VOUCHER = "ZZBIEN-BGS-10A1-BBBB";
+export const B_FORMULA_VOUCHER = "ZZBIEN-BCT-11A1-FFFF";
+export const B_MINUS_VOUCHER = "ZZBIEN-BTR-10A1-GGGG";
 
 export const B_IDS = {
   long: id(201),

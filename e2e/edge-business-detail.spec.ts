@@ -341,6 +341,7 @@ test("Trang 4 hai tab: tab A đánh dấu Đạt, tab B bấm Đạt hay Không 
   await b.reload();
   await expect(bank1(b).getByRole("button", { name: "Đạt", exact: true })).toHaveCount(0);
   await expect(bank1(b).locator("header")).toContainText("Đạt");
+  expect(await voucherCount(b, B.B_NAMES.twoTabs)).toBe(1);
 
   await open(a, detail(B.B_IDS.editTabs));
   await open(b, detail(B.B_IDS.editTabs));
