@@ -312,6 +312,26 @@ test("điện thoại thấp 375x548 và nằm ngang 844x390: hàng nút của b
   }
 });
 
+test("điện thoại thấp 375x548, 320x568 và nằm ngang 844x390: mở Bộ lọc thì focus vào bảng, không nằm ở nút bị bảng che; Xong trả focus về nút", async ({ browser }) => {
+  const page = await loginAs(browser, "zz_e2e_admin", PHONE);
+  for (const viewport of [
+    { width: 375, height: 548 },
+    { width: 320, height: 568 },
+    { width: 844, height: 390 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto("/customers");
+    await page.waitForLoadState("networkidle");
+    const trigger = page.getByRole("button", { name: "Bộ lọc" });
+    await trigger.click();
+    const current = page.getByRole("navigation", { name: "Mục lọc" }).getByRole("button", { name: "Trạng thái" });
+    await expect(current).toBeFocused();
+    expect(await current.evaluate((el) => { const r = el.getBoundingClientRect(); return el.contains(document.elementFromPoint(r.left + r.width / 2, r.top + r.height / 2)); })).toBe(true);
+    await page.getByRole("button", { name: "Xong" }).click();
+    await expect(trigger).toBeFocused();
+  }
+});
+
 test("điện thoại 360 và 390 px: báo lỗi xuất Excel nằm trọn trong màn hình", async ({ browser }) => {
   const page = await loginAs(browser, "zz_e2e_admin", PHONE);
   await page.route("**/api/admin/*/export**", (route) => route.fulfill({ status: 400, json: { message: "Quá số dòng xuất được một lần, lọc bớt rồi xuất lại." } }));

@@ -3,13 +3,11 @@
 import { usePathname, useSearchParams } from "next/navigation";
 import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
+import { MOBILE_QUERY } from "@/lib/breakpoints";
 import { BottomNav } from "./BottomNav";
 import { bottomNavItems } from "./bottomNavItems";
 import type { MenuGroup } from "./menu";
 import { Sidebar } from "./Sidebar";
-
-// Khớp variant mobile trong globals.css.
-const MOBILE = "(max-width: 900px)";
 
 export function AppShell({ groups, fullName, title, children }: { groups: MenuGroup[]; fullName: string; title: string; children: ReactNode }) {
   // So cả chuỗi lọc: Quay lại từ ?status=new về trang không lọc cũng là chuyển trang.
@@ -23,7 +21,7 @@ export function AppShell({ groups, fullName, title, children }: { groups: MenuGr
 
   // Màn rộng qua 900 px thì sidebar thành cột cố định: bỏ trạng thái ngăn, không thì nội dung còn inert và Esc còn đòi focus nút Thêm đã ẩn.
   useEffect(() => {
-    const query = matchMedia(MOBILE);
+    const query = matchMedia(MOBILE_QUERY);
     const onChange = () => {
       if (!query.matches) setOpenedAt(null);
     };

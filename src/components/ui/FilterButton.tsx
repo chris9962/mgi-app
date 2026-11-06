@@ -3,6 +3,8 @@
 import { clsx } from "clsx";
 import { SlidersHorizontal } from "lucide-react";
 import { useEffect, useId, useRef, useState, type ReactNode } from "react";
+import { flushSync } from "react-dom";
+import { MOBILE_QUERY } from "@/lib/breakpoints";
 import { Button } from "./Button";
 
 export type FilterSection = { id: string; label: string; count: number; content: ReactNode };
@@ -17,6 +19,13 @@ export function FilterButton({ sections, onClear }: { sections: FilterSection[];
   // Nút đếm số mục đang lọc như mgst-app; số giá trị chọn trong một mục hiện ở mục đó.
   const active = sections.filter((s) => s.count > 0).length;
   const selected = sections.find((s) => s.id === picked) ?? sections[0];
+
+  // Dưới 900 px bảng có thể che nút Bộ lọc: đưa focus vào mục lọc đang chọn, không để focus nằm dưới bảng.
+  function toggle() {
+    if (open) return setOpen(false);
+    flushSync(() => setOpen(true));
+    if (matchMedia(MOBILE_QUERY).matches) panel.current?.querySelector<HTMLElement>('[aria-current="true"]')?.focus();
+  }
 
   // Nghe Esc và bấm ra ngoài trên document khi bảng mở; bỏ nghe khi bảng đóng.
   useEffect(() => {
@@ -47,7 +56,7 @@ export function FilterButton({ sections, onClear }: { sections: FilterSection[];
         aria-expanded={open}
         aria-controls={open ? paneId : undefined}
         className={clsx(active > 0 && "border-accent text-accent-ink")}
-        onClick={() => setOpen((v) => !v)}
+        onClick={toggle}
       >
         <SlidersHorizontal size={16} aria-hidden />
         Bộ lọc
