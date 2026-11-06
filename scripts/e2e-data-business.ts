@@ -72,6 +72,7 @@ export const B_IDS = {
   resendTabs: id(219),
   late: id(220),
   early: id(221),
+  oldPhoto: id(222),
 } as const;
 
 export const B_NAMES: Record<keyof typeof B_IDS, string> = {
@@ -96,4 +97,5 @@ export const B_NAMES: Record<keyof typeof B_IDS, string> = {
   resendTabs: "Biên Gửi Hai Tab",
   late: B_LATE,
   early: B_EARLY,
+  oldPhoto: "Biên Ảnh Cũ",
 };

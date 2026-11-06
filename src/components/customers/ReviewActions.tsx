@@ -11,7 +11,7 @@ import { ConfirmDialog } from "@/components/users/ConfirmDialog";
 import { apiSend } from "@/lib/api";
 import type { CustomerBankStatus } from "@/lib/studentState";
 
-type Bank = { id: string; name: string; status: CustomerBankStatus; note: string; slots: { id: string; name: string }[] };
+type Bank = { id: string; name: string; status: CustomerBankStatus; note: string; slots: { id: string; name: string }[]; photos: string[] };
 
 function ReplaceDialog({ bank, onClose }: { bank: Bank; onClose: () => void }) {
   const router = useRouter();
@@ -135,7 +135,7 @@ export function ReviewActions({ bank }: { bank: Bank }) {
   if (!open) return null;
 
   const mark = async (result: "passed" | "failed") => {
-    const r = await apiSend("POST", `/api/admin/customer-banks/${bank.id}/review`, { result, expected: bank.status });
+    const r = await apiSend("POST", `/api/admin/customer-banks/${bank.id}/review`, { result, expected: bank.status, photos: bank.photos });
     if (!r.ok) return r.message;
     setDialog(null);
     router.refresh();

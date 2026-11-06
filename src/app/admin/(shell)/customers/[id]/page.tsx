@@ -65,7 +65,7 @@ function PhotoCheck({ check }: { check: NonNullable<DetailBank["check"]> }) {
 }
 
 function BankCard({ bank, customer }: { bank: DetailBank; customer: CustomerDetail }) {
-  const actionBank = { id: bank.id, name: bank.name, status: bank.status, note: bank.note, slots: bank.slots.filter((s) => !s.removed).map((s) => ({ id: s.id, name: s.name })) };
+  const actionBank = { id: bank.id, name: bank.name, status: bank.status, note: bank.note, slots: bank.slots.filter((s) => !s.removed).map((s) => ({ id: s.id, name: s.name })), photos: bank.photos.map((ph) => ph.id) };
   const meta = [`Ngân hàng ${bank.slot}`, bank.referralCode && `Mã giới thiệu ${bank.referralCode}`, bank.managers.length && `Người quản ${bank.managers.join(", ")}`].filter(Boolean).join(" - ");
   return (
     <Card title={bank.name} icon={<Landmark size={17} aria-hidden />} meta={meta} action={bankTag(bank.status, true)} pad={bank.managed}>

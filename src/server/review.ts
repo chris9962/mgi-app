@@ -15,6 +15,7 @@ type Fail = { ok: false; message: string; status: 400 | 404 | 409 | 500; field?:
 const fail = (message: string, status: Fail["status"], field?: string): Fail => ({ ok: false, message, status, field });
 const NOT_FOUND = fail("Không tìm thấy ngân hàng của hồ sơ.", 404);
 const TAKEN = fail("Ngân hàng này đã có người đánh dấu. Tải lại trang để xem kết quả mới.", 409);
+const STALE_PHOTOS = fail("Ảnh vừa được thay. Tải lại trang để xem ảnh mới.", 409);
 
 const VOUCHER_TRIES = 5;
 
@@ -24,7 +25,7 @@ const isCodeTaken = (e: unknown): boolean => {
   return pg.code === "23505" && pg.constraint === "vouchers_code_unique";
 };
 
-export type ReviewInput = { customerBankId: string; result: "passed" | "failed"; expected: CustomerBankStatus };
+export type ReviewInput = { customerBankId: string; result: "passed" | "failed"; expected: CustomerBankStatus; photos?: string[] };
 
 async function targetOf(actor: SessionUser, customerBankId: string) {
   const [row] = await db.select({ customerId: customerBanks.customerId, bankId: customerBanks.bankId, status: customerBanks.status }).from(customerBanks).where(eq(customerBanks.id, customerBankId));
@@ -62,6 +63,12 @@ export async function reviewCustomerBank(actor: SessionUser, input: ReviewInput,
     if (row.status !== input.expected) return TAKEN;
     const from = row.status;
     if (!(from === "pending" || (from === "failed" && input.result === "passed"))) return transitionError(from);
+    // Đạt cấp voucher, không đảo lại được: như luật duyệt số tiền của mgst-app, người kiểm phải thấy đúng ảnh đang dùng. Thay ảnh khoá cùng dòng hồ sơ nên không lọt giữa hai câu.
+    if (input.result === "passed" && input.photos) {
+      const current = await tx.select({ id: proofPhotos.id }).from(proofPhotos).where(and(eq(proofPhotos.customerBankId, input.customerBankId), isNull(proofPhotos.replacedAt)));
+      const seen = new Set(input.photos);
+      if (current.length !== seen.size || current.some((ph) => !seen.has(ph.id))) return STALE_PHOTOS;
+    }
     const issue = input.result === "passed" && !c.firstPassedAt;
     const secret = voucherSecret();
     if (issue && !secret) return fail("Máy chủ chưa cài khoá voucher (VOUCHER_SECRET), chưa đánh dấu Đạt được.", 500);

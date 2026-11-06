@@ -103,6 +103,8 @@ export async function seedBusiness(adminId: string) {
     { id: B.B_IDS.form, fullName: B.B_NAMES.form, n: 217, banks: [{ bank: 1, status: "pending" }] },
     { id: B.B_IDS.resend, fullName: B.B_NAMES.resend, n: 218, banks: [{ bank: 1, status: "passed" }], voucher: { code: "ZZBIEN-BGL-10A1-CCCC", issuedAt: new Date("2026-10-26T03:00:00Z") }, sms: { status: "failed", at: new Date("2026-10-26T03:00:00Z") } },
     { id: B.B_IDS.resendTabs, fullName: B.B_NAMES.resendTabs, n: 219, banks: [{ bank: 1, status: "passed" }], voucher: { code: "ZZBIEN-BGHT-10A1-DDDD", issuedAt: new Date("2026-10-26T04:00:00Z") }, sms: { status: "failed", at: new Date("2026-10-26T04:00:00Z") } },
+    // Hồ sơ cho ca đồng thời mới: ngày tạo cũ hơn các hồ sơ không ghi ngày, không đẩy hồ sơ khác ra khỏi trang 1 khi tìm "bien".
+    { id: B.B_IDS.oldPhoto, fullName: B.B_NAMES.oldPhoto, n: 222, createdAt: new Date("2026-10-22T03:00:00Z"), banks: [{ bank: 1, status: "pending" }] },
   ];
 
   const [reviewer1, reviewer2] = staff;

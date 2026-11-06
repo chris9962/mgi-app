@@ -1,14 +1,14 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { eq } from "drizzle-orm";
-import { cleanTestUsers, makeActor } from "./helpers";
+import { and, eq, isNull } from "drizzle-orm";
+import { cleanTestUsers, FAKE_WEBP, fakeStore, makeActor } from "./helpers";
 import { insertCustomer, setupProgram, type Program } from "./fixtures";
 import { db } from "../../src/server/db/client";
-import { reviewEvents, smsMessages, userManagedBanks, vouchers } from "../../src/server/db/schema";
+import { customerBanks, proofPhotos, reviewEvents, smsMessages, userManagedBanks, vouchers } from "../../src/server/db/schema";
 import { loadSessionUser } from "../../src/server/auth/session";
 import { listCustomers } from "../../src/server/customerList";
 import { listCustomerBanks, readCustomerBankFilters } from "../../src/server/customerBankList";
 import { exportCustomerBanks, exportCustomers, exportVouchers } from "../../src/server/exports";
-import { reviewCustomerBank } from "../../src/server/review";
+import { replacePhoto, reviewCustomerBank } from "../../src/server/review";
 import { searchSchoolOptions } from "../../src/server/schools";
 import { listSms } from "../../src/server/sms/queue";
 import { listVouchers } from "../../src/server/vouchers";
@@ -24,6 +24,7 @@ const id: Record<string, string> = {};
 
 beforeAll(async () => {
   await cleanTestUsers();
+  process.env.VOUCHER_SECRET ||= "khoa-test";
   p = await setupProgram("edgeb", ["A", "B"]);
   admin = await makeActor("edgeb_admin", "admin");
   staff = await makeActor("edgeb_staff", "staff", ["vouchers"], [p.bank.A]);
@@ -101,5 +102,30 @@ describe("Nhân viên đã mở trang rồi bị bỏ giao ngân hàng", () => {
     const fresh = (await loadSessionUser(staff.id))!;
     expect(await reviewCustomerBank(fresh, { customerBankId: id.namRow, result: "passed", expected: "pending" }, null)).toMatchObject({ ok: false, status: 404 });
     expect(await db.select().from(reviewEvents).where(eq(reviewEvents.customerBankId, id.namRow))).toEqual([]);
+  });
+});
+
+describe("bấm Đạt trên ảnh cũ", () => {
+  const photosOf = async (customerBankId: string) =>
+    (await db.select({ id: proofPhotos.id }).from(proofPhotos).where(and(eq(proofPhotos.customerBankId, customerBankId), isNull(proofPhotos.replacedAt)))).map((r) => r.id);
+  const STALE = "Ảnh vừa được thay. Tải lại trang để xem ảnh mới.";
+
+  test("ảnh vừa được thay từ lúc mở trang thì 409, dòng giữ Chờ kiểm tra, không cấp voucher; mở lại trang rồi bấm thì Đạt", async () => {
+    const c = await insertCustomer(p, { fullName: "Edgeb Ảnh Cũ", status: "pending_review", submittedAt: new Date(), banks: [{ key: "A", status: "pending" }] });
+    const seen = await photosOf(c.rows.A);
+    expect(await replacePhoto(admin, { customerBankId: c.rows.A, slotId: p.slot.A }, FAKE_WEBP, null, fakeStore().store)).toEqual({ ok: true });
+    expect(await reviewCustomerBank(admin, { customerBankId: c.rows.A, result: "passed", expected: "pending", photos: seen }, null)).toMatchObject({ ok: false, status: 409, message: STALE });
+    expect((await db.select({ status: customerBanks.status }).from(customerBanks).where(eq(customerBanks.id, c.rows.A)))[0].status).toBe("pending");
+    expect(await db.select().from(vouchers).where(eq(vouchers.customerId, c.id))).toEqual([]);
+    expect(await db.select().from(reviewEvents).where(eq(reviewEvents.customerBankId, c.rows.A))).toEqual([]);
+
+    expect(await reviewCustomerBank(admin, { customerBankId: c.rows.A, result: "passed", expected: "pending", photos: await photosOf(c.rows.A) }, null)).toEqual({ ok: true });
+    expect((await db.select().from(vouchers).where(eq(vouchers.customerId, c.id))).length).toBe(1);
+  });
+
+  test("Không đạt đảo lại được nên không xét ảnh", async () => {
+    const c = await insertCustomer(p, { fullName: "Edgeb Ảnh Cũ Hai", status: "pending_review", submittedAt: new Date(), banks: [{ key: "A", status: "pending" }] });
+    expect(await replacePhoto(admin, { customerBankId: c.rows.A, slotId: p.slot.A }, FAKE_WEBP, null, fakeStore().store)).toEqual({ ok: true });
+    expect(await reviewCustomerBank(admin, { customerBankId: c.rows.A, result: "failed", expected: "pending", photos: [] }, null)).toEqual({ ok: true });
   });
 });

@@ -18,6 +18,12 @@ async function bankRowId(page: Page, customerId: string, bankName: string): Prom
   return (await res.json()).banks.find((b: { name: string }) => b.name === bankName).id;
 }
 
+// Số mã voucher của đúng một hồ sơ: tên link khớp nguyên văn, "Biên Hai Tab" không lẫn với "Biên Gửi Hai Tab".
+async function voucherCount(page: Page, name: string) {
+  await open(page, `/vouchers?q=${encodeURIComponent(name)}`);
+  return page.getByRole("region", { name: "Mã voucher" }).locator("tbody tr").filter({ has: page.getByRole("link", { name, exact: true }) }).count();
+}
+
 async function markPassed(page: Page) {
   await bank1(page).getByRole("button", { name: "Đạt", exact: true }).click();
   await page.getByRole("dialog", { name: "Đánh dấu Đạt" }).getByRole("button", { name: "Đạt" }).click();
@@ -282,6 +288,33 @@ test("Trang 4 hai tab: tab A đánh dấu Đạt, tab B bấm Đạt hay Không 
   await b.reload();
   await expect(b.getByRole("heading", { level: 1 })).toHaveText(B.B_NAMES.editTabs);
   await expect(b.getByRole("button", { name: "Sửa thông tin" })).toHaveCount(0);
+});
+
+test("Trang 4 hai tab: tab A tải ảnh thay thế, tab B đang mở trang cũ bấm Đạt thì báo ảnh vừa được thay, không cấp voucher; tải lại trang thì thấy ảnh mới, Đạt được và cấp đúng 1 voucher", async ({ browser }) => {
+  const a = await loginAs(browser, B.B_USER1);
+  const b = await loginAs(browser, "zz_e2e_admin");
+  await open(a, detail(B.B_IDS.oldPhoto));
+  await open(b, detail(B.B_IDS.oldPhoto));
+  await expect(bank1(b).getByRole("img")).toHaveCount(0);
+
+  await bank1(a).getByRole("button", { name: "Tải ảnh thay thế" }).click();
+  const replace = a.getByRole("dialog", { name: "Tải ảnh thay thế" });
+  await replace.getByLabel("Ảnh", { exact: true }).setInputFiles(PHOTO);
+  await replace.getByRole("button", { name: "Tải lên" }).click();
+  await expect(a.getByRole("dialog")).toHaveCount(0, { timeout: 30_000 });
+  await expect(bank1(a).getByRole("img")).toHaveCount(1);
+
+  await bank1(b).getByRole("button", { name: "Đạt", exact: true }).click();
+  const confirm = b.getByRole("dialog", { name: "Đánh dấu Đạt" });
+  await confirm.getByRole("button", { name: "Đạt", exact: true }).click();
+  await expect(confirm.getByRole("alert")).toHaveText("Ảnh vừa được thay. Tải lại trang để xem ảnh mới.");
+  await confirm.getByRole("button", { name: "Huỷ" }).click();
+  expect(await voucherCount(b, B.B_NAMES.oldPhoto)).toBe(0);
+
+  await open(b, detail(B.B_IDS.oldPhoto));
+  await expect(bank1(b).getByRole("img")).toHaveCount(1);
+  await markPassed(b);
+  expect(await voucherCount(b, B.B_NAMES.oldPhoto)).toBe(1);
 });
 
 test("Trang 4 phân quyền: Nhân viên mở hồ sơ ngoài phạm vi và gọi mọi API của dòng ngoài phạm vi nhận 404; thẻ ngân hàng không quản không có ảnh và nút; request ghi thiếu Origin nhận 403", async ({ browser }) => {
