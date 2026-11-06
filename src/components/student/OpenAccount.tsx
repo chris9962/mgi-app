@@ -112,6 +112,8 @@ export function OpenAccount({ state, onChange }: { state: StudentState; onChange
     setError("");
     const r = await studentApi("POST", "/api/customers/me/submit");
     if (r.ok) return onChange();
+    // Hồ sơ đã đổi ở máy chủ (tab khác đã gửi, người quản lý thêm khung ảnh): tải lại để màn khớp máy chủ.
+    if (r.status === 400 || r.status === 409) await onChange();
     setSending(false);
     setError(r.message);
   }
