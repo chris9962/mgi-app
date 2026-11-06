@@ -100,7 +100,9 @@ export async function updateBank(actor: SessionUser, id: string, values: BankFor
   if (await codeTaken(values.code, id)) return CODE_TAKEN;
   // Giao người quản là việc của quyền Quản lý ngân hàng; người được giao sửa ngân hàng mình thì danh sách người quản giữ nguyên.
   const assign = can(actor, "manage_banks");
-  if (assign && !(await validManagers(values.managerIds))) return fail("Người quản phải là Nhân viên đang hoạt động.", 400, "managerIds");
+  // Người quản đã giao rồi mới bị khoá vẫn được giữ, không thì sửa tên ngân hàng cũng bị chặn: chỉ người mới thêm phải là Nhân viên đang hoạt động.
+  const assigned = new Set((await db.select({ userId: userManagedBanks.userId }).from(userManagedBanks).where(eq(userManagedBanks.bankId, id))).map((r) => r.userId));
+  if (assign && !(await validManagers(values.managerIds.filter((m) => !assigned.has(m))))) return fail("Người quản phải là Nhân viên đang hoạt động.", 400, "managerIds");
   return db
     .transaction(async (tx) => {
       await tx.update(banks).set({ code: values.code, name: values.name, sortOrder: values.sortOrder }).where(eq(banks.id, id));
