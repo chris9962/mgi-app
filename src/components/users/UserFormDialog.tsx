@@ -34,6 +34,10 @@ export function UserFormDialog({ open, onClose, initial, canGrantAdmin }: { open
   const [pending, setPending] = useState(false);
   const [created, setCreated] = useState<{ name: string; password: string } | null>(null);
   const editing = Boolean(start.id);
+  // Đang chờ máy chủ thì Esc, Huỷ, nút Đóng không đóng hộp: đóng lúc tạo tài khoản là mất mật khẩu mới vừa sinh.
+  const close = () => {
+    if (!pending) onClose();
+  };
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -77,11 +81,11 @@ export function UserFormDialog({ open, onClose, initial, canGrantAdmin }: { open
     <Dialog
       open={open}
       title={editing ? "Sửa tài khoản" : "Thêm tài khoản"}
-      onClose={onClose}
+      onClose={close}
       width={560}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>
+          <Button variant="secondary" onClick={close}>
             Huỷ
           </Button>
           <Button type="submit" form="user-form" disabled={pending}>
