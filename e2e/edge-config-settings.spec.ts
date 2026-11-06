@@ -95,6 +95,17 @@ test("Cài đặt: link Zalo javascript:, thiếu https://, có dấu cách, dat
   }
 });
 
+test("Cài đặt: link 501 ký tự thì ô QR ghi Link quá dài như máy chủ, link 500 ký tự vẫn vẽ QR", async ({ page }) => {
+  await apiLogin(page, "zz_e2e_admin");
+  await open(page, "/settings");
+  const base = "https://zalo.me/";
+  await zalo(page).fill(base + "a".repeat(500 - base.length));
+  await expect(zaloCard(page).getByRole("img", { name: "QR kết bạn Zalo" })).toBeVisible();
+  await zalo(page).fill(base + "a".repeat(501 - base.length));
+  await expect(zaloCard(page)).toContainText("Link quá dài");
+  await expect(zaloCard(page).getByRole("img", { name: "QR kết bạn Zalo" })).toHaveCount(0);
+});
+
 test("Cài đặt: Quản lý và Nhân viên mở Cài đặt, Vận hành nhận 404, gọi API lưu cài đặt nhận 403", async ({ browser }) => {
   const admin = await asUser(browser, "zz_e2e_admin");
   const m = await createUser(admin, { fullName: "E2E C Quản lý cài đặt", username: "zz_e2e_c_cdql", role: "manager" });

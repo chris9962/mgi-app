@@ -39,7 +39,7 @@ export const smsValues = (v: { fullName: string; className: string; schoolName: 
 export const smsParts = (text: string) => (text.length <= 160 ? 1 : Math.ceil(text.length / 153));
 
 // Web học sinh vẽ QR của link; QR mức M chứa tối đa 2.331 byte, link dài hơn thì không vẽ được QR. 500 ký tự có dấu vẫn dưới mức đó.
-const URL_MAX = 500;
+export const URL_MAX = 500;
 
 const url = z
   .string()
