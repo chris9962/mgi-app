@@ -3,6 +3,7 @@ import { db } from "./db/client";
 import { banks, sessions, userManagedBanks, userPermissions, users } from "./db/schema";
 import { generatePassword, hashPassword } from "./auth/password";
 import { writeAudit } from "./audit";
+import { isUniqueViolation } from "./db/errors";
 import { matchesPlain } from "./search";
 import type { Permission, Role, SessionUser } from "@/lib/types";
 import type { UserFormValues } from "@/lib/userForm";
@@ -91,6 +92,12 @@ async function conflictOf(values: UserFormValues, exceptId?: string): Promise<Fa
   return null;
 }
 
+const raceConflict = (e: unknown): Fail => {
+  if (isUniqueViolation(e, "users_username_unique")) return fail("Tên đăng nhập đã có.", 409, "username");
+  if (isUniqueViolation(e, "users_staff_code_unique")) return fail("Mã tài khoản đã có.", 409, "staffCode");
+  throw e;
+};
+
 // Quản trị và Quản lý có sẵn mọi quyền, nên chỉ Nhân viên lưu dòng quyền.
 const permissionsFor = (values: UserFormValues) => (values.role === "staff" ? [...new Set(values.permissions)] : []);
 
@@ -99,17 +106,18 @@ export async function createUser(actor: SessionUser, values: UserFormValues, ip?
   if (denied) return denied;
   const password = generatePassword();
   const passwordHash = await hashPassword(password);
-  const id = await db.transaction(async (tx) => {
-    const [row] = await tx
-      .insert(users)
-      .values({ username: values.username, staffCode: values.staffCode, phone: values.phone, fullName: values.fullName, role: values.role, title: values.title, passwordHash })
-      .returning({ id: users.id });
-    const perms = permissionsFor(values);
-    if (perms.length) await tx.insert(userPermissions).values(perms.map((permission) => ({ userId: row.id, permission })));
-    await writeAudit(tx, { userId: actor.id, action: "create_user", targetType: "users", targetId: row.id, detail: { ...values, permissions: perms }, ip });
-    return row.id;
-  });
-  return { ok: true, id, password };
+  return db
+    .transaction(async (tx) => {
+      const [row] = await tx
+        .insert(users)
+        .values({ username: values.username, staffCode: values.staffCode, phone: values.phone, fullName: values.fullName, role: values.role, title: values.title, passwordHash })
+        .returning({ id: users.id });
+      const perms = permissionsFor(values);
+      if (perms.length) await tx.insert(userPermissions).values(perms.map((permission) => ({ userId: row.id, permission })));
+      await writeAudit(tx, { userId: actor.id, action: "create_user", targetType: "users", targetId: row.id, detail: { ...values, permissions: perms }, ip });
+      return { ok: true as const, id: row.id, password };
+    })
+    .catch(raceConflict);
 }
 
 export async function updateUser(actor: SessionUser, id: string, values: UserFormValues, ip?: string | null): Promise<{ ok: true } | Fail> {
@@ -119,23 +127,25 @@ export async function updateUser(actor: SessionUser, id: string, values: UserFor
   const denied = guardAdmin(actor, before.role, values.role) ?? (await conflictOf(values, id));
   if (denied) return denied;
   const perms = permissionsFor(values);
-  await db.transaction(async (tx) => {
-    await tx
-      .update(users)
-      .set({ username: values.username, staffCode: values.staffCode, phone: values.phone, fullName: values.fullName, role: values.role, title: values.title, updatedAt: new Date() })
-      .where(eq(users.id, id));
-    await tx.delete(userPermissions).where(eq(userPermissions.userId, id));
-    if (perms.length) await tx.insert(userPermissions).values(perms.map((permission) => ({ userId: id, permission })));
-    await writeAudit(tx, {
-      userId: actor.id,
-      action: "update_user",
-      targetType: "users",
-      targetId: id,
-      detail: { before: { ...before, managedBanks: undefined }, after: { ...values, permissions: perms } },
-      ip,
-    });
-  });
-  return { ok: true };
+  return db
+    .transaction(async (tx) => {
+      await tx
+        .update(users)
+        .set({ username: values.username, staffCode: values.staffCode, phone: values.phone, fullName: values.fullName, role: values.role, title: values.title, updatedAt: new Date() })
+        .where(eq(users.id, id));
+      await tx.delete(userPermissions).where(eq(userPermissions.userId, id));
+      if (perms.length) await tx.insert(userPermissions).values(perms.map((permission) => ({ userId: id, permission })));
+      await writeAudit(tx, {
+        userId: actor.id,
+        action: "update_user",
+        targetType: "users",
+        targetId: id,
+        detail: { before: { ...before, managedBanks: undefined }, after: { ...values, permissions: perms } },
+        ip,
+      });
+      return { ok: true as const };
+    })
+    .catch(raceConflict);
 }
 
 export async function setActive(actor: SessionUser, id: string, active: boolean, ip?: string | null): Promise<{ ok: true } | Fail> {
