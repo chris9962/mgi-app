@@ -15,15 +15,19 @@ export function ConfirmDialog({ open, title, text, confirmLabel, danger, onConfi
 }) {
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+  // Như mgst-app: request đã đi thì đóng hộp không gọi nó về được, nên lúc đang chạy Huỷ, X, Esc đều không đóng.
+  const requestClose = () => {
+    if (!pending) onClose();
+  };
   return (
     <Dialog
       open={open}
       title={title}
-      onClose={onClose}
+      onClose={requestClose}
       width={420}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>
+          <Button variant="secondary" disabled={pending} onClick={requestClose}>
             Huỷ
           </Button>
           <Button

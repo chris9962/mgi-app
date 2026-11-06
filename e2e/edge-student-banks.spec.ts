@@ -322,6 +322,31 @@ test.describe("D. B3 mở tài khoản", () => {
     }
   });
 
+  test("D20 bấm Quay lại trong hộp hỏi trên mạng chậm: Huỷ khoá, X và Esc không đóng hộp, xong thì về B2", async ({ page, request }) => {
+    const s = await apiCreate(request, SCHOOL.photo, info("Huỷ Lúc Đang Quay Lại"));
+    await apiPick(request, s, [BANK.p1, BANK.p3]);
+    await apiPhotos(request, s, [SLOT.p3]);
+    await openAt(page, SCHOOL.photo, s);
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    await page.route("**/api/customers/me/banks", async (route) => {
+      if (route.request().method() === "DELETE") await gate;
+      await route.continue();
+    });
+    await page.getByRole("button", { name: "Quay lại chọn ngân hàng" }).click();
+    const confirm = page.getByRole("dialog", { name: "Quay lại chọn ngân hàng" });
+    const deleting = page.waitForRequest((r) => r.method() === "DELETE" && new URL(r.url()).pathname === "/api/customers/me/banks");
+    await confirm.getByRole("button", { name: "Quay lại", exact: true }).click();
+    await deleting;
+    await expect(confirm.getByRole("button", { name: "Huỷ" })).toBeDisabled();
+    await confirm.getByRole("button", { name: "Đóng" }).click();
+    await page.keyboard.press("Escape");
+    await expect(confirm).toBeVisible();
+    release();
+    await expect(page.getByRole("heading", { name: "Chọn 2 ngân hàng" })).toBeVisible();
+    await expect(confirm).toHaveCount(0);
+  });
+
   test("D15 hai tab ở B3: tab kia đã gửi kiểm tra, bấm Quay lại thì sang màn kết quả", async ({ page, request }) => {
     const who = info("Hai Tab Quay Lại");
     const s = await apiCreate(request, SCHOOL.photo, who);
