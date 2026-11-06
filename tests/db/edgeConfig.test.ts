@@ -1,9 +1,9 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { TEST_NAME, TEST_PREFIX, cleanTestUsers, makeActor } from "./helpers";
-import { createBank, getGuide, saveGuide, updateBank } from "../../src/server/banks";
+import { createBank, getGuide, managerOptions, saveGuide, updateBank } from "../../src/server/banks";
 import { createCode, listCodes, updateCode } from "../../src/server/referralCodes";
-import { createSchool, setSchoolActive } from "../../src/server/schools";
-import { createUser, resetPassword, setActive, updateUser } from "../../src/server/users";
+import { createSchool, listSchools, searchSchoolOptions, setSchoolActive } from "../../src/server/schools";
+import { createUser, listUsers, resetPassword, setActive, updateUser } from "../../src/server/users";
 import { SESSION_COOKIE, createSession } from "../../src/server/auth/session";
 import { GET as schoolExportRoute } from "../../src/app/api/admin/schools/export/route";
 import { GET as schoolOptionsRoute } from "../../src/app/api/admin/schools/options/route";
@@ -135,5 +135,36 @@ describe("ca biên cấu hình: thứ tự Kho mã", () => {
     const [one, two] = [await list(1), await list(2)];
     expect([one.rows.length, two.rows.length]).toEqual([15, 1]);
     expect([...one.rows, ...two.rows].map((r) => r.id)).toEqual(ids.toSorted());
+  });
+});
+
+describe("ca biên cấu hình: tìm nhiều từ như mgst-app, mỗi từ một điều kiện, không theo thứ tự", () => {
+  test("Trường, ô chọn trường: mỗi từ khớp tên trường hoặc tên xã; cắt ở 8 từ và 100 ký tự", async () => {
+    const school = await createSchool(admin, SchoolForm.parse({ name: TEST_NAME + "THPT Nguyễn Thị Anh Táchds", provinceCode: "80", wardCode: "25585", contactName: "A", contactPhone: "0903111222" }));
+    if (!school.ok) throw new Error(school.message);
+    const found = async (q: string) => (await listSchools({ q, page: 1 })).rows.map((r) => r.id);
+    for (const q of ["anh nguyen tachds", "tachds chau thanh", "TÁCHDS  zztest   ANH", "zztest thpt nguyen thi anh tachds chau thanh khongco", `tachds${" ".repeat(94)}khongco`])
+      expect([q, await found(q)]).toEqual([q, [school.id]]);
+    expect(await found("tachds khongco")).toEqual([]);
+    expect((await searchSchoolOptions("anh nguyen tachds chau")).map((o) => o.id)).toEqual([school.id]);
+  });
+
+  test("Tài khoản, ô chọn người quản: mỗi từ khớp họ tên hoặc tên đăng nhập", async () => {
+    const user = await createUser(admin, userForm("tachds_user", { fullName: "Nguyễn Thị Anh Táchds" }));
+    if (!user.ok) throw new Error(user.message);
+    const found = async (q: string) => (await listUsers({ q, page: 1 })).rows.map((r) => r.id);
+    for (const q of ["anh nguyen tachds", "tachds_user anh", "zz_test_tachds THỊ"]) expect([q, await found(q)]).toEqual([q, [user.id]]);
+    expect(await found("anh tachds khongco")).toEqual([]);
+    expect((await managerOptions("anh nguyen tachds")).map((o) => o.id)).toEqual([user.id]);
+  });
+
+  test("Kho mã: mỗi từ khớp tên hiển thị hoặc mã text", async () => {
+    const bank = await createBank(admin, bankForm("ZZTTACH", "Tách từ"));
+    if (!bank.ok) throw new Error(bank.message);
+    const code = await createCode(admin, CodeForm.parse({ bankId: bank.id, displayName: TEST_NAME + "Mã Nguyễn Thị Anh Táchds", code: "TACHCODE", qrKey: null, openUrl: "", monthlyQuota: "10", priority: "0", schoolIds: [] }));
+    if (!code.ok) throw new Error(code.message);
+    const found = async (q: string) => (await listCodes(admin, { month: "2026-11", q, bankId: "", hideStopped: false, page: 1 })).rows.map((r) => r.id);
+    for (const q of ["anh nguyen tachds", "tachcode anh", "TÁCHDS mã"]) expect([q, await found(q)]).toEqual([q, [code.id]]);
+    expect(await found("tachds khongco")).toEqual([]);
   });
 });

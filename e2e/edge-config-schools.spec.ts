@@ -86,7 +86,7 @@ test("Trường: tìm không dấu, viết hoa, một phần, theo xã, nhiều 
   await searchFor(page, "     ");
   await expect(page.getByRole("region", { name: "Trường" }).locator("header span").last()).toHaveText(all!);
 
-  await searchFor(page, "Nguyễn ".repeat(72));
+  await searchFor(page, "Khôngkhớp ".repeat(50));
   await expect(page.getByText("Không có trường khớp từ khoá.")).toBeVisible();
 
   for (let i = 1; i <= 16; i++) await createSchool(page, `ZZE2E Tìm trang ${String(i).padStart(2, "0")}`);
@@ -97,6 +97,20 @@ test("Trường: tìm không dấu, viết hoa, một phần, theo xã, nhiều 
   await box.press("Enter");
   await expect(page).toHaveURL(/\/schools\?q=ZZE2E\+T%C3%ACm$/);
   await expect(page.getByRole("navigation", { name: "Phân trang" })).toContainText(/^1–15 trên/);
+});
+
+test("Trường: tìm nhiều từ không theo thứ tự, từ ở tên trường và từ ở tên xã; ô tìm nhận tối đa 100 ký tự", async ({ page }) => {
+  await apiLogin(page, "zz_e2e_admin");
+  const name = "ZZE2E THPT Nguyễn Thị Anh Táchtr";
+  await createSchool(page, name);
+  await open(page, "/schools");
+  await expect(page.getByLabel("Tên trường, xã…")).toHaveAttribute("maxlength", "100");
+  for (const q of ["anh nguyen tachtr", "tachtr chau thanh", "ANH   zze2e  táchtr"]) {
+    await searchFor(page, q);
+    await expect(cellOf(page, name), q).toBeVisible();
+  }
+  await searchFor(page, "tachtr khongco");
+  await expect(page.getByText("Không có trường khớp từ khoá.")).toBeVisible();
 });
 
 test("Trường: 16 trường khớp chia 15 và 1; page=0, -1, abc, 1.5, 999 và q lặp không lỗi; Quay lại giữ từ khoá; đóng trường thì xuống cuối danh sách", async ({ page }) => {

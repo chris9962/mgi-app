@@ -1,10 +1,10 @@
-import { and, asc, count, eq, inArray, ne, or, sql } from "drizzle-orm";
+import { and, asc, count, eq, inArray, ne, sql } from "drizzle-orm";
 import { db } from "./db/client";
 import { banks, sessions, userManagedBanks, userPermissions, users } from "./db/schema";
 import { generatePassword, hashPassword } from "./auth/password";
 import { writeAudit } from "./audit";
 import { isUniqueViolation } from "./db/errors";
-import { matchesPlain } from "./search";
+import { matchesEachTerm } from "./search";
 import type { Permission, Role, SessionUser } from "@/lib/types";
 import type { UserFormValues } from "@/lib/userForm";
 
@@ -55,8 +55,7 @@ async function decorate(rows: (typeof users.$inferSelect)[]): Promise<UserDetail
 }
 
 export async function listUsers({ q, page }: { q: string; page: number }): Promise<{ rows: UserRow[]; total: number; page: number }> {
-  const term = q.trim();
-  const where = term ? or(matchesPlain(users.fullName, term), matchesPlain(users.username, term)) : undefined;
+  const where = matchesEachTerm([users.fullName, users.username], q);
   const [{ total }] = await db.select({ total: count() }).from(users).where(where);
   const safePage = Math.min(Math.max(1, Math.trunc(page) || 1), Math.max(1, Math.ceil(total / PAGE_SIZE)));
   const rows = await db

@@ -3,6 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { inputClass } from "@/components/ui/Field";
+import { SEARCH_MAX_LENGTH } from "@/server/search";
 
 type Filters = { q: string; bankId: string; hideStopped: boolean };
 
@@ -61,6 +62,7 @@ export function CodeFilters({ month, banks, ...initial }: Filters & { month: str
         <input
           id="code-q"
           value={q}
+          maxLength={SEARCH_MAX_LENGTH}
           placeholder="Tên hiển thị, mã text…"
           className={`${inputClass} w-60`}
           onChange={(e) => {

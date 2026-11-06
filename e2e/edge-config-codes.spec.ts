@@ -61,6 +61,29 @@ test("Mã: tìm % và _ chỉ ra mã có đúng ký tự đó; tìm không dấu
   await expect(rows(page)).toHaveCount(4);
 });
 
+test("Mã: tìm nhiều từ không theo thứ tự, từ ở tên hiển thị và từ ở mã text; ô tìm và ô chọn trường nhận tối đa 100 ký tự, ô chọn trường tìm nhiều từ", async ({ page }) => {
+  await apiLogin(page, "zz_e2e_admin");
+  const bank = await createBank(page, "ZZCMATACH", "ZZE2E Mã tách từ");
+  await createCode(page, bank, "ZZE2E Nguyễn Thị Anh Táchma", { code: "ZZC-TACHMA" });
+  await createSchool(page, "ZZE2E THPT Nguyễn Thị Anh Táchma");
+  await open(page, "/banks/codes");
+  await expect(searchBox(page)).toHaveAttribute("maxlength", "100");
+  for (const q of ["anh nguyen tachma", "zzc-tachma anh", "THỊ  táchma"]) {
+    await open(page, `/banks/codes?q=${encodeURIComponent(q)}`);
+    await expect(rows(page), q).toHaveCount(1);
+    await expect(rowOf(page, "ZZE2E Nguyễn Thị Anh Táchma"), q).toBeVisible();
+  }
+  await open(page, `/banks/codes?q=${encodeURIComponent("tachma khongco")}`);
+  await expect(rows(page)).toHaveText(["Không có mã khớp bộ lọc."]);
+
+  const d = await openAdd(page);
+  const picker = d.getByRole("combobox", { name: "Trường dùng mã này" });
+  await expect(picker).toHaveAttribute("maxlength", "100");
+  await picker.fill("anh nguyen tachma");
+  await expect(d.getByRole("listbox").getByRole("option")).toHaveText([/^ZZE2E THPT Nguyễn Thị Anh Táchma - /]);
+  await d.getByRole("button", { name: "Huỷ" }).click();
+});
+
 test("Mã: gõ liền sáu ký tự thì URL chỉ đổi một lần; gõ rồi bấm sang Danh sách ngân hàng trước 300 ms thì không bị kéo về Kho mã", async ({ page }) => {
   await apiLogin(page, "zz_e2e_admin");
   const bank = await createBank(page, "ZZCMAGO", "ZZE2E Mã gõ");

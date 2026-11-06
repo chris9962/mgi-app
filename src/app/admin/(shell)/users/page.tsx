@@ -8,6 +8,7 @@ import { bankText, formDefaults, permissionText, statusTag } from "@/components/
 import { ROLE_LABEL } from "@/lib/types";
 import { readParam, type Params } from "@/lib/urlParams";
 import { requirePage } from "@/server/auth/current";
+import { SEARCH_MAX_LENGTH } from "@/server/search";
 import { listUsers, PAGE_SIZE } from "@/server/users";
 
 export const metadata = { title: "Tài khoản" };
@@ -37,6 +38,7 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
               <input
                 id="user-search"
                 name="q"
+                maxLength={SEARCH_MAX_LENGTH}
                 defaultValue={q}
                 placeholder="Tìm tên, tên đăng nhập…"
                 className="h-9 w-64 rounded-[10px] border border-field-border bg-card pr-3 pl-9 text-sm placeholder:text-text-3 narrow:w-full"

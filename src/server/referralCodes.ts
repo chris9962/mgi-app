@@ -1,9 +1,9 @@
-import { and, asc, count, desc, eq, inArray, ne, or, sql } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, ne, sql } from "drizzle-orm";
 import { db } from "./db/client";
 import { banks, referralCodeMonths, referralCodeSchools, referralCodes, schools, users } from "./db/schema";
 import { writeAudit } from "./audit";
 import { isUniqueViolation } from "./db/errors";
-import { matchesPlain } from "./search";
+import { matchesEachTerm } from "./search";
 import { schoolLabels } from "./schools";
 import { can, canManageBank } from "@/lib/permissions";
 import { currentYearMonth } from "@/lib/month";
@@ -66,12 +66,11 @@ export async function listCodes(
   actor: SessionUser,
   { month, q, bankId, hideStopped, page }: { month: string; q: string; bankId: string; hideStopped: boolean; page: number },
 ): Promise<{ rows: CodeRow[]; total: number; page: number }> {
-  const term = q.trim();
   const where = and(
     scopeOf(actor),
     bankId ? eq(referralCodes.bankId, bankId) : undefined,
     hideStopped ? eq(referralCodes.active, true) : undefined,
-    term ? or(matchesPlain(referralCodes.displayName, term), matchesPlain(referralCodes.code, term)) : undefined,
+    matchesEachTerm([referralCodes.displayName, referralCodes.code], q),
   );
   const [{ total }] = await db.select({ total: count() }).from(referralCodes).where(where);
   const safePage = Math.min(Math.max(1, Math.trunc(page) || 1), Math.max(1, Math.ceil(total / PAGE_SIZE)));

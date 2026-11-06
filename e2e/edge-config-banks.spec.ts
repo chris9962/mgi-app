@@ -85,6 +85,21 @@ test("Ngân hàng: mã viết thường lưu in hoa; mã sai dạng, mã trùng 
   expect((await api(page, "POST", "/api/admin/banks", { code: "ZZCRONG", name: "ZZE2E Rỗng", sortOrder: "", managerIds: [] })).body).toEqual({ message: "Độ ưu tiên là số", field: "sortOrder" });
 });
 
+test("Ngân hàng: ô chọn người quản tìm nhiều từ không theo thứ tự, từ ở họ tên và từ ở tên đăng nhập; ô nhận tối đa 100 ký tự", async ({ page }) => {
+  await apiLogin(page, "zz_e2e_admin");
+  await createUser(page, { fullName: "E2E C Nguyễn Thị Anh Táchnq", username: "zz_e2e_c_tachnq" });
+  await open(page, "/banks");
+  await page.getByRole("button", { name: "Thêm ngân hàng" }).click();
+  const d = page.getByRole("dialog", { name: "Thêm ngân hàng" });
+  const picker = d.getByRole("combobox", { name: "Người quản ngân hàng này" });
+  await expect(picker).toHaveAttribute("maxlength", "100");
+  for (const q of ["anh nguyen tachnq", "zz_e2e_c_tachnq anh"]) {
+    await picker.fill(q);
+    await expect(d.getByRole("listbox").getByRole("option"), q).toHaveText(["E2E C Nguyễn Thị Anh Táchnq"]);
+  }
+  await d.getByRole("button", { name: "Huỷ" }).click();
+});
+
 test("Ngân hàng: ba request tạo cùng mã cùng lúc thì một 201, hai 409 báo ở ô mã, không lỗi 500", async ({ page }) => {
   await apiLogin(page, "zz_e2e_admin");
   const body = { code: "ZZCDONG", name: "ZZE2E Đồng thời", sortOrder: "1", managerIds: [] };

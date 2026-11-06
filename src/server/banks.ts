@@ -1,9 +1,9 @@
-import { and, asc, eq, inArray, isNull, ne, or, sql } from "drizzle-orm";
+import { and, asc, eq, inArray, isNull, ne, sql } from "drizzle-orm";
 import { db } from "./db/client";
 import { bankPhotoSlots, banks, customerBanks, referralCodeMonths, referralCodes, userManagedBanks, users } from "./db/schema";
 import { writeAudit } from "./audit";
 import { isUniqueViolation } from "./db/errors";
-import { matchesPlain } from "./search";
+import { matchesEachTerm } from "./search";
 import { can, canManageBank } from "@/lib/permissions";
 import { currentYearMonth } from "@/lib/month";
 import type { SessionUser } from "@/lib/types";
@@ -158,11 +158,10 @@ export async function saveGuide(actor: SessionUser, bankId: string, values: Guid
 }
 
 export async function managerOptions(q: string): Promise<{ id: string; label: string }[]> {
-  const term = q.trim();
   const rows = await db
     .select({ id: users.id, fullName: users.fullName, title: users.title })
     .from(users)
-    .where(and(eq(users.role, "staff"), eq(users.active, true), term ? or(matchesPlain(users.fullName, term), matchesPlain(users.username, term)) : undefined))
+    .where(and(eq(users.role, "staff"), eq(users.active, true), matchesEachTerm([users.fullName, users.username], q)))
     .orderBy(asc(users.fullName))
     .limit(20);
   return rows.map((r) => ({ id: r.id, label: r.title ? `${r.fullName} - ${r.title}` : r.fullName }));

@@ -1,4 +1,4 @@
-import { and, like, sql, type AnyColumn, type SQL } from "drizzle-orm";
+import { and, like, or, sql, type AnyColumn, type SQL } from "drizzle-orm";
 import { plain } from "@/lib/text";
 
 export const SEARCH_MAX_LENGTH = 100;
@@ -24,3 +24,6 @@ export const phoneDigits = (q: string): string | null => {
 
 // Cột chưa có bản bỏ dấu lưu sẵn: Postgres bỏ dấu bằng unaccent, máy chủ bỏ dấu từ khoá bằng plain, rồi so chuỗi con.
 export const matchesPlain = (column: AnyColumn | SQL, term: string): SQL => sql`unaccent(lower(${column})) like ${containsPattern(plain(term).replace(/\s+/g, " "))}`;
+
+// Như ô tìm nhân sự của mgst-app: mỗi từ khớp ít nhất một cột, "nguyen chau thanh" ra trường Nguyễn ở xã Châu Thành.
+export const matchesEachTerm = (columns: (AnyColumn | SQL)[], q: string): SQL | undefined => and(...searchTerms(q).map((t) => or(...columns.map((c) => matchesPlain(c, t)))));

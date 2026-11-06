@@ -69,6 +69,19 @@ test("Tài khoản: tìm không dấu, viết hoa, một phần tên đăng nh�
   expect(await rows(page).count()).toBeGreaterThan(4);
 });
 
+test("Tài khoản: tìm nhiều từ không theo thứ tự, từ ở họ tên và từ ở tên đăng nhập; ô tìm nhận tối đa 100 ký tự", async ({ page }) => {
+  await apiLogin(page, "zz_e2e_admin");
+  await createUser(page, { fullName: "E2E C Nguyễn Thị Anh Táchtk", username: "zz_e2e_c_tachtk" });
+  await open(page, "/users");
+  await expect(page.getByLabel("Tìm tài khoản")).toHaveAttribute("maxlength", "100");
+  for (const q of ["anh nguyen tachtk", "zz_e2e_c_tachtk anh", "THỊ  tachtk"]) {
+    await searchUsers(page, q);
+    expect([q, await usernames(page)]).toEqual([q, ["zz_e2e_c_tachtk"]]);
+  }
+  await searchUsers(page, "tachtk khongco");
+  await expect(rows(page)).toHaveText(["Không có tài khoản khớp từ khoá."]);
+});
+
 test("Tài khoản: 16 tài khoản khớp chia 15 và 1; page lạ, q lặp không lỗi 500; /users/abc, uuid lạ trả 404", async ({ page }) => {
   test.setTimeout(90_000);
   await apiLogin(page, "zz_e2e_admin");

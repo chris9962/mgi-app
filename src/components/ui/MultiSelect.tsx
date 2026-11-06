@@ -3,6 +3,7 @@
 import { clsx } from "clsx";
 import { Search, X } from "lucide-react";
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
+import { SEARCH_MAX_LENGTH } from "@/server/search";
 import { inputClass } from "./Field";
 
 export type Option = { id: string; label: string };
@@ -89,6 +90,7 @@ export function MultiSelect({ label, value, onChange, search, placeholder = "Gõ
           aria-activedescendant={options?.[active] ? `${listId}-${active}` : undefined}
           autoComplete="off"
           placeholder={placeholder}
+          maxLength={SEARCH_MAX_LENGTH}
           value={query}
           onFocus={() => {
             focused.current = true;

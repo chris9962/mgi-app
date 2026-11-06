@@ -1,8 +1,8 @@
-import { and, asc, count, eq, inArray, or, sql } from "drizzle-orm";
+import { and, asc, count, eq, inArray, sql } from "drizzle-orm";
 import { db } from "./db/client";
 import { customers, provinces, schools, wards } from "./db/schema";
 import { writeAudit } from "./audit";
-import { matchesPlain } from "./search";
+import { matchesEachTerm } from "./search";
 import type { SessionUser } from "@/lib/types";
 import type { SchoolFormValues } from "@/lib/schoolForm";
 
@@ -44,10 +44,7 @@ const columns = {
 
 const base = () => db.select(columns).from(schools).innerJoin(wards, eq(wards.code, schools.wardCode)).innerJoin(provinces, eq(provinces.code, wards.provinceCode));
 
-const schoolWhere = (q: string) => {
-  const term = q.trim();
-  return term ? or(matchesPlain(schools.name, term), matchesPlain(wards.name, term)) : undefined;
-};
+const schoolWhere = (q: string) => matchesEachTerm([schools.name, wards.name], q);
 const schoolOrder = [sql`${schools.active} desc`, asc(schools.name), asc(schools.id)];
 
 export async function listSchools({ q, page }: { q: string; page: number }): Promise<{ rows: SchoolRow[]; total: number; page: number }> {
@@ -121,12 +118,11 @@ const shortWard = (name: string) => name.replace(/^(Xã|Phường|Thị trấn|�
 
 // closed: bộ lọc danh sách cần cả trường đã đóng, vì hồ sơ cũ của trường vẫn còn.
 export async function searchSchoolOptions(q: string, { closed = false } = {}): Promise<{ id: string; label: string }[]> {
-  const term = q.trim();
   const rows = await db
     .select({ id: schools.id, name: schools.name, ward: wards.name })
     .from(schools)
     .innerJoin(wards, eq(wards.code, schools.wardCode))
-    .where(and(closed ? undefined : eq(schools.active, true), term ? or(matchesPlain(schools.name, term), matchesPlain(wards.name, term)) : undefined))
+    .where(and(closed ? undefined : eq(schools.active, true), schoolWhere(q)))
     .orderBy(asc(schools.name))
     .limit(20);
   return rows.map((r) => ({ id: r.id, label: `${r.name} - ${shortWard(r.ward)}` }));
