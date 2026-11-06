@@ -72,7 +72,7 @@ function ReplaceDialog({ bank, onClose }: { bank: Bank; onClose: () => void }) {
 function NoteDialog({ bank, onClose }: { bank: Bank; onClose: () => void }) {
   const router = useRouter();
   const id = useId();
-  const [error, setError] = useState("");
+  const [errors, setErrors] = useState<{ note?: string; form?: string }>({});
   const [pending, setPending] = useState(false);
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -80,7 +80,8 @@ function NoteDialog({ bank, onClose }: { bank: Bank; onClose: () => void }) {
     setPending(true);
     const r = await apiSend("PUT", `/api/admin/customer-banks/${bank.id}/note`, { note: String(new FormData(event.currentTarget).get("note") ?? "") });
     setPending(false);
-    if (!r.ok) return setError(r.message);
+    // Mất mạng hay ngân hàng vừa bị bỏ giao không phải lỗi của ghi chú: báo ở dòng chung, không đánh dấu ô sai.
+    if (!r.ok) return setErrors(r.field === "note" ? { note: r.message } : { form: r.message });
     onClose();
     router.refresh();
   }
@@ -101,10 +102,15 @@ function NoteDialog({ bank, onClose }: { bank: Bank; onClose: () => void }) {
         </>
       }
     >
-      <form id="review-note" onSubmit={submit} noValidate>
-        <Field id={id} label={`Ghi chú cho ${bank.name}`} error={error}>
-          <textarea id={id} name="note" rows={5} maxLength={1000} defaultValue={bank.note} data-autofocus aria-invalid={error ? true : undefined} aria-describedby={error ? `${id}-error` : undefined} className={inputClass} />
+      <form id="review-note" onSubmit={submit} noValidate className="flex flex-col gap-3">
+        <Field id={id} label={`Ghi chú cho ${bank.name}`} error={errors.note}>
+          <textarea id={id} name="note" rows={5} maxLength={1000} defaultValue={bank.note} data-autofocus aria-invalid={errors.note ? true : undefined} aria-describedby={errors.note ? `${id}-error` : undefined} className={inputClass} />
         </Field>
+        {errors.form && (
+          <p role="alert" className="text-sm text-danger">
+            {errors.form}
+          </p>
+        )}
       </form>
     </Dialog>
   );
