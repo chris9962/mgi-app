@@ -55,7 +55,7 @@ async function decorate(rows: (typeof users.$inferSelect)[]): Promise<UserDetail
 }
 
 export async function listUsers({ q, page }: { q: string; page: number }): Promise<{ rows: UserRow[]; total: number; page: number }> {
-  const where = matchesEachTerm([users.fullName, users.username], q);
+  const where = matchesEachTerm([users.fullName, users.username, sql`coalesce(${users.staffCode}, '')`], q);
   const [{ total }] = await db.select({ total: count() }).from(users).where(where);
   const safePage = Math.min(Math.max(1, Math.trunc(page) || 1), Math.max(1, Math.ceil(total / PAGE_SIZE)));
   const rows = await db

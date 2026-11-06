@@ -193,6 +193,14 @@ describe("ca biên cấu hình: tìm nhiều từ như mgst-app, mỗi từ mộ
     expect((await managerOptions("anh nguyen tachds")).map((o) => o.id)).toEqual([user.id]);
   });
 
+  test("Tài khoản: từ khoá khớp cả Mã tài khoản như staffSearchWhere của mgst-app", async () => {
+    const user = await createUser(admin, userForm("tachds_ma", { fullName: "Người có mã Táchma", staffCode: "ZZT-MTK-7781" }));
+    if (!user.ok) throw new Error(user.message);
+    const found = async (q: string) => (await listUsers({ q, page: 1 })).rows.map((r) => r.id);
+    for (const q of ["mtk-7781", "ZZT-MTK-7781", "7781 tachma"]) expect([q, await found(q)]).toEqual([q, [user.id]]);
+    expect(await found("mtk-7781 khongco")).toEqual([]);
+  });
+
   test("Kho mã: mỗi từ khớp tên hiển thị hoặc mã text", async () => {
     const bank = await createBank(admin, bankForm("ZZTTACH", "Tách từ"));
     if (!bank.ok) throw new Error(bank.message);
