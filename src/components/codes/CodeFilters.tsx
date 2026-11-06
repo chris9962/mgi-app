@@ -6,12 +6,26 @@ import { inputClass } from "@/components/ui/Field";
 
 type Filters = { q: string; bankId: string; hideStopped: boolean };
 
+const same = (a: Filters, b: Filters) => a.q === b.q && a.bankId === b.bankId && a.hideStopped === b.hideStopped;
+
 // Lọc ngay khi đổi như mgst-app, không có nút Lọc: ô tìm chờ gõ xong 300 ms rồi mới tải lại.
 export function CodeFilters({ month, banks, ...initial }: Filters & { month: string; banks: { id: string; name: string }[] }) {
   const router = useRouter();
   const [q, setQ] = useState(initial.q);
   const [bankId, setBankId] = useState(initial.bankId);
   const [hideStopped, setHideStopped] = useState(initial.hideStopped);
+  // URL đổi vì link hoặc nút Quay lại thì ô lọc hiện theo URL; URL đổi vì chính ô này gửi thì giữ nguyên chữ đang gõ dở.
+  const [synced, setSynced] = useState<Filters>(initial);
+  const [sent, setSent] = useState<Filters | null>(null);
+  if (!same(synced, initial)) {
+    setSynced(initial);
+    if (sent && same(sent, initial)) setSent(null);
+    else {
+      setQ(initial.q);
+      setBankId(initial.bankId);
+      setHideStopped(initial.hideStopped);
+    }
+  }
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   // Gõ rồi bấm sang trang khác trước 300 ms: huỷ lượt tải chờ, không thì trang mới bị kéo về Kho mã.
@@ -24,6 +38,8 @@ export function CodeFilters({ month, banks, ...initial }: Filters & { month: str
 
   const go = (next: Filters) => {
     if (timer.current) clearTimeout(timer.current);
+    const target = { ...next, q: next.q.trim() };
+    if (!same(target, synced)) setSent(target);
     const p = new URLSearchParams({ month, ...(next.q.trim() ? { q: next.q.trim() } : {}), ...(next.bankId ? { bank: next.bankId } : {}), ...(next.hideStopped ? { hide: "1" } : {}) });
     router.replace(`/banks/codes?${p}`);
   };
