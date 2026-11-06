@@ -129,6 +129,7 @@ export async function seedBusiness(adminId: string) {
     // n từ 250: 230 tới 246 đã là số của hồ sơ Chờ Kiểm.
     { id: B.B_IDS.selfReplace, fullName: B.B_NAMES.selfReplace, n: 250, createdAt: new Date("2026-10-22T03:06:00Z"), banks: [{ bank: 1, status: "pending" }] },
     { id: B.B_IDS.slotGone, fullName: B.B_NAMES.slotGone, n: 251, createdAt: new Date("2026-10-22T03:07:00Z"), banks: [{ bank: 2, status: "pending" }] },
+    { id: B.B_IDS.replaceTabs, fullName: B.B_NAMES.replaceTabs, n: 252, createdAt: new Date("2026-10-22T03:08:00Z"), banks: [{ bank: 1, status: "pending" }] },
   ];
 
   const [reviewer1, reviewer2] = staff;

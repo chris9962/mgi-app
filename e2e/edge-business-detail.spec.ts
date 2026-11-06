@@ -488,6 +488,38 @@ test("Trang 4: quản trị gỡ khung ảnh lúc trang đang mở, ảnh của 
   expect(await voucherCount(page, B.B_NAMES.slotGone)).toBe(1);
 });
 
+test("Trang 4 hai tab cùng tải ảnh thay thế một khung: người tải sau ghi đè, ảnh của người tải trước vẫn mở được; tab tải trước bấm Đạt thì báo ảnh vừa được thay; tải lại trang thì thấy ảnh của người tải sau, Đạt được", async ({ browser }) => {
+  const a = await loginAs(browser, B.B_USER1);
+  const b = await loginAs(browser, "zz_e2e_admin");
+  const replace = (page: Page) => page.getByRole("dialog", { name: "Tải ảnh thay thế" });
+  for (const page of [a, b]) {
+    await open(page, detail(B.B_IDS.replaceTabs));
+    await bank1(page).getByRole("button", { name: "Tải ảnh thay thế" }).click();
+    await replace(page).getByLabel("Ảnh", { exact: true }).setInputFiles(PHOTO);
+  }
+  for (const page of [a, b]) {
+    await replace(page).getByRole("button", { name: "Tải lên" }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 30_000 });
+  }
+  await expect(bank1(a).getByText("Ảnh thay thế của E2E Biên Một")).toBeVisible();
+  await expect(bank1(b).getByText("Ảnh thay thế của E2E Quản trị")).toBeVisible();
+  const first = await bank1(a).getByRole("img").getAttribute("src");
+  expect(first).not.toBe(await bank1(b).getByRole("img").getAttribute("src"));
+  expect((await b.request.get(first!, { maxRedirects: 0 })).status()).toBe(302);
+
+  await bank1(a).getByRole("button", { name: "Đạt", exact: true }).click();
+  const confirm = a.getByRole("dialog", { name: "Đánh dấu Đạt" });
+  await confirm.getByRole("button", { name: "Đạt", exact: true }).click();
+  await expect(confirm.getByRole("alert")).toHaveText("Ảnh vừa được thay. Tải lại trang để xem ảnh mới.");
+  await confirm.getByRole("button", { name: "Huỷ" }).click();
+
+  await open(a, detail(B.B_IDS.replaceTabs));
+  await expect(bank1(a).getByRole("img")).toHaveCount(1);
+  await expect(bank1(a).getByText("Ảnh thay thế của E2E Quản trị")).toBeVisible();
+  await markPassed(a);
+  expect(await voucherCount(b, B.B_NAMES.replaceTabs)).toBe(1);
+});
+
 test("Trang 4 hai tab: cùng bấm nút Đạt trong hộp xác nhận đúng một lúc thì một tab Đạt, tab kia báo đã có người đánh dấu; chỉ 1 voucher và 1 tin SMS", async ({ browser }) => {
   const a = await loginAs(browser, B.B_USER1);
   const b = await loginAs(browser, "zz_e2e_admin");

@@ -91,6 +91,7 @@ export const B_IDS = {
   lostBank: id(227),
   selfReplace: id(228),
   slotGone: id(229),
+  replaceTabs: id(230),
 } as const;
 
 export const B_NAMES: Record<keyof typeof B_IDS, string> = {
@@ -123,4 +124,5 @@ export const B_NAMES: Record<keyof typeof B_IDS, string> = {
   lostBank: "Biên Bỏ Giao",
   selfReplace: "Biên Tải Rồi Đạt",
   slotGone: "Biên Gỡ Khung",
+  replaceTabs: "Biên Cùng Khung",
 };
