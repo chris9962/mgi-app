@@ -69,6 +69,7 @@ async function main() {
     parentPhone: "0922333444",
     tokenHash: newCustomerToken().tokenHash,
   });
+  await (await import("./e2e-seed-business")).seedBusiness(admin.id);
   await pool.end();
 }
 
