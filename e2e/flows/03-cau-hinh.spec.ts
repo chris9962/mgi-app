@@ -86,10 +86,7 @@ test("Flow 3: cấu hình trường, ngân hàng, hướng dẫn, mã giới thi
     await form.getByRole("combobox", { name: "Trường dùng mã này" }).pressSequentially("Lê Quý", { delay: 60 });
     await page.getByRole("option", { name: new RegExp(`${SCHOOL} - Châu Thành`) }).click();
     await form.getByRole("button", { name: "Tạo mã" }).click();
-    const row = page.getByRole("row", { name: new RegExp(CODE) });
-    await expect(row.getByText("Còn chỗ")).toBeVisible();
-    await expect(row.getByText("0/200")).toBeVisible();
-    await expect(row).toContainText(SCHOOL);
+    await expect(form).toHaveCount(0);
   });
 
   await test.step("Kho mã: lọc theo ngân hàng ngay khi chọn, không có nút Lọc", async () => {
@@ -97,6 +94,11 @@ test("Flow 3: cấu hình trường, ngân hàng, hướng dẫn, mã giới thi
     await page.getByRole("search").getByLabel("Ngân hàng").selectOption({ label: BANK });
     await expect(page).toHaveURL(/bank=/);
     await expect(page.getByRole("region", { name: "Kho mã giới thiệu" }).getByRole("row")).toHaveCount(2);
+    // Seed ca biên đã lấp đủ 15 dòng trang 1, mã mới chỉ chắc chắn hiện sau khi lọc theo ngân hàng.
+    const row = page.getByRole("row", { name: new RegExp(CODE) });
+    await expect(row.getByText("Còn chỗ")).toBeVisible();
+    await expect(row.getByText("0/200")).toBeVisible();
+    await expect(row).toContainText(SCHOOL);
   });
 
   await test.step("Kho mã theo tháng: lùi một tháng rồi về tháng này", async () => {
