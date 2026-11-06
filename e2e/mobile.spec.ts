@@ -1,16 +1,12 @@
 import { expect, test, type Browser, type Locator, type Page } from "@playwright/test";
+import { E2E_MOBILE_CUSTOMER } from "../scripts/e2e-data";
 
 const PASSWORD = "e2e23test";
 const PHONE = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true };
 const DESKTOP = { viewport: { width: 1366, height: 768 } };
 
 async function loginAs(browser: Browser, username: string, device: object): Promise<Page> {
-  const context = await browser.newContext({ baseURL: "http://admin.localhost:3100", ...device });
-  // Huy hiệu của dev server nằm góc phải dưới, đè lên nút Thêm ở khổ 390 px; bản chạy thật không có huy hiệu này.
-  await context.addInitScript(() =>
-    document.addEventListener("DOMContentLoaded", () => document.head.append(Object.assign(document.createElement("style"), { textContent: "nextjs-portal{display:none!important}" }))),
-  );
-  const page = await context.newPage();
+  const page = await (await browser.newContext({ baseURL: "http://admin.localhost:3100", ...device })).newPage();
   await page.goto("/login");
   await page.getByLabel("Tài khoản").fill(username);
   await page.getByLabel("Mật khẩu", { exact: true }).fill(PASSWORD);
@@ -59,11 +55,42 @@ test("điện thoại: Esc và bấm lớp phủ đóng sidebar, Esc trả focus
   await expect(sidebar(page)).toBeHidden();
 });
 
-// zz_e2e_lock chứ không zz_e2e_staff: config.spec giao ngân hàng cho zz_e2e_staff, chạy cả bộ thì tài khoản đó có quyền hồ sơ.
 test("điện thoại: Nhân viên không có quyền trang nghiệp vụ nào thì thanh đáy chỉ có nút Thêm", async ({ browser }) => {
-  const page = await loginAs(browser, "zz_e2e_lock", PHONE);
+  const page = await loginAs(browser, "zz_e2e_noperm", PHONE);
   await expect(bottomNav(page).getByRole("link")).toHaveCount(0);
   await expect(bottomNav(page).getByRole("button", { name: "Thêm" })).toBeVisible();
+});
+
+const bodyOverflow = (page: Page) => page.evaluate(() => getComputedStyle(document.body).overflow);
+
+test("điện thoại: ngăn đóng thì phím Tab không vào link của ngăn", async ({ browser }) => {
+  const page = await loginAs(browser, "zz_e2e_admin", PHONE);
+  await page.goto("/customers");
+  await page.waitForLoadState("networkidle");
+  const inDrawer: string[] = [];
+  for (let i = 0; i < 40; i++) {
+    await page.keyboard.press("Tab");
+    const hit = await page.evaluate(() => (document.activeElement?.closest("#main-nav") ? document.activeElement.textContent : null));
+    if (hit !== null) inDrawer.push(hit);
+  }
+  expect(inDrawer).toEqual([]);
+});
+
+test("điện thoại: đóng ngăn bằng Esc hay lớp phủ thì trang cuộn lại được", async ({ browser }) => {
+  const page = await loginAs(browser, "zz_e2e_admin", PHONE);
+  const more = bottomNav(page).getByRole("button", { name: "Thêm" });
+  await more.click();
+  await expect(sidebar(page)).toBeVisible();
+  expect(await bodyOverflow(page)).toBe("hidden");
+  await page.keyboard.press("Escape");
+  await expect(sidebar(page)).toBeHidden();
+  expect(await bodyOverflow(page)).toBe("visible");
+
+  await more.click();
+  expect(await bodyOverflow(page)).toBe("hidden");
+  await page.mouse.click(370, 300);
+  await expect(sidebar(page)).toBeHidden();
+  expect(await bodyOverflow(page)).toBe("visible");
 });
 
 test("điện thoại: không trang quản lý nào cuộn ngang cả trang", async ({ browser }) => {
@@ -72,9 +99,9 @@ test("điện thoại: không trang quản lý nào cuộn ngang cả trang", as
   const menu = await page.locator("#main-nav a").evaluateAll((links) => links.map((a) => a.getAttribute("href")!));
   await page.goto("/users?q=zz_e2e_staff");
   const user = await page.getByRole("link", { name: "E2E Nhân viên" }).getAttribute("href");
-  await page.goto("/customers");
-  const customer = await page.locator('main a[href^="/customers/"]').first().getAttribute("href", { timeout: 2_000 }).catch(() => null);
-  const paths = [...new Set([...menu, "/profile", user!, ...(customer ? [customer] : [])])];
+  await page.goto(`/customers?q=${encodeURIComponent(E2E_MOBILE_CUSTOMER)}`);
+  const customer = await page.getByRole("link", { name: E2E_MOBILE_CUSTOMER }).getAttribute("href");
+  const paths = [...new Set([...menu, "/profile", user!, customer!])];
   expect(paths.length).toBeGreaterThan(10);
 
   const wide: string[] = [];

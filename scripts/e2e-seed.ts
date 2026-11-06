@@ -1,11 +1,13 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import { db, pool } from "../src/server/db/client";
-import { bankPhotoSlots, banks, referralCodeSchools, referralCodes, schools, userManagedBanks, userPermissions, users } from "../src/server/db/schema";
+import { bankPhotoSlots, banks, customers, referralCodeSchools, referralCodes, schools, userManagedBanks, userPermissions, users } from "../src/server/db/schema";
 import { hashPassword } from "../src/server/auth/password";
+import { newCustomerToken } from "../src/server/customers";
+import { plain } from "../src/lib/text";
 import { putImage } from "../src/server/storage";
 import { cleanE2e, E2E_NAME, E2E_PASSWORD, E2E_PREFIX } from "./e2e-clean";
-import { E2E_REVIEW_BANK, E2E_STUDENT_SCHOOL, E2E_STUDENT_SCHOOL_ID } from "./e2e-data";
+import { E2E_MOBILE_CUSTOMER, E2E_REVIEW_BANK, E2E_STUDENT_SCHOOL, E2E_STUDENT_SCHOOL_ID } from "./e2e-data";
 
 // Web học sinh cần sẵn một trường có 3 ngân hàng mở, mỗi ngân hàng có hướng dẫn, khung ảnh và mã gắn cho trường.
 async function seedStudentWeb(adminId: string): Promise<Record<string, string>> {
@@ -44,6 +46,7 @@ async function main() {
       { username: `${E2E_PREFIX}admin`, fullName: "E2E Quản trị", role: "admin", passwordHash },
       { username: `${E2E_PREFIX}staff`, fullName: "E2E Nhân viên", role: "staff", passwordHash },
       { username: `${E2E_PREFIX}lock`, fullName: "E2E Khoá", role: "staff", passwordHash },
+      { username: `${E2E_PREFIX}noperm`, fullName: "E2E Không quyền", role: "staff", passwordHash },
     ])
     .returning({ id: users.id });
   const bankIds = await seedStudentWeb(admin.id);
@@ -51,6 +54,17 @@ async function main() {
   const [reviewer] = await db.insert(users).values({ username: `${E2E_PREFIX}reviewer`, fullName: "E2E Hậu kiểm", role: "staff", passwordHash }).returning({ id: users.id });
   await db.insert(userManagedBanks).values({ userId: reviewer.id, bankId: bankIds[E2E_REVIEW_BANK] });
   await db.insert(userPermissions).values({ userId: reviewer.id, permission: "vouchers" });
+  // Trang chi tiết hồ sơ cần ít nhất một hồ sơ để test khổ điện thoại đo được.
+  await db.insert(customers).values({
+    schoolId: E2E_STUDENT_SCHOOL_ID,
+    fullName: E2E_MOBILE_CUSTOMER,
+    nameSearch: plain(E2E_MOBILE_CUSTOMER),
+    className: "10A3",
+    phone: "0911222333",
+    parentName: "Phạm Văn Cha",
+    parentPhone: "0922333444",
+    tokenHash: newCustomerToken().tokenHash,
+  });
   await pool.end();
 }
 
