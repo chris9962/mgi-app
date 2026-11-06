@@ -75,6 +75,9 @@ export const B_IDS = {
   late: id(220),
   early: id(221),
   oldPhoto: id(222),
+  sameTime: id(223),
+  failFirst: id(224),
+  doubleClick: id(225),
 } as const;
 
 export const B_NAMES: Record<keyof typeof B_IDS, string> = {
@@ -100,4 +103,7 @@ export const B_NAMES: Record<keyof typeof B_IDS, string> = {
   late: B_LATE,
   early: B_EARLY,
   oldPhoto: "Biên Ảnh Cũ",
+  sameTime: "Biên Đạt Cùng Lúc",
+  failFirst: "Biên Không Đạt Trước",
+  doubleClick: "Biên Bấm Đúp",
 };

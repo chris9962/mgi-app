@@ -384,6 +384,61 @@ test("Trang 4 hai tab: tab A tải ảnh thay thế, tab B đang mở trang cũ 
   expect(await voucherCount(b, B.B_NAMES.oldPhoto)).toBe(1);
 });
 
+test("Trang 4 hai tab: cùng bấm nút Đạt trong hộp xác nhận đúng một lúc thì một tab Đạt, tab kia báo đã có người đánh dấu; chỉ 1 voucher và 1 tin SMS", async ({ browser }) => {
+  const a = await loginAs(browser, B.B_USER1);
+  const b = await loginAs(browser, "zz_e2e_admin");
+  const confirm = (page: Page) => page.getByRole("dialog", { name: "Đánh dấu Đạt" });
+  for (const page of [a, b]) {
+    await open(page, detail(B.B_IDS.sameTime));
+    await bank1(page).getByRole("button", { name: "Đạt", exact: true }).click();
+    await expect(confirm(page)).toBeVisible();
+  }
+  await Promise.all([a, b].map((page) => confirm(page).getByRole("button", { name: "Đạt", exact: true }).click()));
+  const outcome = async (page: Page) => ((await confirm(page).count()) ? (await confirm(page).getByRole("alert").allTextContents()).join("") : "đóng");
+  await expect.poll(async () => [await outcome(a), await outcome(b)].sort()).toEqual([TAKEN, "đóng"].sort());
+
+  expect(await voucherCount(b, B.B_NAMES.sameTime)).toBe(1);
+  await open(b, `/sms?q=${encodeURIComponent(B.B_NAMES.sameTime)}&status=all`);
+  await expect(b.getByRole("region", { name: "Tin SMS" }).locator("tbody tr").filter({ has: b.getByRole("link", { name: B.B_NAMES.sameTime, exact: true }) })).toHaveCount(1);
+});
+
+test("Trang 4 hai tab: tab A bấm Không đạt, tab B đang mở trang cũ bấm Đạt thì báo đã có người đánh dấu; tải lại trang thì Đạt được và cấp đúng 1 voucher", async ({ browser }) => {
+  const a = await loginAs(browser, B.B_USER1);
+  const b = await loginAs(browser, "zz_e2e_admin");
+  await open(a, detail(B.B_IDS.failFirst));
+  await open(b, detail(B.B_IDS.failFirst));
+  await bank1(a).getByRole("button", { name: "Không đạt" }).click();
+  await a.getByRole("dialog", { name: "Đánh dấu Không đạt" }).getByRole("button", { name: "Không đạt" }).click();
+  await expect(a.getByRole("dialog")).toHaveCount(0);
+
+  await bank1(b).getByRole("button", { name: "Đạt", exact: true }).click();
+  const confirm = b.getByRole("dialog", { name: "Đánh dấu Đạt" });
+  await confirm.getByRole("button", { name: "Đạt", exact: true }).click();
+  await expect(confirm.getByRole("alert")).toHaveText(TAKEN);
+  await confirm.getByRole("button", { name: "Huỷ" }).click();
+  expect(await voucherCount(b, B.B_NAMES.failFirst)).toBe(0);
+
+  await open(b, detail(B.B_IDS.failFirst));
+  await expect(bank1(b).locator("header")).toContainText("Không đạt");
+  await markPassed(b);
+  expect(await voucherCount(b, B.B_NAMES.failFirst)).toBe(1);
+});
+
+test("Trang 4: bấm đúp nút Đạt trong hộp xác nhận chỉ gửi một request", async ({ browser }) => {
+  const page = await loginAs(browser, "zz_e2e_admin");
+  await open(page, detail(B.B_IDS.doubleClick));
+  const posts: string[] = [];
+  page.on("request", (r) => {
+    if (r.method() === "POST" && r.url().endsWith("/review")) posts.push(r.url());
+  });
+  await bank1(page).getByRole("button", { name: "Đạt", exact: true }).click();
+  await page.getByRole("dialog", { name: "Đánh dấu Đạt" }).getByRole("button", { name: "Đạt", exact: true }).dblclick();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(bank1(page).locator("header")).toContainText("Đạt");
+  expect(posts.length).toBe(1);
+  expect(await voucherCount(page, B.B_NAMES.doubleClick)).toBe(1);
+});
+
 test("Trang 4 phân quyền: Nhân viên mở hồ sơ ngoài phạm vi và gọi mọi API của dòng ngoài phạm vi nhận 404; thẻ ngân hàng không quản không có ảnh và nút; request ghi thiếu Origin nhận 403", async ({ browser }) => {
   const admin = await loginAs(browser, "zz_e2e_admin");
   const staff = await loginAs(browser, B.B_USER1);
