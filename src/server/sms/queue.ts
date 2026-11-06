@@ -3,11 +3,10 @@ import { db } from "../db/client";
 import { customers, schools, smsMessages } from "../db/schema";
 import { writeAudit } from "../audit";
 import { customerWhere } from "../customerList";
-import { containsPattern, phoneDigits } from "../search";
+import { containsPattern, likeEachTerm, phoneDigits } from "../search";
 import { sendSms, type SmsResult, type SmsSender } from "./send";
 import { parseCustomerFilters } from "@/lib/customerFilters";
 import type { SmsFilters, SmsStatus } from "@/lib/smsFilters";
-import { plain } from "@/lib/text";
 import type { SessionUser } from "@/lib/types";
 
 export const PAGE_SIZE = 15;
@@ -76,7 +75,7 @@ function smsWhere(actor: SessionUser, f: SmsFilters): SQL | undefined {
     f.q
       ? digits
         ? or(like(smsMessages.toPhone, containsPattern(digits)), like(customers.parentPhone, containsPattern(digits)))
-        : like(customers.nameSearch, containsPattern(plain(f.q).replace(/\s+/g, " ")))
+        : likeEachTerm(customers.nameSearch, f.q)
       : undefined,
   );
 }

@@ -1,9 +1,8 @@
 import { and, count, desc, eq, gte, like, lt, or, type SQL } from "drizzle-orm";
 import { db } from "./db/client";
 import { customers, schools, vouchers } from "./db/schema";
-import { containsPattern } from "./search";
+import { containsPattern, likeEachTerm, SEARCH_MAX_LENGTH } from "./search";
 import { can } from "@/lib/permissions";
-import { plain } from "@/lib/text";
 import { dayRange } from "@/lib/urlParams";
 import type { VoucherFilters } from "@/lib/voucherFilters";
 import type { SessionUser } from "@/lib/types";
@@ -15,7 +14,7 @@ export type VoucherRow = { id: string; code: string; customerId: string; fullNam
 export function voucherWhere(f: VoucherFilters): SQL | undefined {
   const { start, end } = dayRange(f.from, f.to);
   return and(
-    f.q ? or(like(vouchers.code, containsPattern(f.q.toUpperCase())), like(customers.nameSearch, containsPattern(plain(f.q).replace(/\s+/g, " ")))) : undefined,
+    f.q ? or(like(vouchers.code, containsPattern(f.q.slice(0, SEARCH_MAX_LENGTH).toUpperCase())), likeEachTerm(customers.nameSearch, f.q)) : undefined,
     start ? gte(vouchers.issuedAt, start) : undefined,
     end ? lt(vouchers.issuedAt, end) : undefined,
   );

@@ -1,10 +1,9 @@
 import { and, asc, count, desc, eq, gte, inArray, like, lt, or, sql, type SQL } from "drizzle-orm";
 import { db } from "./db/client";
 import { banks, customerBanks, customers, schools, users } from "./db/schema";
-import { containsPattern, phoneDigits } from "./search";
+import { containsPattern, likeEachTerm, phoneDigits } from "./search";
 import { customerScope, reviewsBank } from "@/lib/permissions";
 import { dayRange, type CustomerFilters } from "@/lib/customerFilters";
-import { plain } from "@/lib/text";
 import type { CustomerBankStatus, CustomerStatus } from "@/lib/studentState";
 import type { SessionUser } from "@/lib/types";
 
@@ -51,7 +50,7 @@ export const latestCheck = (cbId: SQL) => sql`(select pc.status, pc.passed, pc.t
 export function customerSearch(q: string): SQL | undefined {
   if (!q) return undefined;
   const digits = phoneDigits(q);
-  return digits ? or(like(customers.phone, containsPattern(digits)), like(customers.parentPhone, containsPattern(digits))) : like(customers.nameSearch, containsPattern(plain(q).replace(/\s+/g, " ")));
+  return digits ? or(like(customers.phone, containsPattern(digits)), like(customers.parentPhone, containsPattern(digits))) : likeEachTerm(customers.nameSearch, q);
 }
 
 export function customerWhere(actor: SessionUser, f: CustomerFilters): SQL | undefined {
