@@ -1,4 +1,5 @@
 import { Search } from "lucide-react";
+import { SEARCH_MAX_LENGTH } from "@/server/search";
 
 // Ô tìm gửi bằng form GET: kết quả lọc ở máy chủ, giữ được trên URL.
 export function SearchBox({ action, placeholder, defaultValue, hidden = {} }: { action: string; placeholder: string; defaultValue: string; hidden?: Record<string, string> }) {
@@ -14,6 +15,7 @@ export function SearchBox({ action, placeholder, defaultValue, hidden = {} }: { 
       <input
         id={`search${action.replace(/\W/g, "-")}`}
         name="q"
+        maxLength={SEARCH_MAX_LENGTH}
         defaultValue={defaultValue}
         placeholder={placeholder}
         className="h-9 w-64 rounded-[10px] border border-field-border bg-card pr-3 pl-9 text-sm placeholder:text-text-3 narrow:w-full"
