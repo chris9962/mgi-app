@@ -1,8 +1,8 @@
 "use client";
 
 import { clsx } from "clsx";
-import { ExternalLink } from "lucide-react";
-import { useRef, useState, type KeyboardEvent } from "react";
+import { Check, Copy, ExternalLink } from "lucide-react";
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { ImageLightbox } from "@/components/ui/ImageLightbox";
 import { ConfirmDialog } from "@/components/users/ConfirmDialog";
@@ -15,6 +15,12 @@ const complete = (b: StudentBank) => b.slots.every((s) => s.photo);
 
 function CodeBox({ bank }: { bank: StudentBank }) {
   const [copy, setCopy] = useState<"idle" | "copied" | "failed">("idle");
+  // Như CopyButton của mgst-app: câu báo tự mất sau 2 giây; hẹn giờ là hệ ngoài React nên dọn khi state đổi hoặc khung biến mất.
+  useEffect(() => {
+    if (copy === "idle") return;
+    const timer = setTimeout(() => setCopy("idle"), 2000);
+    return () => clearTimeout(timer);
+  }, [copy]);
   if (!bank.referralCode && !bank.qrUrl && !bank.openUrl) return null;
   return (
     <div className="flex gap-3 rounded-2xl border border-line bg-card p-3">
@@ -27,23 +33,28 @@ function CodeBox({ bank }: { bank: StudentBank }) {
           <>
             <span className="text-[13px] text-text-2">Mã giới thiệu</span>
             <strong className="break-all font-mono text-lg">{bank.referralCode}</strong>
-            <Button
-              variant="secondary"
-              onClick={async () => {
-                // Như CopyButton của mgst-app: trình duyệt trong app Zalo hay trang http không có clipboard, không được báo đã chép.
-                try {
-                  await navigator.clipboard.writeText(bank.referralCode);
-                  setCopy("copied");
-                } catch {
-                  setCopy("failed");
-                }
-              }}
-            >
-              {copy === "copied" ? "Đã sao chép" : "Sao chép"}
-            </Button>
-            <span role="status" className="text-[13px] text-danger">
-              {copy === "failed" && "Không sao chép được"}
-            </span>
+            {/* Vùng báo nằm cùng hàng với nút: lúc rỗng không thêm hàng trống. */}
+            <div className="flex flex-wrap items-center gap-x-2">
+              <Button
+                variant="secondary"
+                onClick={async () => {
+                  // Trình duyệt trong app Zalo hay trang http không có clipboard: không được báo đã chép.
+                  try {
+                    await navigator.clipboard.writeText(bank.referralCode);
+                    setCopy("copied");
+                  } catch {
+                    setCopy("failed");
+                  }
+                }}
+              >
+                {copy === "copied" ? <Check size={14} aria-hidden /> : <Copy size={14} aria-hidden />}
+                Sao chép
+              </Button>
+              <span aria-live="polite" className={clsx("text-[13px]", copy === "failed" ? "text-danger" : "text-text-2")}>
+                {copy === "copied" && "Đã sao chép"}
+                {copy === "failed" && "Không sao chép được"}
+              </span>
+            </div>
           </>
         )}
         {bank.openUrl && (

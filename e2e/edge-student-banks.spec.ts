@@ -164,25 +164,36 @@ test.describe("D. B3 mở tài khoản", () => {
     expect(dialogs).toEqual([]);
   });
 
-  test("D4 Sao chép khi trình duyệt cho ghi clipboard: báo Đã sao chép, clipboard có đúng mã", async ({ page, request, context }) => {
+  test("D4 Sao chép khi trình duyệt cho ghi clipboard: báo Đã sao chép qua vùng aria-live, clipboard có đúng mã, 2 giây sau về như cũ", async ({ page, request, context }) => {
     await context.grantPermissions(["clipboard-read", "clipboard-write"], { origin: STUDENT });
     const s = await apiCreate(request, SCHOOL.long, info("Sao Chép Được"));
     await apiPick(request, s, [BANK.longSpace, BANK.longWord]);
     await openAt(page, SCHOOL.long, s);
-    await page.getByRole("tabpanel").getByRole("button", { name: "Sao chép" }).click();
-    await expect(page.getByRole("tabpanel").getByRole("button", { name: "Đã sao chép" })).toBeVisible();
+    const panel = page.getByRole("tabpanel");
+    const copy = panel.getByRole("button", { name: "Sao chép" });
+    const status = panel.locator('[aria-live="polite"]');
+    await expect(status).toHaveText("");
+    // Vùng báo rỗng không được thêm một hàng trống giữa nút Sao chép và nút Quét QR code.
+    const gap = async () => (await panel.getByRole("link", { name: "Quét QR code" }).boundingBox())!.y - ((await copy.boundingBox())!.y + (await copy.boundingBox())!.height);
+    expect(await gap()).toBeLessThanOrEqual(7);
+    await copy.click();
+    await expect(status).toHaveText("Đã sao chép");
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(LONG_CODE);
+    await expect(status).toHaveText("", { timeout: 5_000 });
+    await expect(copy).toBeVisible();
   });
 
-  test("D5 Sao chép khi trình duyệt không có clipboard: không báo Đã sao chép, báo Không sao chép được", async ({ page, request }) => {
+  test("D5 Sao chép khi trình duyệt không có clipboard: không báo Đã sao chép, báo Không sao chép được, 2 giây sau về như cũ", async ({ page, request }) => {
     await page.addInitScript(() => Object.defineProperty(Navigator.prototype, "clipboard", { get: () => undefined }));
     const s = await apiCreate(request, SCHOOL.long, info("Không Sao Chép Được"));
     await apiPick(request, s, [BANK.longSpace, BANK.longWord]);
     await openAt(page, SCHOOL.long, s);
     const panel = page.getByRole("tabpanel");
+    const status = panel.locator('[aria-live="polite"]');
     await panel.getByRole("button", { name: "Sao chép" }).click();
-    await expect(panel.getByText("Không sao chép được")).toBeVisible();
+    await expect(status).toHaveText("Không sao chép được");
     await expect(panel.getByText("Đã sao chép")).toHaveCount(0);
+    await expect(status).toHaveText("", { timeout: 5_000 });
   });
 
   test("D8 ngân hàng chưa cài hướng dẫn: tab chỉ có mã, ghi đủ ảnh; gửi kiểm tra được khi ngân hàng kia đủ ảnh", async ({ page, request }) => {
