@@ -1,4 +1,4 @@
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import { api, apiLogin, asUser, createBank, createCode, createSchool, createUser, expectDialogFits, LONG_WORD, open, pageScroll, PHONE } from "./edge-config-support";
 
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
@@ -7,6 +7,22 @@ const rowOf = (page: Page, name: string) => page.getByRole("row", { name: new Re
 const searchBox = (page: Page) => page.getByRole("search").getByLabel("Tìm mã");
 const bankFilter = (page: Page) => page.getByRole("search").getByLabel("Ngân hàng");
 const MISSING = "00000000-0000-4000-8000-00000000c0de";
+const TOO_LARGE = "Ảnh lớn hơn 20 MB.";
+const HTML_413 = "<html><head><title>413 Request Entity Too Large</title></head><body><center><h1>413 Request Entity Too Large</h1></center></body></html>";
+
+const uploadsOf = (page: Page) => {
+  const seen: string[] = [];
+  page.on("request", (r) => {
+    if (new URL(r.url()).pathname === "/api/admin/uploads") seen.push(r.url());
+  });
+  return seen;
+};
+
+async function pickFile(page: Page, trigger: Locator, file: { name: string; mimeType: string; buffer: Buffer }) {
+  const chooser = page.waitForEvent("filechooser");
+  await trigger.click();
+  await (await chooser).setFiles(file);
+}
 
 async function openAdd(page: Page) {
   await page.getByRole("button", { name: "Thêm mã" }).click();
@@ -397,4 +413,27 @@ test("Mã: link có dấu cách giữa lưu như mgst-app; ảnh QR là file vă
   await d.getByLabel("Link mở tài khoản trong QR").fill("https://exa mple.com/mo");
   await d.getByRole("button", { name: "Tạo mã" }).click();
   await expect(d).toBeHidden();
+});
+
+test("Mã: ảnh QR 23 MB báo Ảnh lớn hơn 20 MB. ở ô Ảnh QR, không gửi lên máy chủ; máy chủ trả 413 dạng HTML cũng báo ở ô Ảnh QR", async ({ page }) => {
+  await apiLogin(page, "zz_e2e_admin");
+  await createBank(page, "ZZCQRTO", "ZZE2E Ảnh QR to", [], "0");
+  await open(page, "/banks/codes");
+  const uploads = uploadsOf(page);
+  await page.getByRole("button", { name: "Thêm mã" }).click();
+  let d = page.getByRole("dialog", { name: "Thêm mã giới thiệu" });
+  let qr = d.getByRole("button", { name: "Chọn ảnh QR" });
+  await pickFile(page, qr, { name: "to.png", mimeType: "image/png", buffer: Buffer.alloc(23 * 1024 * 1024) });
+  await expect(qr).toHaveAccessibleDescription(TOO_LARGE);
+  expect(uploads).toEqual([]);
+  await d.getByRole("button", { name: "Huỷ" }).click();
+
+  await page.route((url) => url.pathname === "/api/admin/uploads", (route) => route.fulfill({ status: 413, contentType: "text/html", body: HTML_413 }));
+  await page.getByRole("button", { name: "Thêm mã" }).click();
+  d = page.getByRole("dialog", { name: "Thêm mã giới thiệu" });
+  qr = d.getByRole("button", { name: "Chọn ảnh QR" });
+  await expect(qr).not.toHaveAccessibleDescription(TOO_LARGE);
+  await pickFile(page, qr, { name: "nho.png", mimeType: "image/png", buffer: Buffer.from("ảnh nhỏ") });
+  await expect.poll(() => uploads.length).toBe(1);
+  await expect(qr).toHaveAccessibleDescription(TOO_LARGE);
 });

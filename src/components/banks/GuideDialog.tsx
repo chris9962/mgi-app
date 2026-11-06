@@ -14,6 +14,8 @@ type Slot = { key: string; id?: string; name: string; sampleKey: string | null; 
 
 let counter = 0;
 const localKey = () => `new-${++counter}`;
+const TOO_LARGE = "Ảnh lớn hơn 20 MB.";
+const photoErrorId = (key: string) => `guide-photo-${key}-error`;
 
 export function GuideDialog({ bankId, bankName, onClose }: { bankId: string; bankName: string; onClose: () => void }) {
   const [steps, setSteps] = useState("");
@@ -21,6 +23,7 @@ export function GuideDialog({ bankId, bankName, onClose }: { bankId: string; ban
   const [error, setError] = useState("");
   const [pending, setPending] = useState(false);
   const [uploading, setUploading] = useState<string | null>(null);
+  const [photoError, setPhotoError] = useState<{ key: string; message: string } | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const uploadFor = useRef<string | null>(null);
 
@@ -45,14 +48,17 @@ export function GuideDialog({ bankId, bankName, onClose }: { bankId: string; ban
   async function upload(file: File) {
     const key = uploadFor.current;
     if (!key) return;
-    if (file.size > MAX_IMAGE_BYTES) return setError("Ảnh lớn hơn 20 MB.");
+    setError("");
+    // Kiểm ở cả hai đầu như imageProblem của mgst-app: Nginx chặn file trên 22 MB bằng trang HTML trước khi tới app.
+    if (file.size > MAX_IMAGE_BYTES) return setPhotoError({ key, message: TOO_LARGE });
+    setPhotoError(null);
     setUploading(key);
     const body = new FormData();
     body.set("file", file);
     const res = await fetch("/api/admin/uploads?folder=samples", { method: "POST", body }).catch(() => null);
     const data = await res?.json().catch(() => null);
     setUploading(null);
-    if (!res?.ok) return setError(data?.message ?? "Không tải được ảnh mẫu.");
+    if (!res?.ok) return setPhotoError({ key, message: res?.status === 413 ? TOO_LARGE : (data?.message ?? "Không tải được ảnh mẫu.") });
     patch(key, { sampleKey: data.key });
   }
 
@@ -116,6 +122,7 @@ export function GuideDialog({ bankId, bankName, onClose }: { bankId: string; ban
             <button
               type="button"
               aria-label={`Đổi ảnh mẫu của ${s.name || `ảnh ${i + 1}`}`}
+              aria-describedby={photoError?.key === s.key ? photoErrorId(s.key) : undefined}
               title="Đổi ảnh mẫu"
               onClick={() => {
                 uploadFor.current = s.key;
@@ -132,6 +139,11 @@ export function GuideDialog({ bankId, bankName, onClose }: { bankId: string; ban
                 <Checkbox label="Họ tên" checked={s.checkName} onChange={(e) => patch(s.key, { checkName: e.target.checked })} />
                 <Checkbox label="Mã giới thiệu" checked={s.checkCode} onChange={(e) => patch(s.key, { checkCode: e.target.checked })} />
               </div>
+              {photoError?.key === s.key && (
+                <span id={photoErrorId(s.key)} role="alert" className="text-[13px] text-danger">
+                  {photoError.message}
+                </span>
+              )}
             </div>
             <button
               type="button"

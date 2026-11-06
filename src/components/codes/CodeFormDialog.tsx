@@ -2,7 +2,7 @@
 
 import { ImagePlus } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useRef, useState, type FormEvent } from "react";
+import { useId, useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import { MultiSelect, type Option } from "@/components/ui/MultiSelect";
@@ -12,6 +12,8 @@ import { apiSend } from "@/lib/api";
 import { CodeForm } from "@/lib/codeForm";
 import { httpLinkIn, readQrImage } from "@/lib/readQrImage";
 import { MAX_IMAGE_BYTES } from "@/lib/imageKey";
+
+const TOO_LARGE = "Ảnh lớn hơn 20 MB.";
 
 export type CodeDefaults = {
   id?: string;
@@ -38,6 +40,8 @@ export function CodeFormDialog({ banks, initial, onClose }: { banks: { id: strin
   const [openUrl, setOpenUrl] = useState(start.openUrl);
   const [qrNote, setQrNote] = useState("");
   const [uploading, setUploading] = useState(false);
+  const [qrError, setQrError] = useState("");
+  const qrErrorId = `${useId()}-qr-error`;
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState("");
   const [pending, setPending] = useState(false);
@@ -45,8 +49,10 @@ export function CodeFormDialog({ banks, initial, onClose }: { banks: { id: strin
 
   // Đọc link trong QR ngay trên trình duyệt như mgst-app, để người nhập thấy link và sửa được trước khi lưu.
   async function pickQr(file: File) {
-    if (file.size > MAX_IMAGE_BYTES) return setFormError("Ảnh lớn hơn 20 MB.");
+    // Kiểm ở cả hai đầu như imageProblem của mgst-app: Nginx chặn file trên 22 MB bằng trang HTML trước khi tới app.
+    if (file.size > MAX_IMAGE_BYTES) return setQrError(TOO_LARGE);
     setFormError("");
+    setQrError("");
     setUploading(true);
     setQrNote("");
     const read = await readQrImage(file);
@@ -60,7 +66,7 @@ export function CodeFormDialog({ banks, initial, onClose }: { banks: { id: strin
     const res = await fetch("/api/admin/uploads?folder=qr", { method: "POST", body }).catch(() => null);
     const data = await res?.json().catch(() => null);
     setUploading(false);
-    if (!res?.ok) return setFormError(data?.message ?? "Không tải được ảnh QR.");
+    if (!res?.ok) return setQrError(res?.status === 413 ? TOO_LARGE : (data?.message ?? "Không tải được ảnh QR."));
     setQrKey(data.key);
   }
 
@@ -126,6 +132,7 @@ export function CodeFormDialog({ banks, initial, onClose }: { banks: { id: strin
             <button
               type="button"
               onClick={() => fileInput.current?.click()}
+              aria-describedby={qrError ? qrErrorId : undefined}
               className="flex min-h-[72px] items-center justify-center gap-2 overflow-hidden rounded-[10px] border border-dashed border-field-border bg-surface text-sm text-text-2 hover:border-accent"
             >
               {uploading ? (
@@ -139,6 +146,11 @@ export function CodeFormDialog({ banks, initial, onClose }: { banks: { id: strin
                 </>
               )}
             </button>
+            {qrError && (
+              <span id={qrErrorId} role="alert" className="text-[13px] text-danger">
+                {qrError}
+              </span>
+            )}
           </div>
           <TextField name="code" label="Mã text (Mã giới thiệu)" defaultValue={start.code} error={errors.code} />
         </div>

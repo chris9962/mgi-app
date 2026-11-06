@@ -6,6 +6,16 @@ const rowOf = (page: Page, name: string) => page.getByRole("row", { name: new Re
 const guideBody = (steps: string[], slots: { id?: string; name: string }[]) => ({ steps, slots: slots.map((s) => ({ ...s, sampleKey: null, checkName: false, checkCode: false })) });
 const guideDialog = (page: Page) => page.getByRole("dialog", { name: /Hướng dẫn mở tài khoản/ });
 const MISSING = "00000000-0000-4000-8000-00000000c0de";
+const TOO_LARGE = "Ảnh lớn hơn 20 MB.";
+const HTML_413 = "<html><head><title>413 Request Entity Too Large</title></head><body><center><h1>413 Request Entity Too Large</h1></center></body></html>";
+
+const uploadsOf = (page: Page) => {
+  const seen: string[] = [];
+  page.on("request", (r) => {
+    if (new URL(r.url()).pathname === "/api/admin/uploads") seen.push(r.url());
+  });
+  return seen;
+};
 
 async function pickFile(page: Page, trigger: Locator, file: { name: string; mimeType: string; buffer: Buffer }) {
   const chooser = page.waitForEvent("filechooser");
@@ -244,4 +254,26 @@ test("Hướng dẫn: ngân hàng mới ghi Chưa cài, Chưa giao; tên ảnh t
   await page.getByRole("button", { name: "Hướng dẫn mở tài khoản ZZE2E Hướng dẫn mới" }).click();
   await expect(g.getByLabel("Các bước")).toHaveValue("Tải app\nMở tài khoản\nNhập mã");
   await expect(g.getByLabel("Tên ảnh 10", { exact: true })).toHaveValue("Ảnh 10");
+});
+
+test("Hướng dẫn: ảnh mẫu 23 MB báo Ảnh lớn hơn 20 MB. ở ô ảnh đó, không gửi lên máy chủ; máy chủ trả 413 dạng HTML cũng báo ở ô ảnh", async ({ page }) => {
+  await apiLogin(page, "zz_e2e_admin");
+  await createBank(page, "ZZCANHTO", "ZZE2E Ảnh mẫu to");
+  await open(page, "/banks");
+  await page.getByRole("button", { name: "Hướng dẫn mở tài khoản ZZE2E Ảnh mẫu to" }).click();
+  const g = guideDialog(page);
+  await g.getByLabel("Tên ảnh 1").fill("Ảnh một");
+  await g.getByRole("button", { name: "Thêm ảnh" }).click();
+  await g.getByLabel("Tên ảnh 2").fill("Ảnh hai");
+  const uploads = uploadsOf(page);
+  const one = g.getByRole("button", { name: "Đổi ảnh mẫu của Ảnh một", exact: true });
+  await pickFile(page, one, { name: "to.jpg", mimeType: "image/jpeg", buffer: Buffer.alloc(23 * 1024 * 1024) });
+  await expect(one).toHaveAccessibleDescription(TOO_LARGE);
+  expect(uploads).toEqual([]);
+
+  await page.route((url) => url.pathname === "/api/admin/uploads", (route) => route.fulfill({ status: 413, contentType: "text/html", body: HTML_413 }));
+  const two = g.getByRole("button", { name: "Đổi ảnh mẫu của Ảnh hai", exact: true });
+  await pickFile(page, two, { name: "nho.jpg", mimeType: "image/jpeg", buffer: Buffer.from("ảnh nhỏ") });
+  await expect.poll(() => uploads.length).toBe(1);
+  await expect(two).toHaveAccessibleDescription(TOO_LARGE);
 });
