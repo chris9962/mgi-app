@@ -197,8 +197,8 @@ Thêm ca trong lúc viết test:
 
 ### Chờ
 
-- Xuất Excel trang Trường với `q=%00` vẫn lỗi 500. Route `src/app/api/admin/schools/export/route.ts` đọc `q` bằng `searchParams.get`, không qua `readParam`, rồi `exportSchools` ghi `q` vào `audit_log.detail` (jsonb không nhận NUL). Đã thử bằng test DB tạm: câu insert vào `audit_log` lỗi. Trang này thuộc nhóm C nên nhóm B không sửa.
-- Ô tìm của Trường, Tài khoản, Kho mã và ô chọn người quản vẫn tìm cả chuỗi bằng `matchesPlain`, chưa tách từ như mgst-app. Gõ "anh nguyen" không ra "Nguyễn Thị Anh". Các trang này thuộc nhóm C.
+- Đã xong ở 32fd07d (nhóm C): Xuất Excel trang Trường với `q=%00` lỗi 500. Route `src/app/api/admin/schools/export/route.ts` đọc `q` bằng `searchParams.get`, không qua `readParam`, rồi `exportSchools` ghi `q` vào `audit_log.detail` (jsonb không nhận NUL). Nhóm C chuyển 4 route sang `readParam`.
+- Đã xong ở 369a1eb (nhóm C): ô tìm của Trường, Tài khoản, Kho mã và ô chọn người quản tìm cả chuỗi bằng `matchesPlain`, chưa tách từ như mgst-app. Nhóm C thêm `matchesEachTerm` ở `src/server/search.ts`, dùng lại `searchTerms` của nhóm B.
 
 ### Ca chưa test được
 
