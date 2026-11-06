@@ -52,3 +52,18 @@ test("Tài khoản, Trường, Cá nhân: hộp đang lưu thì Huỷ bị khoá
     await page.unroute(c.url);
   }
 });
+
+test("Hộp xác nhận: lệnh xác nhận ném lỗi giữa chừng thì hộp mở khoá lại, Esc đóng được", async ({ browser }) => {
+  const page = await loginAs(browser, "zz_e2e_admin");
+  const [user] = await (await page.request.get(`/api/admin/users/options?q=${B.B_USER1}`)).json();
+  await open(page, `/users/${user.id}`);
+  // 204 không kèm mật khẩu: đọc r.data.password ném TypeError trong onConfirm; máy chủ giả trả lời nên mật khẩu thật không đổi.
+  await page.route("**/reset-password", (route) => route.fulfill({ status: 204 }));
+  await page.getByRole("button", { name: "Đặt lại mật khẩu" }).click();
+  const confirm = page.getByRole("dialog", { name: "Đặt lại mật khẩu" });
+  await Promise.all([page.waitForResponse("**/reset-password"), confirm.getByRole("button", { name: "Đặt lại", exact: true }).click()]);
+  await expect(confirm.getByRole("button", { name: "Huỷ" })).toBeEnabled();
+  await expect(confirm.getByRole("button", { name: "Đặt lại", exact: true })).toBeEnabled();
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+});

@@ -32,9 +32,13 @@ export function ConfirmDialog({ open, title, text, confirmLabel, danger, onConfi
             disabled={pending}
             onClick={async () => {
               setPending(true);
-              const message = await onConfirm();
-              setPending(false);
-              if (message) setError(message);
+              // onConfirm ném lỗi mà không mở khoá thì Huỷ, Esc đều bị khoá mãi.
+              try {
+                const message = await onConfirm();
+                if (message) setError(message);
+              } finally {
+                setPending(false);
+              }
             }}
           >
             {confirmLabel}
