@@ -107,6 +107,11 @@
 @custom-variant mobile (@media (max-width: 900px));
 @custom-variant narrow (@media (max-width: 600px));
 
+/* Cao thanh đáy (56 px hàng nút + 1 px viền), một số cho thanh, phần chừa đáy của nội dung và bảng Bộ lọc. */
+:root {
+  --bottom-nav-h: 57px;
+}
+
 /* Ngăn trượt hay hộp thoại mở thì trang phía sau đứng yên (chép mgst-app); áp theo khổ màn nên xoay qua 900 px là hết khoá. */
 @media (max-width: 900px) {
   body:has(#main-nav[data-open]),

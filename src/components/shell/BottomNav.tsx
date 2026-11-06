@@ -13,13 +13,13 @@ const ICON: Record<string, ReactNode> = {
   "/vouchers": <TicketCheck size={18} aria-hidden />,
 };
 
-const itemClass = "relative flex min-h-[52px] flex-1 flex-col items-center justify-center gap-1 px-1 py-2 text-center text-[11px] font-semibold focus-visible:-outline-offset-2 [&_svg]:opacity-80";
+const itemClass = "relative flex min-w-0 flex-auto flex-col items-center justify-center gap-1 px-0.5 text-center text-[11px] font-semibold focus-visible:-outline-offset-2 [&_svg]:opacity-80";
 
 export function BottomNav({ items, menuOpen, onOpenMenu, moreRef }: { items: MenuItem[]; menuOpen: boolean; onOpenMenu: () => void; moreRef: Ref<HTMLButtonElement> }) {
   const pathname = (usePathname() ?? "/").replace(/^\/admin(?=\/|$)/, "") || "/";
   // transform-gpu ép lớp GPU riêng: không có thì WebKit vẽ sai chỗ phần tử fixed lúc thanh địa chỉ ẩn hiện.
   return (
-    <nav aria-label="Điều hướng nhanh" inert={menuOpen} className="fixed inset-x-0 bottom-0 z-30 hidden border-t border-line bg-sidebar pb-[env(safe-area-inset-bottom,0px)] text-sidebar-ink-2 transform-gpu will-change-transform mobile:flex">
+    <nav aria-label="Điều hướng nhanh" inert={menuOpen} className="fixed inset-x-0 bottom-0 z-30 hidden h-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom,0px))] border-t border-line bg-sidebar pb-[env(safe-area-inset-bottom,0px)] text-sidebar-ink-2 transform-gpu will-change-transform mobile:flex">
       {items.map((item) => {
         const active = pathname === item.href || (!item.exact && pathname.startsWith(item.href + "/"));
         return (
@@ -34,7 +34,8 @@ export function BottomNav({ items, menuOpen, onOpenMenu, moreRef }: { items: Men
             )}
           >
             {ICON[item.href]}
-            {item.label}
+            {/* Nhãn một hàng để thanh luôn cao đúng --bottom-nav-h; mục rộng theo nhãn nên 320 px vẫn đủ chỗ. */}
+            <span className="max-w-full truncate">{item.label}</span>
           </Link>
         );
       })}

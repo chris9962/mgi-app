@@ -178,7 +178,7 @@ test("điện thoại: không trang quản lý nào cuộn ngang cả trang", as
   expect(wide).toEqual([]);
 });
 
-const box = (locator: Locator) => locator.evaluate((el) => el.getBoundingClientRect().toJSON() as { left: number; right: number; top: number; width: number });
+const box = (locator: Locator) => locator.evaluate((el) => el.getBoundingClientRect().toJSON() as { left: number; right: number; top: number; bottom: number; width: number; height: number });
 
 test("điện thoại: ô tìm rộng hết thanh tiêu đề, bảng Bộ lọc nằm trọn trong màn hình, mục lọc thành một hàng ở trên", async ({ browser }) => {
   const page = await loginAs(browser, "zz_e2e_admin", PHONE);
@@ -226,6 +226,25 @@ test("điện thoại: hộp thoại nằm trọn bề ngang màn hình, nút g�
   const submit = dialog.getByRole("button", { name: "Tạo trường" });
   await submit.scrollIntoViewIfNeeded();
   await expect(submit).toBeInViewport();
+});
+
+test("điện thoại 320 và 390 px: thanh đáy một hàng chữ, nội dung chừa đúng bằng thanh, cuộn hết trang thì khung cuối không bị che", async ({ browser }) => {
+  const page = await loginAs(browser, "zz_e2e_admin", PHONE);
+  for (const viewport of [
+    { width: 320, height: 568 },
+    { width: 390, height: 844 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto("/customers");
+    await page.waitForLoadState("networkidle");
+    const nav = await box(bottomNav(page));
+    const padding = await page.locator("main").locator("xpath=..").evaluate((el) => parseFloat(getComputedStyle(el).paddingBottom));
+    expect([viewport.width, nav.height]).toEqual([viewport.width, 57]);
+    expect([viewport.width, padding]).toEqual([viewport.width, nav.height]);
+    await page.evaluate(() => scrollTo(0, document.documentElement.scrollHeight));
+    const card = await box(page.getByRole("region", { name: "Hồ sơ học sinh" }));
+    expect(card.bottom).toBeLessThanOrEqual((await box(bottomNav(page))).top);
+  }
 });
 
 test("điện thoại: hộp thoại mở thì trang phía sau không cuộn", async ({ browser }) => {

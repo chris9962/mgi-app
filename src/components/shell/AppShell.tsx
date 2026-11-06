@@ -41,7 +41,7 @@ export function AppShell({ groups, fullName, title, children }: { groups: MenuGr
   return (
     <div className="flex min-h-dvh mobile:min-h-[100svh] mobile:flex-col">
       <Sidebar groups={groups} fullName={fullName} title={title} mobileOpen={menuOpen} onMobileClose={closeMenu} />
-      <div className="flex min-w-0 flex-1 flex-col mobile:pb-[calc(52px+env(safe-area-inset-bottom,0px))] mobile:[&>main]:p-4" inert={menuOpen}>
+      <div className="flex min-w-0 flex-1 flex-col mobile:pb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom,0px))] mobile:[&>main]:p-4" inert={menuOpen}>
         {children}
       </div>
       <BottomNav items={bottomNavItems(groups)} menuOpen={menuOpen} onOpenMenu={() => setOpenedAt(pathname)} moreRef={more} />
