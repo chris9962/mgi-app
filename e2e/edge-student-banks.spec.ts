@@ -7,6 +7,7 @@ import {
   apiCreate,
   apiPhotos,
   apiPick,
+  apiSubmit,
   dbOp,
   device,
   expectInsideScreen,
@@ -237,6 +238,76 @@ test.describe("D. B3 mở tài khoản", () => {
     } finally {
       dbOp("school", SCHOOL.closing, "open");
     }
+  });
+
+  test("D14 trường vừa đóng mà web chưa tải lại: bấm Quay lại, có ảnh hay chưa, thì web tải lại, nút Quay lại ẩn", async ({ page, request }) => {
+    const noPhoto = await apiCreate(request, SCHOOL.closing, info("Quay Lại Trường Đóng"));
+    await apiPick(request, noPhoto, [BANK.p1, BANK.p3]);
+    const withPhoto = await apiCreate(request, SCHOOL.closing, info("Quay Lại Có Ảnh Trường Đóng"));
+    await apiPick(request, withPhoto, [BANK.p1, BANK.p3]);
+    await apiPhotos(request, withPhoto, [SLOT.p3]);
+    const back = page.getByRole("button", { name: "Quay lại chọn ngân hàng" });
+    await openAt(page, SCHOOL.closing, noPhoto);
+    await expect(back).toBeVisible();
+    dbOp("school", SCHOOL.closing, "closed");
+    try {
+      await back.click();
+      await expect(alertIn(page)).toHaveText("Trường đã đóng.");
+      await expect(back).toHaveCount(0);
+      await expect(page.getByRole("heading", { name: "Mở tài khoản" })).toBeVisible();
+
+      dbOp("school", SCHOOL.closing, "open");
+      await openAt(page, SCHOOL.closing, withPhoto);
+      await expect(back).toBeVisible();
+      dbOp("school", SCHOOL.closing, "closed");
+      await back.click();
+      const confirm = page.getByRole("dialog", { name: "Quay lại chọn ngân hàng" });
+      await confirm.getByRole("button", { name: "Quay lại", exact: true }).click();
+      await expect(confirm).toHaveCount(0);
+      await expect(alertIn(page)).toHaveText("Trường đã đóng.");
+      await expect(back).toHaveCount(0);
+      await expect(page.getByRole("tabpanel").getByLabel("Ảnh màn hình chính: chụp lại")).toBeAttached();
+    } finally {
+      dbOp("school", SCHOOL.closing, "open");
+    }
+  });
+
+  test("D15 hai tab ở B3: tab kia đã gửi kiểm tra, bấm Quay lại thì sang màn kết quả", async ({ page, request }) => {
+    const who = info("Hai Tab Quay Lại");
+    const s = await apiCreate(request, SCHOOL.photo, who);
+    await apiPick(request, s, [BANK.p1, BANK.p3]);
+    await apiPhotos(request, s);
+    await openAt(page, SCHOOL.photo, s);
+    await expect(page.getByRole("button", { name: "Gửi kiểm tra" })).toBeEnabled();
+    await apiSubmit(request, s);
+    await page.getByRole("button", { name: "Quay lại chọn ngân hàng" }).click();
+    await page.getByRole("dialog", { name: "Quay lại chọn ngân hàng" }).getByRole("button", { name: "Quay lại", exact: true }).click();
+    await expect(page.getByRole("heading", { name: `${who.fullName} - ${who.className}` })).toBeVisible();
+    await expect(page.getByText("Chờ kiểm tra")).toHaveCount(2);
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+  });
+
+  test("D16 bấm đúp Quay lại khi chưa có ảnh trên mạng chậm: nút khoá, chỉ một request, về B2", async ({ page, request }) => {
+    const s = await apiCreate(request, SCHOOL.photo, info("Quay Lại Bấm Đúp"));
+    await apiPick(request, s, [BANK.p1, BANK.p3]);
+    await openAt(page, SCHOOL.photo, s);
+    let deletes = 0;
+    page.on("request", (r) => {
+      if (r.method() === "DELETE" && new URL(r.url()).pathname === "/api/customers/me/banks") deletes += 1;
+    });
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    await page.route("**/api/customers/me/banks", async (route) => {
+      if (route.request().method() === "DELETE") await gate;
+      await route.continue();
+    });
+    const back = page.getByRole("button", { name: "Quay lại chọn ngân hàng" });
+    await back.dblclick();
+    await expect(back).toBeDisabled();
+    release();
+    await expect(page.getByRole("heading", { name: "Chọn 2 ngân hàng" })).toBeVisible();
+    await expect(alertIn(page)).toHaveCount(0);
+    expect(deletes).toBe(1);
   });
 
   test("D11 còn khung trống thì Gửi kiểm tra khoá; đủ ảnh bấm đúp chỉ gửi một lần, vào màn kết quả", async ({ page, request }) => {

@@ -107,6 +107,7 @@ export function OpenAccount({ state, onChange }: { state: StudentState; onChange
   const [confirmBack, setConfirmBack] = useState(false);
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
+  const [leaving, setLeaving] = useState(false);
   const [busySlots, setBusySlots] = useState<string[]>([]);
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
   const current = banks.find((b) => b.id === active) ?? banks[0];
@@ -127,10 +128,23 @@ export function OpenAccount({ state, onChange }: { state: StudentState; onChange
   }
 
   async function back(): Promise<string | null> {
+    setLeaving(true);
+    setError("");
     const r = await studentApi("DELETE", "/api/customers/me/banks");
-    if (!r.ok) return r.message;
-    await onChange();
-    return null;
+    if (r.ok) {
+      await onChange();
+      return null;
+    }
+    // Hồ sơ đã đổi ở máy chủ (trường vừa đóng, tab khác đã gửi kiểm tra): tải lại để màn khớp máy chủ, báo lỗi ở màn chứ không ở hộp hỏi.
+    if (r.status === 409) {
+      await onChange();
+      setConfirmBack(false);
+      setError(r.message);
+      setLeaving(false);
+      return null;
+    }
+    setLeaving(false);
+    return r.message;
   }
 
   // Bàn phím trong tablist: mũi tên trái phải chuyển tab theo mẫu tab của WAI-ARIA.
@@ -188,6 +202,7 @@ export function OpenAccount({ state, onChange }: { state: StudentState; onChange
             variant="secondary"
             large
             block
+            disabled={leaving}
             onClick={async () => {
               if (hasPhoto) return setConfirmBack(true);
               const message = await back();
