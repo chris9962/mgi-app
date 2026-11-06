@@ -1,6 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { readFileSync } from "node:fs";
-import { expect, test, type Page } from "@playwright/test";
+import { expect, test, type Locator, type Page } from "@playwright/test";
 import * as B from "../scripts/e2e-data-business";
 import { ADMIN, closeContexts, DESKTOP, insideViewport, loginAs, open, overflowOf, pageOverflow, PHONE } from "./edge-business-support";
 
@@ -215,6 +215,41 @@ test("Trang 4 ghi chú: ô nhập chặn ở 1.000 ký tự, API từ chối 1.0
   await note.getByRole("button", { name: "Lưu" }).click();
   await expect(a.getByRole("dialog")).toHaveCount(0);
   await expect(bank1(a).getByRole("region", { name: "Ghi chú nội bộ" }).locator("p")).toHaveText("Ghi chú lúc mất mạng");
+});
+
+// Giữ request lại tới khi test cho đi; máy chủ giả trả 204 nên dữ liệu không đổi.
+async function hold(page: Page, url: string) {
+  let release = () => {};
+  const gate = new Promise<void>((resolve) => (release = resolve));
+  await page.route(url, async (route) => {
+    await gate;
+    await route.fulfill({ status: 204 });
+  });
+  return release;
+}
+
+test("Trang 4: đang tải ảnh thay thế hay đang lưu ghi chú thì Huỷ bị khoá, Esc và nút Đóng không đóng hộp; máy chủ trả lời xong thì hộp đóng", async ({ browser }) => {
+  const page = await loginAs(browser, "zz_e2e_admin");
+  await open(page, detail(B.B_IDS.note));
+  for (const [url, button, title, fill, submit, busy] of [
+    ["**/photos", "Tải ảnh thay thế", "Tải ảnh thay thế", (d: Locator) => d.getByLabel("Ảnh", { exact: true }).setInputFiles(PHOTO), "Tải lên", "Đang tải ảnh"],
+    ["**/note", /^Sửa ghi chú/, "Ghi chú nội bộ", (d: Locator) => d.getByRole("textbox").fill("Ghi chú lúc mạng chậm"), "Lưu", "Lưu"],
+  ] as const) {
+    const release = await hold(page, url);
+    await bank1(page).getByRole("button", { name: button }).click();
+    const dialog = page.getByRole("dialog", { name: title });
+    await fill(dialog);
+    await dialog.getByRole("button", { name: submit, exact: true }).click();
+    await expect(dialog.getByRole("button", { name: busy, exact: true }), title).toBeDisabled();
+    await expect(dialog.getByRole("button", { name: "Huỷ" }), title).toBeDisabled();
+    await page.keyboard.press("Escape");
+    await expect(dialog, `${title} sau Esc`).toBeVisible();
+    await dialog.getByRole("button", { name: "Đóng" }).click({ timeout: 5_000 });
+    await expect(dialog, `${title} sau nút Đóng`).toBeVisible();
+    release();
+    await expect(page.getByRole("dialog"), title).toHaveCount(0);
+    await page.unroute(url);
+  }
 });
 
 test("Trang 4 tải ảnh thay thế: không chọn file, file 0 byte, file chữ đổi đuôi .jpg, file 21 MB, 23 MB báo dưới ô Ảnh, file trên 20 MB không gửi lên máy chủ; Nginx trả 413 cũng báo dưới ô Ảnh; mất mạng báo ở dòng báo chung; chọn lại đúng ảnh đang chọn thì hộp thoại không đóng; tab khác vừa đánh dấu Đạt thì báo không thay được", async ({ browser }) => {

@@ -241,6 +241,29 @@ test.describe("Tin SMS lỗi", () => {
     await expect(rows(page, SMS)).toContainText("0/3");
   });
 
+  test("đang Gửi lại thì Huỷ bị khoá, Esc và nút Đóng không đóng hộp; máy chủ trả lời xong thì hộp đóng", async ({ browser }) => {
+    const page = await loginAs(browser, "zz_e2e_admin");
+    await open(page, `/sms?${q(B.bPageName(2))}`);
+    let release = () => {};
+    const gate = new Promise<void>((resolve) => (release = resolve));
+    // Máy chủ giả trả 204 nên tin vẫn ở trạng thái Lỗi.
+    await page.route("**/api/admin/sms/*/resend", async (route) => {
+      await gate;
+      await route.fulfill({ status: 204 });
+    });
+    await page.getByRole("button", { name: `Gửi lại tin cho ${B.bPageName(2)}` }).click();
+    const dialog = resendDialog(page);
+    await dialog.getByRole("button", { name: "Gửi lại" }).click();
+    await expect(dialog.getByRole("button", { name: "Gửi lại" })).toBeDisabled();
+    await expect(dialog.getByRole("button", { name: "Huỷ" })).toBeDisabled();
+    await page.keyboard.press("Escape");
+    await expect(dialog, "sau Esc").toBeVisible();
+    await dialog.getByRole("button", { name: "Đóng" }).click({ timeout: 5_000 });
+    await expect(dialog, "sau nút Đóng").toBeVisible();
+    release();
+    await expect(dialog).toHaveCount(0);
+  });
+
   test("hai tab cùng Gửi lại một tin: tab sau báo tin không còn lỗi ở dòng báo chung, ô SĐT không bị đánh dấu sai", async ({ browser }) => {
     const a = await loginAs(browser, "zz_e2e_admin");
     const b = await loginAs(browser, "zz_e2e_admin");

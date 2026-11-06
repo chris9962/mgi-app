@@ -14,6 +14,8 @@ export function ResendButton({ id, fullName, toPhone }: { id: string; fullName: 
   const [pending, setPending] = useState(false);
 
   function close() {
+    // Như dismissible={!pending} của mgst-app: tin đã gửi lại thì đóng hộp không huỷ được.
+    if (pending) return;
     setOpen(false);
     setErrors({});
   }
@@ -42,7 +44,7 @@ export function ResendButton({ id, fullName, toPhone }: { id: string; fullName: 
           width={420}
           footer={
             <>
-              <Button variant="secondary" onClick={close}>
+              <Button variant="secondary" disabled={pending} onClick={close}>
                 Huỷ
               </Button>
               <Button type="submit" form="sms-resend" disabled={pending}>
