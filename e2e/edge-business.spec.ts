@@ -311,3 +311,26 @@ test("Trang 3 xuất Excel lọc trọn ngày giờ Việt Nam: ngày 31/10 ch�
     expect([day, sheet.rows.slice(3).map((r) => cols.map((c) => r[c]))]).toEqual([day, [[name, sent, issued]]]);
   }
 });
+
+test("Trang 3: lọc Chờ kiểm tra còn 1 dòng ở trang 2, mở hồ sơ đó bấm Đạt rồi bấm Quay lại của trình duyệt thì trang ghi 1 / 1, không có trang rỗng, không còn dòng cũ", async ({ browser }) => {
+  const page = await loginAs(browser, "zz_e2e_admin");
+  const name = B.bWaitName(0);
+  await open(page, `/customers?${q("bien cho kiem")}&status=pending_review&from=2026-10-15&to=2026-10-15&page=2`);
+  await expect(meta(page)).toHaveText("16 hồ sơ");
+  await expect(bodyRows(page)).toHaveCount(1);
+  await table(page).getByRole("link", { name, exact: true }).click();
+  await page.waitForURL(new RegExp(B.bWaitId(0)));
+  const bank = page.getByRole("region", { name: B.B_BANK2, exact: true });
+  await bank.getByRole("button", { name: "Đạt", exact: true }).click();
+  await page.getByRole("dialog", { name: "Đánh dấu Đạt" }).getByRole("button", { name: "Đạt", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(bank.getByRole("button", { name: "Đạt", exact: true })).toHaveCount(0);
+
+  await page.goBack();
+  await page.waitForURL(/page=2/);
+  await page.waitForLoadState("networkidle");
+  await expect(meta(page)).toHaveText("15 hồ sơ");
+  await expect(pager(page)).toContainText("1 / 1");
+  await expect(bodyRows(page)).toHaveCount(15);
+  await expect(table(page).getByRole("link", { name, exact: true })).toHaveCount(0);
+});

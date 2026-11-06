@@ -30,6 +30,12 @@ export const bPhone = (n: number) => `0966${String(n).padStart(6, "0")}`;
 export const bParentPhone = (n: number) => `0988${String(n).padStart(6, "0")}`;
 export const bPageVoucher = (n: number) => `ZZBIEN-BPT${String(n).padStart(2, "0")}-10A1-K7Q2`;
 
+// 17 hồ sơ chờ kiểm tra cho ca Đạt dòng cuối của trang cuối rồi bấm Quay lại. A chỉ có ngân hàng 2, Q tạo ngày 14/10, B tới P ngày 15/10:
+// Trang 3 lọc ngày 15/10 ra A tới P, trang Ngân hàng lọc ngân hàng 1 ra B tới Q, hai test không đổi dòng của nhau.
+export const B_WAIT_COUNT = 17;
+export const bWaitName = (i: number) => `Biên Chờ Kiểm ${String.fromCharCode(65 + i)}`;
+export const bWaitId = (i: number) => id(400 + i);
+
 export const B_LONG_NAME = exactly("Biên Nguyễn Hoàng Bảo Ngọc Phương Thảo Minh Châu Khánh Linh Thùy Dương ", 100);
 export const B_LONG_PARENT = exactly("Phụ Huynh Trần Văn Hoàng Minh Quang Đức Trọng Nghĩa ", 100);
 export const B_LONG_CLASS = "12CHUYENTOANTINHOCAB";

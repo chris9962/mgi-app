@@ -81,6 +81,10 @@ export async function seedBusiness(adminId: string) {
         sms: { status: "failed", at },
       };
     }),
+    ...Array.from({ length: B.B_WAIT_COUNT }, (_, i): Spec => {
+      const last = i === B.B_WAIT_COUNT - 1;
+      return { id: B.bWaitId(i), fullName: B.bWaitName(i), n: 230 + i, createdAt: last ? new Date("2026-10-14T03:00:00Z") : minutes("2026-10-15T01:00:00Z", i), banks: [{ bank: i === 0 ? 2 : 1, status: "pending" }] };
+    }),
     // 23:30 ngày 31/10 và 00:30 ngày 01/11 giờ Việt Nam: lệch ngày nếu so theo UTC.
     { id: B.B_IDS.late, fullName: B.B_LATE, n: 220, createdAt: new Date("2026-10-31T16:30:00Z"), banks: [{ bank: 2, status: "passed" }], voucher: { code: B.B_LATE_VOUCHER, issuedAt: new Date("2026-10-31T16:45:00Z") }, sms: { status: "sent", at: new Date("2026-10-31T16:50:00Z") } },
     { id: B.B_IDS.early, fullName: B.B_EARLY, n: 221, createdAt: new Date("2026-10-31T17:30:00Z"), banks: [{ bank: 2, status: "passed" }], voucher: { code: B.B_EARLY_VOUCHER, issuedAt: new Date("2026-10-31T17:45:00Z") } },

@@ -83,6 +83,29 @@ test.describe("trang Ngân hàng nhóm Nghiệp vụ", () => {
     }
   });
 
+  test("lọc Chờ kiểm tra còn 1 dòng ở trang 2, mở hồ sơ đó bấm Đạt rồi bấm Quay lại của trình duyệt thì trang ghi 1 / 1, không có trang rỗng, không còn dòng cũ", async ({ browser }) => {
+    const page = await loginAs(browser, "zz_e2e_admin");
+    const name = B.bWaitName(B.B_WAIT_COUNT - 1);
+    await open(page, `/customer-banks?${q("bien cho kiem")}&status=pending&bank=${B.B_BANK1_ID}&page=2`);
+    await expect(meta(page, NH, "dòng")).toHaveText("16 dòng");
+    await expect(rows(page, NH)).toHaveCount(1);
+    await card(page, NH).getByRole("link", { name, exact: true }).click();
+    await page.waitForURL(new RegExp(B.bWaitId(B.B_WAIT_COUNT - 1)));
+    const bank = card(page, B.B_BANK1);
+    await bank.getByRole("button", { name: "Đạt", exact: true }).click();
+    await page.getByRole("dialog", { name: "Đánh dấu Đạt" }).getByRole("button", { name: "Đạt", exact: true }).click();
+    await expect(page.getByRole("dialog")).toHaveCount(0);
+    await expect(bank.getByRole("button", { name: "Đạt", exact: true })).toHaveCount(0);
+
+    await page.goBack();
+    await page.waitForURL(/page=2/);
+    await page.waitForLoadState("networkidle");
+    await expect(meta(page, NH, "dòng")).toHaveText("15 dòng");
+    await expect(pager(page)).toContainText("1 / 1");
+    await expect(rows(page, NH)).toHaveCount(15);
+    await expect(card(page, NH).getByRole("link", { name, exact: true })).toHaveCount(0);
+  });
+
   test("phạm vi và rỗng: Nhân viên chỉ thấy dòng ngân hàng mình quản, không có mục lọc Ngân hàng; ngân hàng chưa có hồ sơ và tìm không khớp có câu báo riêng", async ({ browser }) => {
     const staff = await loginAs(browser, B.B_USER1);
     await open(staff, `/customer-banks?${q("bien")}`);
