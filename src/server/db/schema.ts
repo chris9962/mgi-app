@@ -6,7 +6,6 @@ import {
   index,
   inet,
   integer,
-  jsonb,
   numeric,
   pgEnum,
   pgTable,
@@ -17,6 +16,7 @@ import {
   uniqueIndex,
   uuid,
 } from "drizzle-orm/pg-core";
+import { jsonb } from "./jsonb";
 
 const id = () => uuid("id").primaryKey().defaultRandom();
 const serialId = () => bigint("id", { mode: "number" }).primaryKey().generatedAlwaysAsIdentity();

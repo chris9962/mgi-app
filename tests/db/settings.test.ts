@@ -42,4 +42,14 @@ describe("cài đặt", () => {
   test("Quản lý không lưu được", async () => {
     expect((await saveSettings(manager, { smsTemplate: "x", zaloUrl: "", pviAppUrl: "" })).ok).toBe(false);
   });
+
+  // Form đã chặn hai ký tự này; máy chủ vẫn phải lưu được nếu chúng lọt qua, vì Postgres từ chối cả hai trong jsonb và trả lỗi 500.
+  test("giá trị có NUL hay nửa cặp surrogate lọt qua form vẫn lưu được, ký tự hỏng thành U+FFFD ở cài đặt và audit_log", async () => {
+    const values = { smsTemplate: "Ma \ud83c {MA_VOUCHER}\u0000", zaloUrl: "https://zalo.me/\udf93", pviAppUrl: "" };
+    const clean = { smsTemplate: "Ma \ufffd {MA_VOUCHER}\ufffd", zaloUrl: "https://zalo.me/\ufffd", pviAppUrl: "" };
+    expect(await saveSettings(admin, values)).toEqual({ ok: true });
+    expect(await getSettings()).toEqual(clean);
+    const rows = await db.select({ detail: auditLog.detail }).from(auditLog).where(and(eq(auditLog.userId, admin.id), eq(auditLog.action, "save_settings")));
+    expect(rows.map((r) => (r.detail as { after: unknown }).after)).toContainEqual(clean);
+  });
 });

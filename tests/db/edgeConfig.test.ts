@@ -1,8 +1,9 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
-import { eq } from "drizzle-orm";
+import { and, eq } from "drizzle-orm";
 import { TEST_NAME, TEST_PREFIX, cleanTestUsers, makeActor } from "./helpers";
 import { db } from "../../src/server/db/client";
-import { settings, users } from "../../src/server/db/schema";
+import { auditLog, settings, users } from "../../src/server/db/schema";
+import { writeAudit } from "../../src/server/audit";
 import { createBank, getGuide, managerOptions, saveGuide, setBankActive, updateBank } from "../../src/server/banks";
 import { createCode, listCodes, updateCode } from "../../src/server/referralCodes";
 import { createSchool, listSchools, searchSchoolOptions, setSchoolActive } from "../../src/server/schools";
@@ -213,6 +214,26 @@ describe("ca biên cấu hình: tìm nhiều từ như mgst-app, mỗi từ mộ
 });
 
 // Chạy cuối file: cleanTestUsers xoá cả tài khoản test mà các describe khác dùng chung.
+describe("ca biên cấu hình: chuỗi Postgres từ chối trong jsonb", () => {
+  // Form đã chặn NUL và nửa cặp surrogate; máy chủ vẫn phải lưu được nếu chúng lọt qua, không thì trả lỗi 500.
+  const BAD = "a\ud83cb\u0000c\udf93";
+  const CLEAN = "a\ufffdb\ufffdc\ufffd";
+
+  test("audit_log: detail có NUL, nửa cặp surrogate lưu được, ký tự hỏng thành U+FFFD; emoji đủ cặp giữ nguyên", async () => {
+    await writeAudit(db, { userId: admin.id, action: "zz_test_bad_json", targetType: "banks", targetId: "zz_test_bad_json", detail: { name: BAD, list: [BAD, "🎓"], n: 1 } });
+    const rows = await db.select({ detail: auditLog.detail }).from(auditLog).where(and(eq(auditLog.userId, admin.id), eq(auditLog.action, "zz_test_bad_json")));
+    expect(rows.map((r) => r.detail)).toEqual([{ name: CLEAN, list: [CLEAN, "🎓"], n: 1 }]);
+  });
+
+  test("hướng dẫn: bước có NUL, nửa cặp surrogate lưu được vào banks.guide và audit_log", async () => {
+    const bank = await createBank(admin, bankForm("ZZTJSON", "Chuỗi jsonb"));
+    if (!bank.ok) throw new Error(bank.message);
+    const slots = [{ name: "Ảnh một", sampleKey: null, checkName: false, checkCode: false }];
+    expect(await saveGuide(admin, bank.id, { steps: [BAD, "Tải app 🎓"], slots, seenSlotIds: [] })).toEqual({ ok: true });
+    expect((await getGuide(bank.id))?.steps).toEqual([CLEAN, "Tải app 🎓"]);
+  });
+});
+
 describe("ca biên cấu hình: dọn dữ liệu test", () => {
   test("câu dọn chỉ chọn đúng tiền tố zz_test_: dấu _ là chữ, không phải ký tự đại diện", async () => {
     const [other] = await db.insert(users).values({ username: "zzxtestxkhac", fullName: "Không phải dữ liệu test", passwordHash: "x", role: "staff" }).returning({ id: users.id });
