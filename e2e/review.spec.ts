@@ -78,6 +78,7 @@ test("Người quản ngân hàng đánh dấu Đạt, voucher hiện ở Trang 
 
   await student.reload();
   await expect(student.getByRole("img", { name: "QR mở app PVI" })).toBeVisible();
+  await expect(student.getByRole("link", { name: "Mở app PVI" })).toBeVisible();
   await expect(student.getByText(code)).toHaveCount(0);
 });
 

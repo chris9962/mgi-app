@@ -62,8 +62,7 @@ test("Học sinh quét link trường, khai thông tin, chọn 2 ngân hàng, n�
   await expect(send).toBeEnabled();
   await send.click();
   await expect(page.getByText("Chờ kiểm tra")).toHaveCount(2);
-  await expect(page.getByText("Phụ huynh nhận SMS khi có ngân hàng đạt.")).toBeVisible();
-  await expect(page.getByText("Gửi tới 0987 •••• 321")).toBeVisible();
+  await expect(page.getByText(/voucher/i)).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Trần Minh Anh - 11A3" })).toBeVisible();
 
   await page.reload();
