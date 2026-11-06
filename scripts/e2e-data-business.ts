@@ -22,6 +22,7 @@ export const B_BANK3 = "ZZE2E Biên Ngân hàng Trống";
 export const B_USER1 = "zz_e2e_bien1";
 export const B_USER2 = "zz_e2e_bien2";
 export const B_USER3 = "zz_e2e_bien3";
+export const B_USER4 = "zz_e2e_bien4";
 
 export const B_PAGE_COUNT = 16;
 export const bPageName = (n: number) => `Biên Phân Trang ${String(n).padStart(2, "0")}`;
@@ -87,6 +88,7 @@ export const B_IDS = {
   failFirst: id(224),
   doubleClick: id(225),
   longError: id(226),
+  lostBank: id(227),
 } as const;
 
 export const B_NAMES: Record<keyof typeof B_IDS, string> = {
@@ -116,4 +118,5 @@ export const B_NAMES: Record<keyof typeof B_IDS, string> = {
   failFirst: "Biên Không Đạt Trước",
   doubleClick: "Biên Bấm Đúp",
   longError: "Biên Lỗi Dài",
+  lostBank: "Biên Bỏ Giao",
 };

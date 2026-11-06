@@ -476,6 +476,40 @@ test("Trang 4 phân quyền: Nhân viên mở hồ sơ ngoài phạm vi và gọ
   await expect(bank1(staff).getByRole("button", { name: "Không đạt" })).toBeVisible();
 });
 
+test("Nhân viên bị bỏ giao ngân hàng lúc đang mở hộp: Lưu ghi chú, Tải lên, Lưu thông tin, Gửi lại báo không tìm thấy ở dòng báo chung, không ô nào bị đánh dấu sai", async ({ browser }) => {
+  const admin = await loginAs(browser, "zz_e2e_admin");
+  const staff = await loginAs(browser, B.B_USER4);
+  const [notePage, replacePage, editPage, smsPage] = [staff, await staff.context().newPage(), await staff.context().newPage(), await staff.context().newPage()];
+  for (const page of [notePage, replacePage, editPage]) await open(page, detail(B.B_IDS.lostBank));
+  await open(smsPage, `/sms?q=${encodeURIComponent(B.B_NAMES.lostBank)}`);
+
+  await bank2(notePage).getByRole("button", { name: /^Sửa ghi chú/ }).click();
+  const note = notePage.getByRole("dialog", { name: "Ghi chú nội bộ" });
+  await note.getByRole("textbox").fill("Ghi chú sau khi bị bỏ giao");
+  await bank2(replacePage).getByRole("button", { name: "Tải ảnh thay thế" }).click();
+  const replace = replacePage.getByRole("dialog", { name: "Tải ảnh thay thế" });
+  await replace.getByLabel("Ảnh", { exact: true }).setInputFiles(PHOTO);
+  await editPage.getByRole("button", { name: "Sửa thông tin" }).click();
+  const edit = editPage.getByRole("dialog", { name: "Sửa thông tin" });
+  await smsPage.getByRole("button", { name: `Gửi lại tin cho ${B.B_NAMES.lostBank}` }).click();
+  const resend = smsPage.getByRole("dialog", { name: "Gửi lại tin SMS" });
+
+  const [keep] = await (await admin.request.get(`/api/admin/users/options?q=${B.B_USER2}`)).json();
+  const unassign = await admin.request.patch(`/api/admin/banks/${B.B_BANK2_ID}`, { headers: { Origin: ADMIN }, data: { code: "ZZE2EB2", name: B.B_BANK2, sortOrder: "96", managerIds: [keep.id] } });
+  expect(unassign.status()).toBe(204);
+
+  for (const [dialog, submit, message] of [
+    [note, "Lưu", "Không tìm thấy ngân hàng của hồ sơ."],
+    [replace, "Tải lên", "Không tìm thấy ngân hàng của hồ sơ."],
+    [edit, "Lưu", "Không tìm thấy hồ sơ."],
+    [resend, "Gửi lại", "Không tìm thấy tin SMS."],
+  ] as const) {
+    await dialog.getByRole("button", { name: submit, exact: true }).click();
+    await expect(dialog.getByRole("alert"), message).toHaveText(message);
+    await expect(dialog.locator('[aria-invalid="true"]'), message).toHaveCount(0);
+  }
+});
+
 test("Trang 4 rỗng và giờ: hồ sơ chưa chọn ngân hàng chỉ có thẻ Thông tin và SMS; chưa có ảnh, chưa có ghi chú; voucher cấp 23:45 ngày 31/10 giờ Việt Nam; hồ sơ trùng tên và SĐT có link sang nhau", async ({ browser }) => {
   for (const device of [DESKTOP, PHONE]) {
     const page = await loginAs(browser, "zz_e2e_admin", device);

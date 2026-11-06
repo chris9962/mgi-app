@@ -64,6 +64,9 @@ export async function seedBusiness(adminId: string) {
     .returning({ id: users.id });
   await db.insert(userManagedBanks).values(staff.map((u, i) => ({ userId: u.id, bankId: bankRows[i].id })));
   await db.insert(userPermissions).values({ userId: staff[1].id, permission: "export_excel" });
+  // Quản B2 và B3: test bỏ giao B2 giữa chừng, B3 giữ quyền vào trang hồ sơ nên API trả 404 thay vì 403.
+  const [lost] = await db.insert(users).values({ username: B.B_USER4, fullName: "E2E Biên Bốn", role: "staff", passwordHash }).returning({ id: users.id });
+  await db.insert(userManagedBanks).values([B.B_BANK2_ID, B.B_BANK3_ID].map((bankId) => ({ userId: lost.id, bankId })));
 
   const bankId = { 1: B.B_BANK1_ID, 2: B.B_BANK2_ID } as const;
   const specs: Spec[] = [
@@ -122,6 +125,7 @@ export async function seedBusiness(adminId: string) {
       voucher: { code: "ZZBIEN-BLD-10A1-HHHH", issuedAt: new Date("2026-10-22T04:00:00Z") },
       sms: { status: "failed", at: new Date("2026-10-22T04:00:00Z"), error: B.B_LONG_SMS_ERROR },
     },
+    { id: B.B_IDS.lostBank, fullName: B.B_NAMES.lostBank, n: 227, createdAt: new Date("2026-10-22T03:05:00Z"), banks: [{ bank: 2, status: "pending" }], sms: { status: "failed", at: new Date("2026-10-22T04:00:00Z") } },
   ];
 
   const [reviewer1, reviewer2] = staff;
