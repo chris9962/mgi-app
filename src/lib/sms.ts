@@ -57,7 +57,7 @@ export const SettingsForm = z.object({
   smsTemplate: z
     .string()
     .trim()
-    .min(1, "Nhập mẫu SMS")
+    .min(1, { message: "Nhập mẫu SMS", abort: true })
     .refine((v) => !/[\r\n]/.test(v), { message: "Mẫu SMS viết trên một dòng", abort: true })
     .regex(/^[\x20-\x7E]+$/, "Mẫu SMS viết không dấu")
     .superRefine((v, ctx) => {
