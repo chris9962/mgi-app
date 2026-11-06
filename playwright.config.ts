@@ -14,7 +14,7 @@ export default defineConfig({
       name: "flows",
       testDir: "./e2e/flows",
       timeout: 300_000,
-      use: { ...devices["Desktop Chrome"], viewport: { width: 1366, height: 768 }, video: flowVideo(1366, 768), launchOptions: { slowMo: 300 } },
+      use: { ...devices["Desktop Chrome"], viewport: { width: 1366, height: 768 }, video: flowVideo(1366, 768), launchOptions: { slowMo: 300 }, actionTimeout: 20_000, navigationTimeout: 30_000 },
     },
   ],
   webServer: { command: "bun dev", url: "http://admin.localhost:3100/login", reuseExistingServer: true, timeout: 120_000 },
