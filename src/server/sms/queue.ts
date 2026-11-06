@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, like, lt, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, inArray, like, lt, or, sql, type SQL } from "drizzle-orm";
 import { db } from "../db/client";
 import { customers, schools, smsMessages } from "../db/schema";
 import { writeAudit } from "../audit";
@@ -16,11 +16,15 @@ export const MAX_ATTEMPTS = 3;
 type Fail = { ok: false; message: string; status: 400 | 404 | 409; field?: string };
 const fail = (message: string, status: Fail["status"], field?: string): Fail => ({ ok: false, message, status, field });
 
-export async function queuedSmsIds(limit = 20): Promise<string[]> {
+// Worker chạy với cờ --truong chỉ gửi tin của hồ sơ thuộc các trường đó: e2e không gửi tin của hồ sơ thật trong DB local.
+const ofSchools = (schoolIds?: string[]): SQL | undefined =>
+  schoolIds === undefined ? undefined : schoolIds.length ? inArray(smsMessages.customerId, db.select({ id: customers.id }).from(customers).where(inArray(customers.schoolId, schoolIds))) : sql`false`;
+
+export async function queuedSmsIds(limit = 20, schoolIds?: string[]): Promise<string[]> {
   const rows = await db
     .select({ id: smsMessages.id })
     .from(smsMessages)
-    .where(and(eq(smsMessages.status, "queued"), lt(smsMessages.attempts, MAX_ATTEMPTS)))
+    .where(and(eq(smsMessages.status, "queued"), lt(smsMessages.attempts, MAX_ATTEMPTS), ofSchools(schoolIds)))
     .orderBy(asc(smsMessages.createdAt))
     .limit(limit);
   return rows.map((r) => r.id);
@@ -53,9 +57,9 @@ export async function sendOneSms(id: string, send: SmsSender = sendSms): Promise
 }
 
 // Một vòng của worker: mỗi tin đang chờ gửi một lần; tin lỗi chờ vòng sau mới thử lại.
-export async function runSmsQueue(send: SmsSender = sendSms): Promise<Record<SendOutcome, number>> {
+export async function runSmsQueue(send: SmsSender = sendSms, schoolIds?: string[]): Promise<Record<SendOutcome, number>> {
   const tally: Record<SendOutcome, number> = { sent: 0, retry: 0, failed: 0, skipped: 0 };
-  for (const id of await queuedSmsIds()) tally[await sendOneSms(id, send)] += 1;
+  for (const id of await queuedSmsIds(20, schoolIds)) tally[await sendOneSms(id, send)] += 1;
   return tally;
 }
 

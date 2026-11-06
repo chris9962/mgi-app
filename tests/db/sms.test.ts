@@ -1,10 +1,11 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { spawn } from "node:child_process";
 import { and, eq } from "drizzle-orm";
 import { cleanTestUsers, makeActor } from "./helpers";
 import { insertCustomer, setupProgram, type Program } from "./fixtures";
 import { db } from "../../src/server/db/client";
 import { auditLog, smsMessages } from "../../src/server/db/schema";
-import { failedSmsCount, listSms, queuedSmsIds, resendSms, sendOneSms } from "../../src/server/sms/queue";
+import { failedSmsCount, listSms, queuedSmsIds, resendSms, runSmsQueue, sendOneSms } from "../../src/server/sms/queue";
 import { parseSmsFilters } from "../../src/lib/smsFilters";
 import type { SmsSender } from "../../src/server/sms/send";
 import type { SessionUser } from "../../src/lib/types";
@@ -13,8 +14,8 @@ let p: Program;
 let staffA: SessionUser;
 let staffB: SessionUser;
 
-async function queued(fullName = "Smsds Trần Minh Anh", bank = "A", status: "queued" | "sent" | "failed" = "queued", attempts = 0) {
-  const c = await insertCustomer(p, { fullName, parentPhone: "0987654321", status: "reviewed", submittedAt: new Date(), banks: [{ key: bank, status: "passed" }] });
+async function queued(fullName = "Smsds Trần Minh Anh", bank = "A", status: "queued" | "sent" | "failed" = "queued", attempts = 0, program = p) {
+  const c = await insertCustomer(program, { fullName, parentPhone: "0987654321", status: "reviewed", submittedAt: new Date(), banks: [{ key: bank, status: "passed" }] });
   const [row] = await db.insert(smsMessages).values({ customerId: c.id, kind: "voucher", toPhone: "0987654321", body: "TRAN MINH ANH da mo tai khoan", status, attempts, error: status === "failed" ? "Số không tồn tại" : "" }).returning();
   return row;
 }
@@ -109,4 +110,40 @@ describe("Trang Tin SMS lỗi", () => {
     expect(await failedSmsCount(staffB)).toBe(before + 1);
     expect(await failedSmsCount(staffA)).toBeGreaterThanOrEqual(1);
   });
+});
+
+describe("worker SMS chỉ gửi tin của trường được chỉ", () => {
+  let other: Program;
+  const worker = (...args: string[]) => spawn("bun", ["scripts/sms-worker.ts", ...args], { env: process.env, stdio: ["ignore", "pipe", "pipe"] });
+  const exited = (child: ReturnType<typeof worker>) => new Promise<number | null>((resolve) => child.on("exit", (code) => resolve(code)));
+
+  beforeAll(async () => {
+    other = await setupProgram("smsother", ["C"]);
+  });
+
+  test("runSmsQueue có danh sách trường thì tin trường khác vẫn chờ, chưa gửi lần nào", async () => {
+    const mine = await queued("Smsscope Mai Anh");
+    const theirs = await queued("Smsscope Khác Trường", "C", "queued", 0, other);
+    await runSmsQueue(ok, [p.schoolId]);
+    expect((await smsRow(mine.id)).status).toBe("sent");
+    expect([(await smsRow(theirs.id)).status, (await smsRow(theirs.id)).attempts]).toEqual(["queued", 0]);
+  });
+
+  test("--mot-vong --truong gửi tin đang chờ của trường đó, ghi log rồi thoát mã 0", async () => {
+    const mine = await queued("Smsworker Lan Anh");
+    const theirs = await queued("Smsworker Khác Trường", "C", "queued", 0, other);
+    const child = worker("--mot-vong", `--truong=${p.schoolId}`);
+    let out = "";
+    child.stdout!.on("data", (d) => (out += d));
+    expect(await exited(child)).toBe(0);
+    expect((await smsRow(mine.id)).status).toBe("sent");
+    expect(out).toContain("[sms] tới 0987654321");
+    expect((await smsRow(theirs.id)).status).toBe("queued");
+  }, 30_000);
+
+  test("cờ --truong sai thì thoát lỗi, không gửi tin nào", async () => {
+    const mine = await queued("Smsworker Cờ Sai");
+    expect(await exited(worker("--mot-vong", "--truong=abc"))).not.toBe(0);
+    expect((await smsRow(mine.id)).status).toBe("queued");
+  }, 30_000);
 });
