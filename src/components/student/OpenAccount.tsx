@@ -115,6 +115,11 @@ export function OpenAccount({ state, onChange }: { state: StudentState; onChange
   // Đang tải hoặc chụp lại ảnh thì chưa gửi: gửi lúc đó là gửi ảnh cũ, ảnh mới bị bỏ.
   const ready = banks.length > 0 && banks.every(complete) && busySlots.length === 0;
   const markBusy = (slotId: string, busy: boolean) => setBusySlots((list) => (busy ? [...list, slotId] : list.filter((id) => id !== slotId)));
+  // Ảnh vừa nộp có thể lấp đúng khung mà câu lỗi đang nhắc: câu cũ không được ở lại tới lần bấm sau.
+  const photoSaved = () => {
+    setError("");
+    return onChange();
+  };
 
   async function submit() {
     setSending(true);
@@ -188,7 +193,7 @@ export function OpenAccount({ state, onChange }: { state: StudentState; onChange
       </div>
       {banks.map((b) => (
         <div key={b.id} role="tabpanel" id={`panel-${b.id}`} aria-labelledby={`tab-${b.id}`} hidden={b.id !== current.id}>
-          <BankPanel bank={b} onSaved={onChange} onBusy={markBusy} />
+          <BankPanel bank={b} onSaved={photoSaved} onBusy={markBusy} />
         </div>
       ))}
       {error && (

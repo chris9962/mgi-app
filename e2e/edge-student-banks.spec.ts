@@ -390,6 +390,7 @@ test.describe("D. B3 mở tài khoản", () => {
     await expect(page.getByRole("tabpanel").getByLabel("Ảnh mới: chụp hoặc chọn ảnh")).toBeAttached();
     await expect(send).toBeDisabled();
     await uploadIn(page, "Ảnh mới");
+    await expect(alertIn(page)).toHaveCount(0);
     await send.click();
     await expect(page.getByText("Chờ kiểm tra")).toHaveCount(2);
   });
