@@ -142,6 +142,20 @@ test.describe("C. B2 chọn ngân hàng", () => {
       dbOp("school", SCHOOL.closing, "open");
     }
   });
+
+  test("C9 hai tab ở B2: tab kia đã giữ chỗ, bấm Tiếp tục thì sang B3 với ngân hàng tab kia đã chọn", async ({ page, request }) => {
+    const s = await apiCreate(request, SCHOOL.photo, info("Hai Tab Chọn Ngân Hàng"));
+    await openAt(page, SCHOOL.photo, s);
+    await page.getByRole("button", { name: NAME.p3 }).click();
+    await page.getByRole("button", { name: NAME.p4 }).click();
+    await apiPick(request, s, [BANK.p1, BANK.p3]);
+    await next(page).click();
+    await expect(page.getByRole("heading", { name: "Mở tài khoản" })).toBeVisible();
+    await expect(page.getByRole("tab")).toHaveCount(2);
+    await expect(tab(page, NAME.p1)).toBeVisible();
+    await expect(tab(page, NAME.p3)).toBeVisible();
+    expect((await s.me()).banks.map((b) => b.bankId)).toEqual([BANK.p1, BANK.p3]);
+  });
 });
 
 test.describe("D. B3 mở tài khoản", () => {
@@ -372,6 +386,19 @@ test.describe("D. B3 mở tài khoản", () => {
     await expect(confirm.getByRole("alert")).toHaveCount(0);
     await confirm.getByRole("button", { name: "Quay lại", exact: true }).click();
     await expect(page.getByRole("heading", { name: "Chọn 2 ngân hàng" })).toBeVisible();
+  });
+
+  test("D22 tab kia bấm Quay lại nên hồ sơ về B2: tab này nộp ảnh thì web tải lại sang B2, không báo Hồ sơ đã gửi kiểm tra", async ({ page, request }) => {
+    const s = await apiCreate(request, SCHOOL.photo, info("Tab Kia Quay Lại"));
+    await apiPick(request, s, [BANK.p1, BANK.p3]);
+    await openAt(page, SCHOOL.photo, s);
+    await expect(page.getByRole("heading", { name: "Mở tài khoản" })).toBeVisible();
+    expect((await request.delete(`${STUDENT}/api/customers/me/banks`, { headers: s.auth })).status()).toBe(204);
+    await page.getByRole("tabpanel").getByLabel("Ảnh màn hình chính: chụp hoặc chọn ảnh").setInputFiles(PHOTO);
+    await expect(page.getByRole("heading", { name: "Chọn 2 ngân hàng" })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByText("Hồ sơ đã gửi kiểm tra.")).toHaveCount(0);
+    await expect(alertIn(page)).toHaveCount(0);
+    expect((await s.me()).banks).toEqual([]);
   });
 
   test("D15 hai tab ở B3: tab kia đã gửi kiểm tra, bấm Quay lại thì sang màn kết quả", async ({ page, request }) => {
