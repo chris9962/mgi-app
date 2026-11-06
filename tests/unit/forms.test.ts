@@ -59,3 +59,17 @@ describe("ảnh học sinh", () => {
     expect(isAdminImageKey("../x")).toBe(false);
   });
 });
+
+describe("tab trong Hướng dẫn", () => {
+  const guide = (steps: string[], slotName = "Ảnh một") => GuideForm.safeParse({ steps, slots: [{ name: slotName, sampleKey: null, checkName: false, checkCode: false }], seenSlotIds: [] });
+
+  test("bước dán từ Word có tab: mỗi tab thành một dấu cách như form học sinh, không gộp khoảng trắng khác", () => {
+    expect(guide(["•\tTải app", "Mở\t\ttài  khoản\t", "\tNhập mã"]).data?.steps).toEqual(["• Tải app", "Mở  tài  khoản", "Nhập mã"]);
+  });
+
+  test("bước chỉ có tab vẫn là bước trống; ký tự điều khiển khác trong bước vẫn báo lỗi; tên ảnh có tab vẫn báo lỗi ở ô tên ảnh", () => {
+    expect(guide(["\t"]).success).toBe(false);
+    expect(guide(["Tải\u0001app"]).error?.issues.map((i) => [i.path.join("."), i.message])).toEqual([["steps.0", "Có ký tự không hợp lệ"]]);
+    expect(guide(["Tải app"], "Ảnh\tmột").error?.issues.map((i) => [i.path.join("."), i.message])).toEqual([["slots.0.name", "Có ký tự không hợp lệ"]]);
+  });
+});

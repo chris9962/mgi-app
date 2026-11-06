@@ -69,7 +69,7 @@ test("API: tải ảnh thư mục lạ, không có file, file 0 byte, file khôn
   }
 });
 
-test("API: ký tự NUL, ký tự điều khiển, nửa cặp surrogate ở mọi ô chữ của form trả 400 kèm ô lỗi, không lỗi 500; đăng nhập với tên có NUL trả 401", async ({ browser }) => {
+test("API: ký tự NUL, ký tự điều khiển, nửa cặp surrogate ở mọi ô chữ của form trả 400 kèm ô lỗi, không lỗi 500; tab ở ô Bước thành dấu cách; đăng nhập với tên có NUL trả 401", async ({ browser }) => {
   test.setTimeout(120_000);
   const admin = await asUser(browser, "zz_e2e_admin");
   const bankId = await createBank(admin, "ZZCNUL", "ZZE2E Ký tự lạ");
@@ -112,15 +112,17 @@ test("API: ký tự NUL, ký tự điều khiển, nửa cặp surrogate ở m�
   };
   try {
     // \ud83c là nửa đầu của 🎓: JSON vẫn gửi được, cột jsonb của audit_log thì từ chối.
-    for (const ch of ["\u0000", "\u0001", "\u007f", "\ud83c"]) {
+    for (const ch of ["\u0000", "\u0001", "\u0009", "\u007f", "\ud83c"]) {
       for (const [page, method, url, base, paths] of cases) {
         for (const path of paths) {
           const r = await api(page, method, url, withChar(base, path, ch));
           const label = `${method} ${url} ${path} U+${ch.charCodeAt(0).toString(16).padStart(4, "0")}`;
-          expect([label, r.status, (r.body as { field?: string } | null)?.field]).toEqual([label, 400, path.split(".")[0]]);
+          const expected = ch === "\t" && path === "steps.0" ? [label, 204, undefined] : [label, 400, path.split(".")[0]];
+          expect([label, r.status, (r.body as { field?: string } | null)?.field]).toEqual(expected);
         }
       }
     }
+    expect((await api(admin, "GET", `/api/admin/banks/${bankId}/guide`)).body).toMatchObject({ steps: ["Tải app x"] });
   } finally {
     expect((await api(admin, "PATCH", "/api/admin/settings", before)).status).toBe(204);
   }

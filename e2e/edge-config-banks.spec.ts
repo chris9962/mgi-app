@@ -233,7 +233,7 @@ test("Hướng dẫn: hai tab cùng mở, tab 1 thêm khung rồi lưu, tab 2 l�
   await expect(guideDialog(one).getByLabel("Tên ảnh 3")).toHaveValue("Ảnh ba");
 });
 
-test("Hướng dẫn: ngân hàng mới ghi Chưa cài, Chưa giao; tên ảnh trống, 21 bước, bỏ hết khung, 11 khung đều báo lỗi; dòng trống và số thứ tự bị bỏ; file không phải ảnh bị từ chối", async ({ page }) => {
+test("Hướng dẫn: ngân hàng mới ghi Chưa cài, Chưa giao; tên ảnh trống, 21 bước, bỏ hết khung, 11 khung đều báo lỗi; dòng trống và số thứ tự bị bỏ; tab dán từ Word thành dấu cách; file không phải ảnh bị từ chối", async ({ page }) => {
   test.setTimeout(90_000);
   await apiLogin(page, "zz_e2e_admin");
   await createBank(page, "ZZCMOI", "ZZE2E Hướng dẫn mới");
@@ -253,7 +253,7 @@ test("Hướng dẫn: ngân hàng mới ghi Chưa cài, Chưa giao; tên ảnh t
   await g.getByRole("button", { name: "Lưu" }).click();
   await expect(g.getByRole("alert")).toHaveText("Tối đa 20 bước");
 
-  await g.getByLabel("Các bước").fill("1. Tải app\n\n   \n2) Mở tài khoản\n  3.Nhập mã  ");
+  await g.getByLabel("Các bước").fill("1. Tải app\n\n   \n2) Mở tài khoản\n  3.Nhập mã  \n•\tChụp\tảnh\n\t");
   await g.getByRole("button", { name: "Bỏ Ảnh màn hình chính", exact: true }).click();
   await g.getByRole("button", { name: "Lưu" }).click();
   await expect(g.getByRole("alert")).toHaveText("Cần ít nhất 1 ảnh cần nộp");
@@ -278,7 +278,7 @@ test("Hướng dẫn: ngân hàng mới ghi Chưa cài, Chưa giao; tên ảnh t
   await expect(g).toBeHidden();
   await expect(row).toContainText("10 ảnh");
   await page.getByRole("button", { name: "Hướng dẫn mở tài khoản ZZE2E Hướng dẫn mới" }).click();
-  await expect(g.getByLabel("Các bước")).toHaveValue("Tải app\nMở tài khoản\nNhập mã");
+  await expect(g.getByLabel("Các bước")).toHaveValue("Tải app\nMở tài khoản\nNhập mã\n• Chụp ảnh");
   await expect(g.getByLabel("Tên ảnh 10", { exact: true })).toHaveValue("Ảnh 10");
 });
 
