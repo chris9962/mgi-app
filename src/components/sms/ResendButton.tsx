@@ -10,12 +10,12 @@ import { apiSend } from "@/lib/api";
 export function ResendButton({ id, fullName, toPhone }: { id: string; fullName: string; toPhone: string }) {
   const router = useRouter();
   const [open, setOpen] = useState(false);
-  const [error, setError] = useState("");
+  const [errors, setErrors] = useState<{ toPhone?: string; form?: string }>({});
   const [pending, setPending] = useState(false);
 
   function close() {
     setOpen(false);
-    setError("");
+    setErrors({});
   }
 
   async function submit(event: FormEvent<HTMLFormElement>) {
@@ -23,7 +23,8 @@ export function ResendButton({ id, fullName, toPhone }: { id: string; fullName: 
     setPending(true);
     const r = await apiSend("POST", `/api/admin/sms/${id}/resend`, { toPhone: String(new FormData(event.currentTarget).get("toPhone") ?? "") });
     setPending(false);
-    if (!r.ok) return setError(r.message);
+    // Tab khác vừa gửi lại hay mất mạng không phải lỗi của SĐT: báo ở dòng chung, không đánh dấu ô sai.
+    if (!r.ok) return setErrors(r.field === "toPhone" ? { toPhone: r.message } : { form: r.message });
     close();
     router.refresh();
   }
@@ -50,8 +51,13 @@ export function ResendButton({ id, fullName, toPhone }: { id: string; fullName: 
             </>
           }
         >
-          <form id="sms-resend" onSubmit={submit} noValidate>
-            <TextField name="toPhone" label="SĐT nhận" inputMode="numeric" defaultValue={toPhone} error={error} data-autofocus />
+          <form id="sms-resend" onSubmit={submit} noValidate className="flex flex-col gap-3">
+            <TextField name="toPhone" label="SĐT nhận" inputMode="numeric" defaultValue={toPhone} error={errors.toPhone} data-autofocus />
+            {errors.form && (
+              <p role="alert" className="text-sm text-danger">
+                {errors.form}
+              </p>
+            )}
           </form>
         </Dialog>
       )}
