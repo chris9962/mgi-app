@@ -163,7 +163,7 @@ describe("xuất Excel quá 20.000 dòng", () => {
     await db.execute(sql`insert into vouchers (code, customer_id) select 'ZZTESTBIGX-' || id, id from customers where school_id = ${big.schoolId}`);
     try {
       const n = EXPORT_LIMIT + 1;
-      const tooMany = { ok: false, status: 400, message: `Danh sách có ${n} dòng, quá ${EXPORT_LIMIT} dòng một file. Lọc bớt rồi xuất lại.` };
+      const tooMany = { ok: false, status: 400, message: `Danh sách có ${n} dòng, quá ${EXPORT_LIMIT} dòng một file. Lọc bớt rồi xuất lại.` } as const;
       expect(await exportCustomers(admin, parseCustomerFilters({ q: "bigx" }), null)).toEqual(tooMany);
       expect(await exportCustomerBanks(admin, (await readCustomerBankFilters(admin, { q: "bigx" })).filters, null)).toEqual(tooMany);
       expect(await exportVouchers(admin, parseVoucherFilters({ q: "bigx" }), null)).toEqual(tooMany);
