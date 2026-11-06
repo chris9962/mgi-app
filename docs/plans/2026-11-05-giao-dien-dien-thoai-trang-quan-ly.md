@@ -151,3 +151,17 @@ Test sau lượt sửa:
 - `bun run lint` sạch, còn 2 cảnh báo `<img>` có từ trước.
 
 Việc để lại sau review lần 2: không có việc mới. Hai mục còn lại của lần 1 (vạch ngăn ở trang chi tiết có tên dài, `viewport-fit=cover`) vẫn như cũ.
+
+### Sửa theo review lần 3
+
+Reviewer đọc bản `435701e`. Mục 1, 2, 3 của lần 2 đúng, không có vòng render, `useSearchParams` không cần Suspense. Mục 4 gây lại 1 lỗi Important.
+
+1. Important, `bc6e1f1`. Ở khổ rộng 601 tới khoảng 663 px và cao trên 780 px, bảng Bộ lọc rộng 520 px neo vào mép phải nút nên tràn mép trái. Nút "Bỏ hết bộ lọc" và nhãn mục lọc bị cắt. Sửa: dưới 900 px bảng neo vào thanh tiêu đề, cách mép phải 16 px (`mobile:static`, `mobile:right-4`). Test "Bộ lọc dưới 900 px" thêm khổ 601x900, 640x900 và kiểm bảng nằm trọn trong màn. Test fail ở 601x900 trên `435701e`, pass trên `bc6e1f1`.
+
+Test sau lượt sửa: `bun run test` 227/227, `bun run e2e` 44/44, `bunx tsc --noEmit` sạch, `bun run lint` sạch (2 cảnh báo `<img>` có từ trước). Không chạy lại `bun test:db` và `e2e:flows`: lượt sửa chỉ đổi lớp CSS ở khổ 600 tới 900 px, flow 11 chạy ở 390 px.
+
+Việc để lại sau review lần 3:
+
+- Biến `location` ở `src/components/shell/AppShell.tsx` trùng tên biến toàn cục `window.location`. Code chạy đúng, đổi tên thì dễ đọc hơn.
+- Bàn phím ảo khi gõ ô tìm trong bảng Bộ lọc đang đứng trên thanh đáy: chưa kiểm trên iPhone và Android thật.
+- Hai mục còn lại của lần 1 vẫn như cũ.
