@@ -268,6 +268,22 @@ test("điện thoại thấp 375x548 và nằm ngang 844x390: hàng nút của b
   }
 });
 
+test("điện thoại 360 và 390 px: báo lỗi xuất Excel nằm trọn trong màn hình", async ({ browser }) => {
+  const page = await loginAs(browser, "zz_e2e_admin", PHONE);
+  await page.route("**/api/admin/*/export**", (route) => route.fulfill({ status: 400, json: { message: "Quá số dòng xuất được một lần, lọc bớt rồi xuất lại." } }));
+  for (const [width, path] of [
+    [360, "/customers"],
+    [390, "/schools"],
+  ] as const) {
+    await page.setViewportSize({ width, height: 800 });
+    await page.goto(path);
+    await page.waitForLoadState("networkidle");
+    await page.getByRole("button", { name: "Xuất Excel" }).click();
+    const alert = await box(page.locator('[role="alert"]').filter({ hasText: "Quá số dòng" }));
+    expect([path, alert.left >= 0, alert.right <= width]).toEqual([path, true, true]);
+  }
+});
+
 test("điện thoại: hộp thoại mở thì trang phía sau không cuộn", async ({ browser }) => {
   const page = await loginAs(browser, "zz_e2e_admin", PHONE);
   await page.goto("/banks/codes");

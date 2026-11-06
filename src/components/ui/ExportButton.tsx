@@ -29,14 +29,15 @@ export function ExportButton({ href }: { href: string }) {
     }
   }
 
+  // Màn hẹp: nút xuống hàng thứ hai, neo lời báo vào nút thì tràn mép trái; neo vào thanh tiêu đề để rộng hết màn hình.
   return (
-    <span className="relative">
+    <span className="relative narrow:static">
       <Button variant="secondary" disabled={pending} onClick={download}>
         <Download size={16} aria-hidden />
         {pending ? "Đang xuất" : "Xuất Excel"}
       </Button>
       {error && (
-        <span role="alert" className="absolute top-full right-0 z-10 mt-1 w-72 rounded-lg border border-danger bg-card px-3 py-2 text-[13px] text-danger shadow">
+        <span role="alert" className="absolute top-full right-0 z-10 mt-1 w-72 rounded-lg border border-danger bg-card px-3 py-2 text-[13px] text-danger shadow narrow:right-4 narrow:left-4 narrow:w-auto">
           {error}
         </span>
       )}
