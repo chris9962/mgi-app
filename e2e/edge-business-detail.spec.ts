@@ -467,6 +467,27 @@ test("Trang 4 mạng chậm: tự tải ảnh thay thế rồi bấm Đạt ngay
   expect(await voucherCount(page, B.B_NAMES.selfReplace)).toBe(1);
 });
 
+test("Trang 4: quản trị gỡ khung ảnh lúc trang đang mở, ảnh của khung đó vẫn đang dùng, người kiểm bấm Đạt thì Đạt được; cấp đúng 1 voucher", async ({ browser }) => {
+  const page = await loginAs(browser, "zz_e2e_admin");
+  const headers = { Origin: ADMIN };
+  const row = await bankRowId(page, B.B_IDS.slotGone, B.B_BANK2);
+  const guide = await (await page.request.get(`/api/admin/banks/${B.B_BANK2_ID}/guide`)).json();
+  const up = await page.request.post(`/api/admin/customer-banks/${row}/photos`, { headers, multipart: { slotId: guide.slots[0].id, file: { name: "a.jpg", mimeType: "image/jpeg", buffer: readFileSync(PHOTO) } } });
+  expect(up.status()).toBe(204);
+  await open(page, detail(B.B_IDS.slotGone));
+  await expect(bank2(page).getByRole("img")).toHaveCount(1);
+
+  // Người quản ngân hàng thay khung bằng khung mới cùng tên: khung cũ bị gỡ, ảnh của khung cũ vẫn là ảnh đang dùng của dòng ngân hàng.
+  const saved = await page.request.put(`/api/admin/banks/${B.B_BANK2_ID}/guide`, { headers, data: { steps: guide.steps, seenSlotIds: guide.slots.map((s: { id: string }) => s.id), slots: [{ name: guide.slots[0].name, sampleKey: null, checkName: false, checkCode: false }] } });
+  expect(saved.status()).toBe(204);
+
+  await bank2(page).getByRole("button", { name: "Đạt", exact: true }).click();
+  await page.getByRole("dialog", { name: "Đánh dấu Đạt" }).getByRole("button", { name: "Đạt", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  await expect(bank2(page).locator("header")).toContainText("Đạt");
+  expect(await voucherCount(page, B.B_NAMES.slotGone)).toBe(1);
+});
+
 test("Trang 4 hai tab: cùng bấm nút Đạt trong hộp xác nhận đúng một lúc thì một tab Đạt, tab kia báo đã có người đánh dấu; chỉ 1 voucher và 1 tin SMS", async ({ browser }) => {
   const a = await loginAs(browser, B.B_USER1);
   const b = await loginAs(browser, "zz_e2e_admin");

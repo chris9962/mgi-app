@@ -90,6 +90,7 @@ export const B_IDS = {
   longError: id(226),
   lostBank: id(227),
   selfReplace: id(228),
+  slotGone: id(229),
 } as const;
 
 export const B_NAMES: Record<keyof typeof B_IDS, string> = {
@@ -121,4 +122,5 @@ export const B_NAMES: Record<keyof typeof B_IDS, string> = {
   longError: "Biên Lỗi Dài",
   lostBank: "Biên Bỏ Giao",
   selfReplace: "Biên Tải Rồi Đạt",
+  slotGone: "Biên Gỡ Khung",
 };
