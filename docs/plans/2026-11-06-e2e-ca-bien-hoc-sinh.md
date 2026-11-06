@@ -22,7 +22,7 @@ Brief chung ở `docs/plans/2026-11-06-e2e-ca-bien.md`. Mọi ca e2e chạy ở 
 | A5 | Tên trường dài có chuỗi 60 ký tự không dấu cách, có `<script>`, `"`, `'`, `&`, emoji | Ở B1, "Đổi trường", "Trường đã đóng": chữ đúng nguyên văn, không có hộp alert, trang không cuộn ngang |
 | A6 | Máy giữ token của hồ sơ không còn | Web quên token, hiện B1 của trường đang lưu |
 | A7 | Máy giữ id trường hỏng (không phải uuid) | Màn "Chưa có trường" |
-| A8 | `GET /api/customers/me` trả 502 HTML (máy chủ đang khởi động lại) | Màn "Không tải được" với câu mạng, không ghi "Không lưu được". Thử lại khi máy chủ đã trả lời thì vào đúng bước |
+| A8 | `GET /api/customers/me` trả 502 HTML (máy chủ đang khởi động lại) | Màn "Không tải được" với câu "Thử lại sau ít phút.", không bảo kiểm tra mạng, không ghi "Không lưu được". Thử lại khi máy chủ đã trả lời thì vào đúng bước |
 | A9 | Mất mạng lúc mở web | Màn "Không tải được", câu "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại." |
 | A10 | `/t/<id>/thua`, `/abc`, `/admin` ở tên miền học sinh | 404, không 500 |
 | A11 | Đang ở B2 bấm Quay lại của trình duyệt rồi bấm Tới | Web hiện lại B2, không mất bước |
@@ -31,6 +31,8 @@ Brief chung ở `docs/plans/2026-11-06-e2e-ca-bien.md`. Mọi ca e2e chạy ở 
 | A14 | Máy không có camera, bấm "Quét mã QR" | Hộp thoại báo "Không mở được camera. Quét mã QR bằng camera của điện thoại." Đóng thì hết hộp thoại |
 | A15 | Camera thấy QR link trường dạng tên miền thật `https://bank.minhgroup-i.com.vn/t/<id>` | Vào B1 của trường đó |
 | A16 | Camera thấy QR không phải link trường | Câu "Mã QR này không phải của trường.", không chuyển màn |
+| A17 | Máy mới mở `/t/<id>` lúc mạng lỗi, bấm Thử lại. Máy có hồ sơ ở trường A mở link trường B lúc mạng lỗi, bấm Thử lại | Vào B1 của trường trong link. Máy có hồ sơ thì thấy màn "Đổi trường" |
+| A18 | Quét QR trường lúc mạng lỗi, bấm Thử lại | Vào B1 của trường vừa quét |
 
 ### B. B1 khai thông tin
 
@@ -51,6 +53,8 @@ Brief chung ở `docs/plans/2026-11-06-e2e-ca-bien.md`. Mọi ca e2e chạy ở 
 | B13 | Ngân hàng đã có: tên dài có và không có dấu cách | Ô tick không đè nhau, trang không cuộn ngang |
 | B14 | Trường chưa có ngân hàng nào | Không có khối "Ngân hàng đã có tài khoản". Gửi xong thấy "Ngân hàng đã hết lượt trong tháng này" |
 | B15 | Tick đủ mọi ngân hàng của trường | Màn "Không có ngân hàng nào phù hợp" |
+| B16 | Mọi ngân hàng của trường hết lượt trong tháng | Khối tick có đủ ngân hàng của trường. Tick đủ thì thấy "Không có ngân hàng nào phù hợp" |
+| B17 | Ô tick cạnh tên ngân hàng rất dài có và không có dấu cách, cạnh tên ngắn | Ô tick giữ 18x18 px |
 
 ### C. B2 chọn ngân hàng
 
@@ -60,9 +64,10 @@ Brief chung ở `docs/plans/2026-11-06-e2e-ca-bien.md`. Mọi ca e2e chạy ở 
 | C2 | Còn 1 ngân hàng (ngân hàng kia hết lượt) | Chọn sẵn, tiêu đề "Chọn ngân hàng", câu "Chỉ còn 1 ngân hàng chưa có tài khoản." |
 | C3 | Hết lượt cả hai ngân hàng | "Ngân hàng đã hết lượt trong tháng này" |
 | C4 | Đang xem 2 ngân hàng, học sinh khác lấy lượt cuối của một ngân hàng, bấm Tiếp tục | Báo "Ngân hàng vừa hết lượt. Chọn lại.", danh sách tải lại còn 1 ngân hàng chọn sẵn |
-| C5 | Đang xem 1 ngân hàng chọn sẵn, lượt được trả lại nên còn 2, bấm Tiếp tục | Web tải lại danh sách 2 ngân hàng để chọn, không kẹt ở câu lỗi |
+| C5 | Đang xem 1 ngân hàng chọn sẵn, lượt được trả lại nên còn 2, bấm Tiếp tục | Web tải lại danh sách 2 ngân hàng để chọn, không kẹt ở câu lỗi. Câu "Chọn đúng 2 ngân hàng." chỉ hiện một lần |
 | C6 | Tên ngân hàng dài có và không có dấu cách | Nút không tràn, dấu tích nằm trong nút, trang không cuộn ngang |
 | C7 | Bấm đúp Tiếp tục | Giữ chỗ một lần, vào B3, không có câu lỗi |
+| C8 | Trường đóng lúc học sinh ở B2, bấm Tiếp tục | Màn "Trường đã đóng", không giữ chỗ |
 
 ### D. B3 mở tài khoản
 
@@ -71,16 +76,22 @@ Brief chung ở `docs/plans/2026-11-06-e2e-ca-bien.md`. Mọi ca e2e chạy ở 
 | D1 | Tab tên dài có và không có dấu cách | Trang không cuộn ngang, bấm được cả hai tab, thanh tab dính đầu màn khi cuộn |
 | D2 | Bước hướng dẫn dài, có link dài không dấu cách, có `<b>` và `"` | Chữ đúng nguyên văn, xuống dòng, không cuộn ngang |
 | D3 | Mã giới thiệu 55 ký tự liền | Mã xuống dòng, nút Sao chép nằm trong khung |
-| D4 | Sao chép khi trình duyệt cho ghi clipboard | "Đã sao chép", clipboard có đúng mã |
-| D5 | Sao chép khi trình duyệt không có clipboard (trình duyệt trong app Zalo, trang http) | Không báo "Đã sao chép". Báo "Không sao chép được" như nút chép của mgst-app |
+| D4 | Sao chép khi trình duyệt cho ghi clipboard | "Đã sao chép" ở vùng `aria-live`, clipboard có đúng mã, 2 giây sau câu báo mất. Vùng báo rỗng không thêm hàng trống |
+| D5 | Sao chép khi trình duyệt không có clipboard (trình duyệt trong app Zalo, trang http) | Không báo "Đã sao chép". Báo "Không sao chép được" như nút chép của mgst-app, 2 giây sau câu báo mất |
 | D6 | Link "Quét QR code" có dấu cách. Ngân hàng không có link | `href` đã mã hoá dấu cách, mở tab mới. Không có link thì không có nút |
 | D7 | Khung không có ảnh mẫu. Bấm ảnh mẫu khung có tên dài | "Chưa có ảnh mẫu". Hộp xem ảnh mở đúng ảnh, chú thích không tràn ngang |
 | D8 | Ngân hàng chưa cài Hướng dẫn (không bước, không khung ảnh) | Tab chỉ có mã, ghi đủ ảnh. Gửi kiểm tra được khi ngân hàng kia đủ ảnh |
 | D9 | Quay lại chọn ngân hàng khi chưa có ảnh. Khi đã có ảnh thì bấm Huỷ ở hộp hỏi | Chưa có ảnh: về B2 không hỏi. Có ảnh: Huỷ giữ nguyên ảnh |
 | D10 | Trường đóng lúc học sinh ở B3 | Sau khi web tải lại: nút Quay lại ẩn, vẫn nộp ảnh và gửi kiểm tra được |
 | D11 | Gửi kiểm tra: còn khung trống, rồi bấm đúp khi đủ ảnh | Nút khoá khi còn khung trống. Bấm đúp chỉ gửi một lần, vào màn kết quả |
-| D12 | Người quản lý thêm khung ảnh trong lúc học sinh đủ ảnh ở B3, học sinh bấm Gửi kiểm tra | Báo "Còn khung chưa có ảnh.", web tải lại và hiện khung mới |
+| D12 | Người quản lý thêm khung ảnh trong lúc học sinh đủ ảnh ở B3, học sinh bấm Gửi kiểm tra | Báo "Còn khung chưa có ảnh.", web tải lại và hiện khung mới. Nộp ảnh vào khung mới thì câu lỗi mất |
 | D13 | Người quản lý bỏ một khung trống lúc học sinh ở B3, học sinh nộp ảnh vào khung đó | Báo "Không tìm thấy khung ảnh.", web tải lại, khung biến mất, Gửi kiểm tra bật |
+| D14 | Trường vừa đóng mà web chưa tải lại, học sinh bấm Quay lại chọn ngân hàng: chưa có ảnh, rồi đã có ảnh | Web tải lại, nút Quay lại ẩn, câu "Trường đã đóng." hiện dưới tab, hộp hỏi đóng lại, ảnh còn nguyên |
+| D15 | Hai tab ở B3. Tab 2 gửi kiểm tra. Tab 1 bấm Quay lại chọn ngân hàng | Tab 1 sang màn kết quả |
+| D16 | Bấm đúp Quay lại khi chưa có ảnh, mạng chậm | Nút khoá trong lúc chờ, chỉ một request, về B2 |
+| D17 | Trang ẩn rồi hiện lại (camera Android) lúc mạng chậm, ảnh nộp xong trước khi lần tải lại cũ về | Ảnh vừa nộp vẫn hiện |
+| D18 | Link ảnh mẫu, ảnh đã nộp, ảnh QR trả 403 (link hết hạn) | Khung vẫn ghi "Đã gửi", khung ảnh giữ 160 px, ô QR giữ 96 px, trang không cuộn ngang |
+| D19 | Tab tên dài cạnh tab tên ngắn. Hai tab tên dài | Vòng tròn đánh dấu giữ 16x16 px, tên ngắn nằm trên một dòng, trang không cuộn ngang |
 
 ### E. Tải ảnh từng khung
 
@@ -110,6 +121,7 @@ Brief chung ở `docs/plans/2026-11-06-e2e-ca-bien.md`. Mọi ca e2e chạy ở 
 | F5 | Gửi lúc 23:30 giờ Việt Nam, máy đặt múi giờ New York | Hiện "Đã gửi 05/11/2026 23:30" |
 | F6 | Một ngân hàng Đạt, một Không đạt (tên dài), có voucher | Câu "<tên> không đạt: nhân viên gọi cho phụ huynh để hướng dẫn." xuống dòng trong khung |
 | F7 | Tải lại màn kết quả | Giữ nguyên trạng thái, không có nút Gửi kiểm tra |
+| F8 | Khối Zalo có link dài ở màn hết lượt, màn không có ngân hàng phù hợp, màn kết quả | QR và chữ nằm trọn trong khối, khối nằm trọn trong khổ 390 px |
 
 ### G. API học sinh gọi thẳng
 
@@ -129,19 +141,19 @@ Brief chung ở `docs/plans/2026-11-06-e2e-ca-bien.md`. Mọi ca e2e chạy ở 
 
 | Loại | Ca |
 |---|---|
-| 1. Chữ dài | A5, B3, B13, C6, D1, D2, D3, D7, F1, F2, F6 |
+| 1. Chữ dài | A5, B3, B13, B17, C6, D1, D2, D3, D7, D19, F1, F2, F6, F8 |
 | 2. Ký tự đặc biệt | A5, B5, D2 |
 | 3. Tìm kiếm | Không áp dụng: web học sinh không có ô tìm |
-| 4. Bộ lọc và URL | A1, A2, A7, A10, G5. Web học sinh không có bộ lọc, tham số URL duy nhất là id trường |
+| 4. Bộ lọc và URL | A1, A2, A7, A10, A17, G5. Web học sinh không có bộ lọc, tham số URL duy nhất là id trường |
 | 5. Phân trang | Không áp dụng: web học sinh không có danh sách phân trang |
 | 6. Ngày giờ | F5 |
-| 7. Form | B1 tới B12, C7, D11 |
+| 7. Form | B1 tới B12, C7, D11, D16 |
 | 8. Phân quyền | A6, G1, G6, G9. Học sinh không có vai trò hay quyền, chỉ có token |
-| 9. Đồng thời và trạng thái cũ | A13, C4, C5, D10, D12, D13 |
-| 10. Rỗng | B14, B15, C3, D7, D8, F4 |
+| 9. Đồng thời và trạng thái cũ | A13, C4, C5, C8, D10, D12 tới D15, D17 |
+| 10. Rỗng | B14, B15, B16, C3, D7, D8, F4 |
 | 11. Xuất Excel | Không áp dụng: web học sinh không xuất Excel |
-| 12. Link | D6, F3. Web học sinh không có ô nhập link; link đến từ Kho mã và Cài đặt, nhóm C kiểm form chặn `javascript:` |
-| 13. Tải ảnh | E1 tới E12. Mất mạng giữa chừng và tải lại cùng khung đã có ở `e2e/student.spec.ts` |
+| 12. Link | D6, F3, F8. Web học sinh không có ô nhập link; link đến từ Kho mã và Cài đặt, nhóm C kiểm form chặn `javascript:` |
+| 13. Tải ảnh | E1 tới E12, D17, D18. Mất mạng giữa chừng và tải lại cùng khung đã có ở `e2e/student.spec.ts` |
 | 14. Điện thoại | Mọi ca chạy ở 390x844 |
 
 Ngày sinh biên và CCCD sai dạng: không áp dụng. B1 không thu ngày sinh, không thu CCCD (quyết định 2026-11-05 ở `../du-an-mo-tai-khoan-hoc-sinh/cau-hoi-kien-truc-2026-11-03.md`, mục B4).
@@ -204,7 +216,6 @@ Không có. Agent không sửa file dùng chung nào (`src/components/ui/*`, `sr
 | Link `/t/<id viết hoa>` khi máy đã có hồ sơ ở đúng trường đó: đọc code thấy web hỏi "Đổi trường" giữa hai tên giống nhau (`decideLink` so chuỗi phân biệt hoa thường) | Không test, không sửa: QR do app sinh luôn viết thường, đường `/T/` viết hoa thì Next trả 404. Chủ dự án quyết nếu cần |
 | Safari trên iPhone: mở HEIC trên máy, nén ảnh, Safari cũ không xuất WebP | Playwright của dự án chỉ chạy Chromium |
 | Nginx: 413 dạng HTML khi body quá 22 MB, giới hạn request theo IP | Dev server không có Nginx; route 413 của app đã test (E9) |
-| Link xem ảnh hết hạn sau 1 giờ khi học sinh ở lâu ở B3 | Phải chờ 1 giờ; web ký lại link mỗi lần học sinh quay lại tab |
 | Nhiều HEIC lớn gửi cùng lúc làm app hết RAM | Cần đo tải thật, ngoài phạm vi e2e |
 | Camera thật quét QR mờ, thiếu sáng | Camera giả chỉ phát khung QR rõ nét |
 | Trình duyệt trong app Zalo thật | Giả lập bằng cách bỏ `navigator.clipboard` (D5) |
@@ -224,3 +235,77 @@ Lần chạy cuối, ngày 2026-11-06. Working tree lúc chạy có việc đang
 | `bun run lint` | 0 lỗi, 3 cảnh báo `<img>`: 2 cảnh báo cũ, 1 cảnh báo ở `e2e/edge-config-users.spec.ts` của nhóm C |
 
 A12 fail ở lượt toàn bộ vì dev server chậm. Lệnh tải lại `/` mất 3,6 giây, rồi `/api/customers/me` chưa trả lời sau 5 giây. Lúc đó nhóm khác đang sửa file nguồn, nên dev server biên dịch lại. Chạy riêng thì A12 qua cả 3 lần, nên agent không sửa test.
+
+## Lượt 2: sửa theo review
+
+Agent nhóm A làm ngày 2026-11-06, commit acc1c8a tới commit ghi mục này, trên nhánh `dev`. Báo cáo review nhóm A tìm ra 3 lỗi Important (I1 tới I3), 8 lỗi Minor (M1 tới M8) và 15 ca sót.
+
+### Test đã thêm
+
+- 12 test e2e mới: A17, A18, B16, B17, C8, D14 tới D19, F8. Nhóm A nay có 71 test e2e.
+- Test đã sửa: A8, C5, C6, D1, D4, D5, D12, D13, F2, F3.
+- 1 test DB cho `programBanksAtSchool` ở `tests/db/customers.test.ts`.
+- Dữ liệu: thêm trường `ZZE2E HSB Trường có tên ngân hàng dài và ngắn`, mã P1 có ảnh QR, lệnh `slot-reset` trả khung ảnh về như lúc seed.
+- Lượt chạy đầu trên code cũ: 14 test fail đúng chỗ lỗi, test DB fail vì chưa có hàm. Test cho ca sót 6, 9, 11 và test M1, M7, M8 pass ngay trên code cũ.
+
+### Lỗi đã sửa
+
+| Mã review | Ca | Lỗi, góc nhìn học sinh | Commit |
+|---|---|---|---|
+| I1 | A17, A18 | Mất mạng lúc mở link hay quét QR trường, bấm Thử lại thì thấy "Chưa có trường". Máy có hồ sơ ở trường khác thì về thẳng hồ sơ cũ, không hỏi đổi trường | acc1c8a |
+| I2 | D14, D15, D16 | Trường vừa đóng mà web chưa tải lại: bấm Quay lại thì câu "Trường đã đóng." hiện mà nút vẫn còn; có ảnh thì câu lỗi nằm trong hộp hỏi. Tab khác đã gửi kiểm tra thì màn B3 đứng lại. Bấm đúp khi chưa có ảnh gửi hai request | 4306fe4 |
+| I3 | B16 | Ô tick "Ngân hàng đã có tài khoản" thiếu ngân hàng hết lượt. Học sinh có đủ ngân hàng kẹt ở màn hết lượt. Trường mà mọi mã hết lượt thì mất hẳn khối tick | fbc8ae2 |
+| Ca sót 8 | D17 | Camera Android làm trang ẩn rồi hiện lại lúc mạng chậm: lần tải lại cũ về muộn làm khung vừa nộp ảnh trở lại trống | 2e3fb27 |
+| M1 | F3 | Test F3 pass mà không kiểm khối App PVI khi link app PVI trống | effebf0 |
+| M2 | D12 | Nộp ảnh vào khung mới mà câu "Còn khung chưa có ảnh." vẫn hiện tới lần bấm sau | 583235d |
+| M3 | D4, D5 | Câu "Đã sao chép" hay "Không sao chép được" ở lại mãi, trình đọc màn hình không được báo, vùng báo rỗng thêm 6 px | d521b31 |
+| M4 | B17, D19 | Tên ngân hàng dài bóp vòng tròn ở tab còn 6,7 px thay vì 16 px, ô tick ở B1 còn 13 px thay vì 18 px. Tab tên ngắn cạnh tab tên dài vỡ thành 6 dòng | ec70f2f |
+| M5 | C5 | Câu "Chọn đúng 2 ngân hàng." hiện hai lần sau khi web tải lại danh sách | 6e79ca7 |
+| M6 | A8 | Máy chủ trả 502, 500 hay 429 lúc mở web mà màn bảo kiểm tra mạng | 6b46b66 |
+| M7 | D12, D13 | D13 chạy lần hai thì fail vì khung đã bỏ không được mở lại | a8357f7 |
+| M8 | C6, D1, F2 | Test đo phần tử với mép phải màn hình, phần tử tràn khung cha vẫn pass | 4fdcbf8 |
+
+Commit 9bc0980 là test cho ca sót 6, 9, 11 (C8, D18, F8).
+
+Lượt này agent sửa ba file dùng chung, có phép của brief: `src/server/customers.ts` và `src/app/api/schools/[id]/route.ts` cho I3, `src/components/ui/Checkbox.tsx` cho M4. `openBanksAtSchool` giữ nguyên hành vi.
+
+### Ruling mới
+
+- Ruling (M6): mgst-app không có web cho khách. Màn đăng nhập của mgst-app tách hai lỗi: mất mạng thì báo kiểm tra kết nối mạng, máy chủ trả lỗi thì báo thử lại sau ít phút (`../mgst-app/src/lib/api/auth.ts`, `../mgst-app/src/app/login/page.tsx`). Màn "Không tải được" chép cách đó: mất mạng ghi "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.", máy chủ có trả lời mà lỗi ghi "Thử lại sau ít phút.".
+- Ruling (M3): nút luôn ghi "Sao chép" và đổi icon khi chép xong. Câu báo nằm cạnh nút trong vùng `aria-live="polite"` như `CopyButton` của mgst-app, tự mất sau 2 giây.
+- Ruling (I2): Quay lại bị máy chủ trả 409 thì web tải lại hồ sơ, đóng hộp hỏi, hiện câu lỗi dưới tab. Hộp hỏi chỉ giữ câu lỗi khác 409, ví dụ mất mạng.
+- Ruling (M5): B2 bị trả 400 ở ô `bankIds` thì web tải lại danh sách và không nhắc câu lỗi, vì dòng gợi ý đã ghi "Chọn đúng 2 ngân hàng.". Lỗi 409 vẫn hiện câu lỗi.
+- Ruling (M4): thanh tab B3 dùng grid thay flex. Grid chia chỗ đều tới khi tab ngắn đủ chỗ cho tên, phần còn lại cho tab dài. Grid có `justify-start` nên không kéo giãn tab, tab tên ngắn rộng bằng chữ như trước. Kiểm đột biến: bỏ grid thì D19 fail. Ô tick ở hộp Thêm tài khoản và hộp Hướng dẫn của trang quản lý đo được 18x18 px cả trước và sau khi thêm `shrink-0`, ở 1366 px và 390 px.
+- Ruling (I3): B1 hỏi ngân hàng đã có trên mọi ngân hàng của chương trình ở trường, bỏ qua lượt. Ngân hàng của chương trình là ngân hàng đang mở có mã đang dùng gắn cho trường, cùng tập với `hasAllBanks`.
+- Ruling (M1, ca sót 11): test không ghi Cài đặt thật của DB local. F3 kiểm link app PVI mặc định khác rỗng. F8 chèn link Zalo vào hồ sơ trả về bằng `page.route`.
+- Ruling (M7): agent chạy bản cũ với D12 trước D13 thì D13 vẫn pass, nên câu "đảo thứ tự thì D13 fail" của review không đúng. Lỗi thật là D13 chạy lần hai thì fail. Nay hai test trả khung trong `finally`.
+- Ruling (ca sót 9): đồng ý với review. Link ảnh hết hạn giả được bằng `page.route` trả 403 cho ảnh ngoài tên miền học sinh.
+
+### Ca chưa làm
+
+| Ca sót | Nội dung | Lý do |
+|---|---|---|
+| 7 | Request treo không trả lời (sóng yếu) lúc mở web hay ở B1: màn "Đang tải" không có nút, nút Tiếp tục ở B1 khoá mãi | `studentApi` không có thời hạn, mgst-app cũng không đặt. Chủ dự án quyết có đặt thời hạn không |
+| 10 | Hai tab cùng ở B1 cùng gửi: tạo hai hồ sơ, tab gửi sau ghi đè token | Ưu tiên thấp |
+| 14 | Máy có hồ sơ ở trường A mở link trường B đã đóng: web vẫn hỏi đổi trường, đổi xong mất hồ sơ A mà chỉ thấy "Trường đã đóng" | Ưu tiên thấp |
+| 15 | Họ tên gõ bằng bộ gõ Unicode tổ hợp (Laban Key) không được chuẩn hoá NFC, mà OCR ở giai đoạn 6 so nguyên văn | Ưu tiên thấp |
+
+B14 và D8 giữ nguyên hành vi, chờ chủ dự án quyết. Khuyến nghị của review:
+- B14: giữ luồng, không chặn B1. Nếu muốn câu đúng nghĩa thì chỉ đổi tiêu đề cho ca trường không có mã nào.
+- D8: loại ngân hàng không có khung ảnh nào khỏi B2. Việc này thêm điều kiện vào luật B4 đã chốt, nên chủ dự án phải chốt.
+
+### Kết quả các lệnh
+
+Ngày 2026-11-06. Working tree lúc chạy có việc đang làm dở của nhóm B và nhóm C.
+
+| Lệnh | Kết quả |
+|---|---|
+| `bun run test` | 232 pass, 0 fail |
+| `bunx tsc --noEmit` | Sạch |
+| `bun run lint` | 0 lỗi, 2 cảnh báo `<img>` cũ |
+| `bun test:db` trên DB tạm `zz_test_edge_a` (đã xoá) | 253 pass, 0 fail |
+| `bun run e2e e2e/edge-student` trên code cũ với test mới, dưới khoá | 57 pass, 14 fail đúng chỗ lỗi |
+| `bun run e2e e2e/edge-student` trên code đã sửa, dưới khoá | 71 pass, 0 fail |
+| Kiểm đột biến dưới khoá: bỏ grid ở thanh tab | D19 fail, tên ngắn vỡ thành 6 dòng |
+
+Agent chạy e2e trên code đã sửa trước khi tách thành từng commit. Sau khi tách, agent so từng file với bản đã chạy: giống hệt.
