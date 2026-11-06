@@ -52,7 +52,7 @@ Mỗi kế hoạch giai đoạn có mục "Việc để lại" của review trư
 ## Test và commit
 
 - `bun run test` (unit, không cần DB), `bun test:db` (DB local, dữ liệu test tiền tố `zz_test_` / `ZZTEST `, dọn ở `tests/db/helpers.ts`),
-  `bun test:s3` (bucket dev), `bun run e2e` (Playwright, tài khoản `zz_e2e_*`, dữ liệu `ZZE2E `, seed và dọn ở `scripts/e2e-*.ts`),
+  `bun test:s3` (bucket dev), `bun run e2e` (Playwright trên bản build production: `scripts/e2e-run.sh` build, bật `next start` ở cổng 3100 thay dev server, seed, chạy, dọn; tài khoản `zz_e2e_*`, dữ liệu `ZZE2E `, seed và dọn ở `scripts/e2e-*.ts`),
   `bunx tsc --noEmit`, `bun run lint`. Viết test trước, xem test fail rồi mới code (TDD).
 - Không đóng pool trong file test DB: các file chạy chung tiến trình.
 - Git: commit trên nhánh `dev`, ký `chuyentina2 <chuyentina2@gmail.com>` (đã cài local). Không merge vào `main`, không push, không deploy.
