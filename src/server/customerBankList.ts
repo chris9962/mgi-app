@@ -106,7 +106,7 @@ export async function listCustomerBanks(actor: SessionUser, f: CustomerBankFilte
   return { total, page: safePage, rows };
 }
 
-// Ô lọc ngân hàng chỉ liệt kê ngân hàng người xem thấy dòng: lọc ngân hàng ngoài phạm vi luôn ra bảng rỗng.
+// Ô lọc ngân hàng chỉ liệt kê ngân hàng người xem thấy dòng; readCustomerBankFilters bỏ id ngoài danh sách này.
 export async function scopedBanks(actor: SessionUser): Promise<{ id: string; name: string }[]> {
   const scope = scopedBankIds(actor);
   if (scope && !scope.length) return [];

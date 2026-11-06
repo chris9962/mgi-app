@@ -31,7 +31,7 @@
 - Sắp xếp: ngày tạo hồ sơ mới nhất lên trước, rồi theo thứ tự chọn ngân hàng của học sinh.
 - Phân trang 15 dòng ở máy chủ.
 - Xuất Excel (quyền `export_excel`): mỗi dòng ngân hàng một dòng, đúng bộ lọc và phạm vi người xuất, đầu bảng 3 tầng như các file xuất khác, ghi `audit_log`.
-- Trang 3 Hồ sơ học sinh: hai cột "Ngân hàng 1", "Ngân hàng 2" gộp thành một cột "Ngân hàng", mỗi ngân hàng một dòng trong ô. File Excel hồ sơ giữ nguyên.
+- Trang 3 Hồ sơ học sinh: hai cột "Ngân hàng 1", "Ngân hàng 2" gộp thành một cột "Ngân hàng", mỗi ngân hàng một dòng trong ô. File Excel hồ sơ giữ bố cục; cột KẾT QUẢ đổi tên thành TRẠNG THÁI ở lần sửa theo review 1.
 
 ## Task
 
@@ -51,7 +51,7 @@ Làm ngày 2026-11-05, commit `ee2a695`, `96ae8fa`, `3ac71e8` trên `dev`.
 - `UrlFilters` nhận thêm ô chọn nhiều (`multiple`) và ô tìm qua route (`kind: "search"`, dùng `MultiSelect`).
 - Route `GET /api/admin/customer-banks/schools` cho ô tìm trường: quyền hồ sơ, tối đa 20 dòng, có cả trường đã đóng.
 - Route `GET /api/admin/customer-banks/export`: file "ngan-hang-YYYY-MM-DD.xlsx", đầu bảng 3 tầng, nhóm HỌC SINH và NGÂN HÀNG, ghi `audit_log` với `targetType` `customer_banks`.
-- Trang 3: cột "Ngân hàng" liệt kê mỗi ngân hàng một dòng trong ô. File Excel hồ sơ giữ nguyên.
+- Trang 3: cột "Ngân hàng" liệt kê mỗi ngân hàng một dòng trong ô. File Excel hồ sơ giữ bố cục; cột KẾT QUẢ đổi tên thành TRẠNG THÁI ở lần sửa theo review 1.
 - Test mới: `tests/unit/customerBankFilters.test.ts`, `tests/unit/menu.test.ts`, `tests/db/customerBankList.test.ts`, thêm ca ở `tests/db/exports.test.ts` và `tests/db/adminRoutes.test.ts`, `e2e/customerBanks.spec.ts`.
 - Đã chạy trên DB tạm `zz_test_bankpage`: `bun run test` 220/220, `bun test:db` 219/219, `bun test:s3` 29/29. `bunx tsc --noEmit` và `bun run lint` đạt.
 - `bun run e2e` chạy trên dev server và DB chính: 20/20 đạt, gồm `e2e/customerBanks.spec.ts`.
