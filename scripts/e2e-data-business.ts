@@ -89,6 +89,7 @@ export const B_IDS = {
   doubleClick: id(225),
   longError: id(226),
   lostBank: id(227),
+  selfReplace: id(228),
 } as const;
 
 export const B_NAMES: Record<keyof typeof B_IDS, string> = {
@@ -119,4 +120,5 @@ export const B_NAMES: Record<keyof typeof B_IDS, string> = {
   doubleClick: "Biên Bấm Đúp",
   longError: "Biên Lỗi Dài",
   lostBank: "Biên Bỏ Giao",
+  selfReplace: "Biên Tải Rồi Đạt",
 };

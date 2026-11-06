@@ -444,6 +444,29 @@ test("Trang 4 hai tab: tab A tải ảnh thay thế, tab B đang mở trang cũ 
   expect(await voucherCount(b, B.B_NAMES.oldPhoto)).toBe(1);
 });
 
+test("Trang 4 mạng chậm: tự tải ảnh thay thế rồi bấm Đạt ngay thì Đạt được, không báo ảnh vừa được thay; cấp đúng 1 voucher", async ({ browser }) => {
+  const page = await loginAs(browser, "zz_e2e_admin");
+  await open(page, detail(B.B_IDS.selfReplace));
+  const rsc = /[?&]_rsc=/;
+  // Lượt tải lại trang sau khi thay ảnh về trễ 5 giây, như điện thoại ở mạng chậm.
+  await page.route(rsc, async (route) => {
+    await new Promise((r) => setTimeout(r, 5_000));
+    await route.continue();
+  });
+  await bank1(page).getByRole("button", { name: "Tải ảnh thay thế" }).click();
+  const replace = page.getByRole("dialog", { name: "Tải ảnh thay thế" });
+  await replace.getByLabel("Ảnh", { exact: true }).setInputFiles(PHOTO);
+  await replace.getByRole("button", { name: "Tải lên" }).click();
+  await bank1(page).getByRole("button", { name: "Đạt", exact: true }).click({ timeout: 30_000 });
+  const confirm = page.getByRole("dialog", { name: "Đánh dấu Đạt" });
+  await confirm.getByRole("button", { name: "Đạt", exact: true }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0, { timeout: 30_000 });
+  await page.unroute(rsc);
+  await expect(bank1(page).getByRole("img")).toHaveCount(1);
+  await expect(bank1(page).locator("header")).toContainText("Đạt", { timeout: 15_000 });
+  expect(await voucherCount(page, B.B_NAMES.selfReplace)).toBe(1);
+});
+
 test("Trang 4 hai tab: cùng bấm nút Đạt trong hộp xác nhận đúng một lúc thì một tab Đạt, tab kia báo đã có người đánh dấu; chỉ 1 voucher và 1 tin SMS", async ({ browser }) => {
   const a = await loginAs(browser, B.B_USER1);
   const b = await loginAs(browser, "zz_e2e_admin");

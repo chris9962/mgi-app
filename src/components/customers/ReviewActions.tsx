@@ -2,7 +2,7 @@
 
 import { ImageUp, Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useId, useState, type FormEvent } from "react";
+import { useId, useState, useTransition, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
 import { Field, inputClass } from "@/components/ui/Field";
@@ -20,7 +20,9 @@ function ReplaceDialog({ bank, onClose }: { bank: Bank; onClose: () => void }) {
   const router = useRouter();
   const fileId = useId();
   const [errors, setErrors] = useState<Record<string, string>>({});
-  const [pending, setPending] = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [refreshing, startTransition] = useTransition();
+  const pending = uploading || refreshing;
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -30,19 +32,22 @@ function ReplaceDialog({ bank, onClose }: { bank: Bank; onClose: () => void }) {
     // Như imageProblem của mgst-app: chặn ở trình duyệt để báo ngay, máy chủ vẫn kiểm lại.
     if (file.size > MAX_IMAGE_BYTES) return setErrors({ file: TOO_LARGE });
     setErrors({});
-    setPending(true);
+    setUploading(true);
     try {
       const res = await fetch(`/api/admin/customer-banks/${bank.id}/photos`, { method: "POST", body: form });
       // Nginx chặn request quá client_max_body_size trước khi vào app, trả trang HTML chứ không phải JSON.
       if (res.status === 413) return setErrors({ file: TOO_LARGE });
       const data = res.ok ? null : await res.json().catch(() => null);
       if (!res.ok) return setErrors({ [data?.field ?? "form"]: data?.message ?? "Không tải được ảnh lên. Thử lại." });
-      onClose();
-      router.refresh();
+      // Hộp đóng cùng lúc ảnh mới hiện: đóng trước thì mạng chậm, người kiểm bấm Đạt trên danh sách ảnh cũ và nhận 409 cho chính ảnh mình tải.
+      startTransition(() => {
+        onClose();
+        router.refresh();
+      });
     } catch {
       setErrors({ form: "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại." });
     } finally {
-      setPending(false);
+      setUploading(false);
     }
   }
 
