@@ -146,7 +146,12 @@ const ops: Record<string, (...args: string[]) => Promise<unknown>> = {
   school: async (schoolId, state) => db.update(s.schools).set({ active: state === "open" }).where(eq(s.schools.id, await hsbSchool(schoolId))),
   "slot-add": async (bankId, slotId, name) => {
     if (!isHsbBank(bankId)) throw new Error(`Không phải ngân hàng HSB: ${bankId}`);
-    await db.insert(s.bankPhotoSlots).values({ id: slotId, bankId, name, sortOrder: 9 });
+    await db.insert(s.bankPhotoSlots).values({ id: slotId, bankId, name, sortOrder: 9 }).onConflictDoUpdate({ target: s.bankPhotoSlots.id, set: { name, removedAt: null } });
+  },
+  // Khung của ngân hàng Đổi khung về như lúc seed: test thêm hay bỏ khung chạy thứ tự nào cũng được. Khung đã thêm có ảnh nên đánh dấu bỏ, không xoá.
+  "slot-reset": async () => {
+    await db.update(s.bankPhotoSlots).set({ removedAt: null }).where(inArray(s.bankPhotoSlots.id, [SLOT.stale1, SLOT.stale2]));
+    await db.update(s.bankPhotoSlots).set({ removedAt: new Date() }).where(eq(s.bankPhotoSlots.id, SLOT.staleAdded));
   },
   "slot-remove": async (slotId) => {
     if (!(Object.values(SLOT) as string[]).includes(slotId)) throw new Error(`Không phải khung HSB: ${slotId}`);

@@ -400,12 +400,16 @@ test.describe("D. B3 mở tài khoản", () => {
     const send = page.getByRole("button", { name: "Gửi kiểm tra" });
     await expect(send).toBeDisabled();
     dbOp("slot-remove", SLOT.stale2);
-    const panel = page.getByRole("tabpanel");
-    await panel.getByLabel("Ảnh 2: chụp hoặc chọn ảnh").setInputFiles(PHOTO);
-    await expect(panel.getByText("2. Ảnh 2")).toHaveCount(0, { timeout: 30_000 });
-    await expect(send).toBeEnabled();
-    await send.click();
-    await expect(page.getByText("Chờ kiểm tra")).toHaveCount(2);
+    try {
+      const panel = page.getByRole("tabpanel");
+      await panel.getByLabel("Ảnh 2: chụp hoặc chọn ảnh").setInputFiles(PHOTO);
+      await expect(panel.getByText("2. Ảnh 2")).toHaveCount(0, { timeout: 30_000 });
+      await expect(send).toBeEnabled();
+      await send.click();
+      await expect(page.getByText("Chờ kiểm tra")).toHaveCount(2);
+    } finally {
+      dbOp("slot-reset");
+    }
   });
 
   test("D12 người quản lý thêm khung lúc học sinh đã đủ ảnh: Gửi kiểm tra báo còn khung trống, web tải lại hiện khung mới", async ({ page, request }) => {
@@ -416,14 +420,18 @@ test.describe("D. B3 mở tài khoản", () => {
     const send = page.getByRole("button", { name: "Gửi kiểm tra" });
     await expect(send).toBeEnabled();
     dbOp("slot-add", BANK.stale, SLOT.staleAdded, "Ảnh mới");
-    await send.click();
-    await expect(alertIn(page)).toHaveText("Còn khung chưa có ảnh.");
-    await tab(page, NAME.stale).click();
-    await expect(page.getByRole("tabpanel").getByLabel("Ảnh mới: chụp hoặc chọn ảnh")).toBeAttached();
-    await expect(send).toBeDisabled();
-    await uploadIn(page, "Ảnh mới");
-    await expect(alertIn(page)).toHaveCount(0);
-    await send.click();
-    await expect(page.getByText("Chờ kiểm tra")).toHaveCount(2);
+    try {
+      await send.click();
+      await expect(alertIn(page)).toHaveText("Còn khung chưa có ảnh.");
+      await tab(page, NAME.stale).click();
+      await expect(page.getByRole("tabpanel").getByLabel("Ảnh mới: chụp hoặc chọn ảnh")).toBeAttached();
+      await expect(send).toBeDisabled();
+      await uploadIn(page, "Ảnh mới");
+      await expect(alertIn(page)).toHaveCount(0);
+      await send.click();
+      await expect(page.getByText("Chờ kiểm tra")).toHaveCount(2);
+    } finally {
+      dbOp("slot-reset");
+    }
   });
 });
