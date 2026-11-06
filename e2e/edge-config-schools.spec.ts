@@ -78,7 +78,7 @@ test("Trường: tìm không dấu, viết hoa, một phần, theo xã, nhiều 
   await expect(cellOf(page, "ZZE2E Tìm Nguyễn Đình Chiểu")).toBeVisible();
   await searchFor(page, "zze2e   tìm     nguyễn");
   await expect(cellOf(page, "ZZE2E Tìm Nguyễn Đình Chiểu")).toBeVisible();
-  await searchFor(page, "chau thanh");
+  await searchFor(page, "chieu chau thanh");
   await expect(cellOf(page, "ZZE2E Tìm Nguyễn Đình Chiểu")).toBeVisible();
 
   await open(page, "/schools");

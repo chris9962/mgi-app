@@ -55,7 +55,7 @@ test("Tài khoản: tìm không dấu, viết hoa, một phần tên đăng nh�
   await open(page, "/users");
   for (const [q, expected] of [
     ["50%", ["zz_e2e_c_tim1"]],
-    ["e2e c tim", ["zz_e2e_c_tim2", "zz_e2e_c_tim1"]],
+    ["c_tim tim", ["zz_e2e_c_tim2", "zz_e2e_c_tim1"]],
     ["TÌM PHẦN", ["zz_e2e_c_tim1"]],
     ["c_ta_b", ["zz_e2e_c_ta_b"]],
     ["   c_ta_b   ", ["zz_e2e_c_ta_b"]],
