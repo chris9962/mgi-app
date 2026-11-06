@@ -21,10 +21,6 @@ function ReplaceDialog({ bank, onClose }: { bank: Bank; onClose: () => void }) {
   const fileId = useId();
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [pending, setPending] = useState(false);
-  // Như dismissible={!pending} của mgst-app: request đã đi thì đóng hộp không huỷ được, ảnh vẫn bị thay.
-  const close = () => {
-    if (!pending) onClose();
-  };
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -54,10 +50,11 @@ function ReplaceDialog({ bank, onClose }: { bank: Bank; onClose: () => void }) {
     <Dialog
       open
       title="Tải ảnh thay thế"
-      onClose={close}
+      onClose={onClose}
+      dismissible={!pending}
       footer={
         <>
-          <Button variant="secondary" disabled={pending} onClick={close}>
+          <Button variant="secondary" disabled={pending} onClick={onClose}>
             Huỷ
           </Button>
           <Button type="submit" form="replace-photo" disabled={pending}>
@@ -86,9 +83,6 @@ function NoteDialog({ bank, onClose }: { bank: Bank; onClose: () => void }) {
   const id = useId();
   const [errors, setErrors] = useState<{ note?: string; form?: string }>({});
   const [pending, setPending] = useState(false);
-  const close = () => {
-    if (!pending) onClose();
-  };
 
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
@@ -105,10 +99,11 @@ function NoteDialog({ bank, onClose }: { bank: Bank; onClose: () => void }) {
     <Dialog
       open
       title="Ghi chú nội bộ"
-      onClose={close}
+      onClose={onClose}
+      dismissible={!pending}
       footer={
         <>
-          <Button variant="secondary" disabled={pending} onClick={close}>
+          <Button variant="secondary" disabled={pending} onClick={onClose}>
             Huỷ
           </Button>
           <Button type="submit" form="review-note" disabled={pending}>

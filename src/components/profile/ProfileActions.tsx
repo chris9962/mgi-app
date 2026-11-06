@@ -62,10 +62,11 @@ export function EditInfoRow({ fullName, phone }: { fullName: string; phone: stri
           open
           title="Sửa thông tin"
           onClose={() => setOpen(false)}
+          dismissible={!s.pending}
           width={440}
           footer={
             <>
-              <Button variant="secondary" onClick={() => setOpen(false)}>
+              <Button variant="secondary" disabled={s.pending} onClick={() => setOpen(false)}>
                 Huỷ
               </Button>
               <Button type="submit" form="info-form" disabled={s.pending}>
@@ -134,10 +135,11 @@ export function ChangePasswordRow() {
           open
           title="Đổi mật khẩu"
           onClose={() => setOpen(false)}
+          dismissible={!s.pending}
           width={440}
           footer={
             <>
-              <Button variant="secondary" onClick={() => setOpen(false)}>
+              <Button variant="secondary" disabled={s.pending} onClick={() => setOpen(false)}>
                 Huỷ
               </Button>
               <Button type="submit" form="password-form" disabled={s.pending}>

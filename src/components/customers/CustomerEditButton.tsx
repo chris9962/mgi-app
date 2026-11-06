@@ -51,10 +51,11 @@ export function CustomerEditButton({ customer }: { customer: CustomerEditDefault
           open
           title="Sửa thông tin"
           onClose={close}
+          dismissible={!pending}
           width={560}
           footer={
             <>
-              <Button variant="secondary" onClick={close}>
+              <Button variant="secondary" disabled={pending} onClick={close}>
                 Huỷ
               </Button>
               <Button type="submit" form="customer-edit" disabled={pending}>

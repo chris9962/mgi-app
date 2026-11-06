@@ -228,28 +228,38 @@ async function hold(page: Page, url: string, reply: { status: number; json?: obj
   return release;
 }
 
-test("Trang 4: đang tải ảnh thay thế hay đang lưu ghi chú thì Huỷ bị khoá, Esc và nút Đóng không đóng hộp; máy chủ trả lời xong thì hộp đóng", async ({ browser }) => {
+test("Trang 4: hộp Tải ảnh thay thế, Ghi chú, Sửa thông tin, Đạt, Không đạt đang gửi thì Huỷ bị khoá, không có nút Đóng, nhấn Esc 4 lần không đóng hộp; máy chủ lưu xong thì hộp đóng, báo lỗi thì câu báo hiện trong hộp", async ({ browser }) => {
   const page = await loginAs(browser, "zz_e2e_admin");
   await open(page, detail(B.B_IDS.note));
-  for (const [url, button, title, fill, submit, busy] of [
-    ["**/photos", "Tải ảnh thay thế", "Tải ảnh thay thế", (d: Locator) => d.getByLabel("Ảnh", { exact: true }).setInputFiles(PHOTO), "Tải lên", "Đang tải ảnh"],
-    ["**/note", /^Sửa ghi chú/, "Ghi chú nội bộ", (d: Locator) => d.getByRole("textbox").fill("Ghi chú lúc mạng chậm"), "Lưu", "Lưu"],
-  ] as const) {
-    const release = await hold(page, url);
-    await bank1(page).getByRole("button", { name: button }).click();
-    const dialog = page.getByRole("dialog", { name: title });
-    await fill(dialog);
-    await dialog.getByRole("button", { name: submit, exact: true }).click();
-    await expect(dialog.getByRole("button", { name: busy, exact: true }), title).toBeDisabled();
-    await expect(dialog.getByRole("button", { name: "Huỷ" }), title).toBeDisabled();
-    await page.keyboard.press("Escape");
-    await expect(dialog, `${title} sau Esc`).toBeVisible();
-    await dialog.getByRole("button", { name: "Đóng" }).click({ timeout: 5_000 });
-    await expect(dialog, `${title} sau nút Đóng`).toBeVisible();
-    release();
-    await expect(page.getByRole("dialog"), title).toHaveCount(0);
-    await page.unroute(url);
-  }
+  const dialogs = [
+    { url: "**/photos", button: bank1(page).getByRole("button", { name: "Tải ảnh thay thế" }), title: "Tải ảnh thay thế", fill: (d: Locator) => d.getByLabel("Ảnh", { exact: true }).setInputFiles(PHOTO), submit: "Tải lên", busy: "Đang tải ảnh", error: { status: 409, message: "Ngân hàng đã Đạt, không thay được ảnh." } },
+    { url: "**/note", button: bank1(page).getByRole("button", { name: /^Sửa ghi chú/ }), title: "Ghi chú nội bộ", fill: (d: Locator) => d.getByRole("textbox").fill("Ghi chú lúc mạng chậm"), submit: "Lưu", busy: "Lưu", error: { status: 404, message: "Không tìm thấy ngân hàng của hồ sơ." } },
+    { url: `**/api/admin/customers/${B.B_IDS.note}`, button: page.getByRole("button", { name: "Sửa thông tin" }), title: "Sửa thông tin", submit: "Lưu", busy: "Lưu", error: { status: 409, message: "Hồ sơ đã có voucher, không sửa được thông tin." } },
+    { url: "**/review", button: bank1(page).getByRole("button", { name: "Đạt", exact: true }), title: "Đánh dấu Đạt", submit: "Đạt", busy: "Đạt", error: { status: 409, message: TAKEN } },
+    { url: "**/review", button: bank1(page).getByRole("button", { name: "Không đạt" }), title: "Đánh dấu Không đạt", submit: "Không đạt", busy: "Không đạt", error: { status: 409, message: TAKEN } },
+  ];
+  for (const d of dialogs)
+    for (const reply of [{ status: 204 }, { status: d.error.status, json: { message: d.error.message } }]) {
+      const label = `${d.title} ${reply.status}`;
+      const release = await hold(page, d.url, reply);
+      await d.button.click();
+      const dialog = page.getByRole("dialog", { name: d.title });
+      await d.fill?.(dialog);
+      await dialog.getByRole("button", { name: d.submit, exact: true }).click();
+      await expect(dialog.getByRole("button", { name: d.busy, exact: true }), label).toBeDisabled();
+      await expect(dialog.getByRole("button", { name: "Huỷ" }), label).toBeDisabled();
+      await expect(dialog.getByRole("button", { name: "Đóng" }), label).toHaveCount(0);
+      for (let i = 0; i < 4; i++) await page.keyboard.press("Escape");
+      await expect(dialog, label).toBeVisible();
+      release();
+      if (reply.status === 204) await expect(page.getByRole("dialog"), label).toHaveCount(0);
+      else {
+        await expect(dialog.getByRole("alert"), label).toHaveText(d.error.message);
+        await dialog.getByRole("button", { name: "Huỷ" }).click();
+        await expect(page.getByRole("dialog"), label).toHaveCount(0);
+      }
+      await page.unroute(d.url);
+    }
 });
 
 test("Trang 4 hộp Đạt đang gửi: nhấn Esc 4 lần hay trình duyệt tự đóng thẻ dialog thì hộp vẫn mở, không có nút Đóng; máy chủ trả 409 thì câu báo hiện trong hộp, Huỷ rồi bấm Đạt mở lại được hộp", async ({ browser }) => {

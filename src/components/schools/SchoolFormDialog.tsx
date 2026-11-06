@@ -56,10 +56,11 @@ export function SchoolFormDialog({ provinces, initial, onClose }: { provinces: {
       open
       title={start.id ? "Sửa trường" : "Thêm trường"}
       onClose={onClose}
+      dismissible={!pending}
       width={560}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>
+          <Button variant="secondary" disabled={pending} onClick={onClose}>
             Huỷ
           </Button>
           <Button type="submit" form="school-form" disabled={pending}>

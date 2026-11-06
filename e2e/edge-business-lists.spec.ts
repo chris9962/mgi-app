@@ -315,7 +315,7 @@ test.describe("Tin SMS lỗi", () => {
     await expect(rows(page, SMS)).toContainText("0/3");
   });
 
-  test("đang Gửi lại thì Huỷ bị khoá, Esc và nút Đóng không đóng hộp; máy chủ trả lời xong thì hộp đóng", async ({ browser }) => {
+  test("đang Gửi lại thì Huỷ bị khoá, không có nút Đóng, nhấn Esc 4 lần không đóng hộp; máy chủ trả lời xong thì hộp đóng", async ({ browser }) => {
     const page = await loginAs(browser, "zz_e2e_admin");
     await open(page, `/sms?${q(B.bPageName(2))}`);
     let release = () => {};
@@ -330,10 +330,9 @@ test.describe("Tin SMS lỗi", () => {
     await dialog.getByRole("button", { name: "Gửi lại" }).click();
     await expect(dialog.getByRole("button", { name: "Gửi lại" })).toBeDisabled();
     await expect(dialog.getByRole("button", { name: "Huỷ" })).toBeDisabled();
-    await page.keyboard.press("Escape");
+    await expect(dialog.getByRole("button", { name: "Đóng" })).toHaveCount(0);
+    for (let i = 0; i < 4; i++) await page.keyboard.press("Escape");
     await expect(dialog, "sau Esc").toBeVisible();
-    await dialog.getByRole("button", { name: "Đóng" }).click({ timeout: 5_000 });
-    await expect(dialog, "sau nút Đóng").toBeVisible();
     release();
     await expect(dialog).toHaveCount(0);
   });

@@ -15,8 +15,6 @@ export function ResendButton({ id, fullName, toPhone }: { id: string; fullName: 
   const [stale, setStale] = useState(false);
 
   function close() {
-    // Như dismissible={!pending} của mgst-app: tin đã gửi lại thì đóng hộp không huỷ được.
-    if (pending) return;
     setOpen(false);
     setErrors({});
     // Máy chủ vừa từ chối vì tin đã đổi ở tab khác: đóng hộp thì tải lại bảng, dòng Lỗi cũ không còn nút Gửi lại.
@@ -49,6 +47,7 @@ export function ResendButton({ id, fullName, toPhone }: { id: string; fullName: 
           open
           title="Gửi lại tin SMS"
           onClose={close}
+          dismissible={!pending}
           width={420}
           footer={
             <>
