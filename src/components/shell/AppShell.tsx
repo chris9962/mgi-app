@@ -15,7 +15,9 @@ export function AppShell({ groups, fullName, title, children }: { groups: MenuGr
   const pathname = usePathname();
   // Ngăn chỉ mở trên trang lúc bấm Thêm: chuyển trang kiểu nào (cả nút Quay lại) cũng đóng, không cần effect.
   const [openedAt, setOpenedAt] = useState<string | null>(null);
-  const menuOpen = openedAt !== null && openedAt === pathname;
+  // Bỏ hẳn trạng thái ngay lúc render khi đã sang trang khác: khung không mount lại, giữ đường dẫn cũ thì về lại trang đó ngăn tự mở.
+  if (openedAt !== null && openedAt !== pathname) setOpenedAt(null);
+  const menuOpen = openedAt === pathname;
   const more = useRef<HTMLButtonElement>(null);
 
   // Màn rộng qua 900 px thì sidebar thành cột cố định: bỏ trạng thái ngăn, không thì nội dung còn inert và Esc còn đòi focus nút Thêm đã ẩn.

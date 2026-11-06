@@ -124,6 +124,34 @@ test("điện thoại: bấm Quay lại của trình duyệt khi ngăn đang m�
   expect(await bodyOverflow(page)).toBe("visible");
 });
 
+const inertCount = (page: Page) => page.locator("[inert]").count();
+
+test("điện thoại: ngăn đã đóng vì Quay lại thì không tự mở lại khi về đúng trang cũ, kể cả bằng nút Tới", async ({ browser }) => {
+  const page = await loginAs(browser, "zz_e2e_admin", PHONE);
+  const customers = bottomNav(page).getByRole("link", { name: "Hồ sơ học sinh" });
+  const more = bottomNav(page).getByRole("button", { name: "Thêm" });
+  await customers.click();
+  await expect(page).toHaveURL(/\/customers$/);
+  await more.click();
+  await expect(sidebar(page)).toBeVisible();
+  await page.goBack();
+  await expect(page).toHaveURL(/\/users$/);
+  await expect(sidebar(page)).toBeHidden();
+  await customers.click();
+  await expect(page).toHaveURL(/\/customers$/);
+  await expect(sidebar(page)).toBeHidden();
+  expect([await inertCount(page), await bodyOverflow(page)]).toEqual([0, "visible"]);
+
+  await more.click();
+  await expect(sidebar(page)).toBeVisible();
+  await page.goBack();
+  await expect(page).toHaveURL(/\/users$/);
+  await page.goForward();
+  await expect(page).toHaveURL(/\/customers$/);
+  await expect(sidebar(page)).toBeHidden();
+  expect([await inertCount(page), await bodyOverflow(page)]).toEqual([0, "visible"]);
+});
+
 test("ngăn đang mở mà màn rộng quá 900 px thì ngăn đóng, trang hết khoá cuộn, Esc không cướp focus", async ({ browser }) => {
   const page = await loginAs(browser, "zz_e2e_admin", PHONE);
   await page.goto("/customers");
