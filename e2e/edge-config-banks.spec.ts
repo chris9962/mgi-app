@@ -335,3 +335,26 @@ test("Hướng dẫn: đang tải ảnh mẫu của một khung thì nút đổi
   await expect(g.getByRole("button", { name: "Lưu" })).toBeEnabled();
   await g.getByRole("button", { name: "Huỷ" }).click();
 });
+
+test("Hướng dẫn: huỷ hộp chọn ảnh mẫu thì hộp Hướng dẫn vẫn mở, chữ đang gõ còn; Esc vẫn đóng hộp", async ({ page }) => {
+  await apiLogin(page, "zz_e2e_admin");
+  await createBank(page, "ZZCHUYFILE", "ZZE2E Huỷ chọn ảnh");
+  await open(page, "/banks");
+  await page.getByRole("button", { name: "Hướng dẫn mở tài khoản ZZE2E Huỷ chọn ảnh" }).click();
+  const g = guideDialog(page);
+  await g.getByLabel("Các bước").fill("Bước đang gõ");
+  await g.getByLabel("Tên ảnh 1").fill("Ảnh đang gõ");
+  const chooser = page.waitForEvent("filechooser");
+  await g.getByRole("button", { name: "Đổi ảnh mẫu của Ảnh đang gõ", exact: true }).click();
+  await chooser;
+  // Huỷ hộp chọn file hay chọn lại đúng ảnh cũ thì Chrome phát `cancel` từ ô file; phát thẳng sự kiện đó, không chờ Chrome tự phát.
+  await g.locator('input[type="file"]').evaluate(async (el) => {
+    el.dispatchEvent(new Event("cancel", { bubbles: true }));
+    await new Promise(requestAnimationFrame);
+  });
+  await expect(g).toBeVisible();
+  await expect(g.getByLabel("Các bước")).toHaveValue("Bước đang gõ");
+  await expect(g.getByLabel("Tên ảnh 1")).toHaveValue("Ảnh đang gõ");
+  await page.keyboard.press("Escape");
+  await expect(g).toBeHidden();
+});

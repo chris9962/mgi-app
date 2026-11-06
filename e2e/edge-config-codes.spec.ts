@@ -517,3 +517,25 @@ test("Mã: đang tải ảnh QR thì nút chọn ảnh QR bị khoá, không ch�
   await expect(d.getByRole("button", { name: "Ảnh QR đã chọn" })).toBeEnabled();
   await d.getByRole("button", { name: "Huỷ" }).click();
 });
+
+test("Mã: huỷ hộp chọn ảnh QR thì hộp Thêm mã vẫn mở, chữ đang gõ còn; Esc vẫn đóng hộp", async ({ page }) => {
+  await apiLogin(page, "zz_e2e_admin");
+  await createBank(page, "ZZCQRHUY", "ZZE2E Huỷ chọn QR", [], "0");
+  await open(page, "/banks/codes");
+  const d = await openAdd(page);
+  await d.getByLabel("Tên hiển thị").fill("ZZE2E Tên đang gõ");
+  await d.getByLabel("Mã text (Mã giới thiệu)").fill("ZZC-DANGGO");
+  const chooser = page.waitForEvent("filechooser");
+  await d.getByRole("button", { name: "Chọn ảnh QR" }).click();
+  await chooser;
+  // Huỷ hộp chọn file hay chọn lại đúng ảnh cũ thì Chrome phát `cancel` từ ô file; phát thẳng sự kiện đó, không chờ Chrome tự phát.
+  await d.locator('input[type="file"]').evaluate(async (el) => {
+    el.dispatchEvent(new Event("cancel", { bubbles: true }));
+    await new Promise(requestAnimationFrame);
+  });
+  await expect(d).toBeVisible();
+  await expect(d.getByLabel("Tên hiển thị")).toHaveValue("ZZE2E Tên đang gõ");
+  await expect(d.getByLabel("Mã text (Mã giới thiệu)")).toHaveValue("ZZC-DANGGO");
+  await page.keyboard.press("Escape");
+  await expect(d).toBeHidden();
+});
