@@ -148,6 +148,30 @@ test("Mã: gõ ô tìm rồi bấm sang Danh sách ngân hàng lúc mạng chậ
   await expect(page).toHaveURL(/\/banks$/);
 });
 
+test("Mã: gõ ô tìm rồi bấm Tháng sau hay Sau trước 300 ms thì ô tìm khớp từ khoá trên URL, bảng lọc đúng như ô tìm", async ({ page }) => {
+  test.setTimeout(90_000);
+  await apiLogin(page, "zz_e2e_admin");
+  const bank = await createBank(page, "ZZCMALECH", "ZZE2E Mã lệch");
+  for (let i = 1; i <= 16; i++) await createCode(page, bank, `ZZE2E Lệchô ${String(i).padStart(2, "0")}`);
+  await page.clock.install();
+  for (const link of [page.getByRole("link", { name: "Tháng sau" }), page.getByRole("navigation", { name: "Phân trang" }).getByRole("link", { name: "Sau" })]) {
+    await open(page, `/banks/codes?bank=${bank}`);
+    await page.clock.pauseAt((await page.evaluate(() => Date.now())) + 1000);
+    const href = (await link.getAttribute("href"))!;
+    await searchBox(page).fill("lệchô 05");
+    await link.click();
+    await expect(page).toHaveURL(new RegExp(`${escape(href)}$`));
+    await page.waitForLoadState("networkidle");
+    await page.clock.runFor(1000);
+    await page.waitForLoadState("networkidle");
+    // Ô tìm và bảng phải cùng theo một từ khoá: từ khoá trên URL là từ khoá bảng đang lọc.
+    const q = new URL(page.url()).searchParams.get("q") ?? "";
+    await expect(searchBox(page), href).toHaveValue(q);
+    await expect(page.getByText(q ? "1 mã" : "16 mã", { exact: true }), href).toBeVisible();
+    await page.clock.resume();
+  }
+});
+
 test("Mã: lọc ngân hàng, từ khoá, Ẩn mã đã ngừng kết hợp; đổi một lọc về trang 1 và giữ lọc khác; đổi tháng giữ lọc; 16 mã thì trang 1 có 15, trang 2 có 1", async ({ page }) => {
   test.setTimeout(90_000);
   await apiLogin(page, "zz_e2e_admin");
