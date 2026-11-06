@@ -2,6 +2,7 @@ import { and, asc, eq, inArray, isNull, ne, or, sql } from "drizzle-orm";
 import { db } from "./db/client";
 import { bankPhotoSlots, banks, customerBanks, referralCodeMonths, referralCodes, userManagedBanks, users } from "./db/schema";
 import { writeAudit } from "./audit";
+import { isUniqueViolation } from "./db/errors";
 import { matchesPlain } from "./search";
 import { can, canManageBank } from "@/lib/permissions";
 import { currentYearMonth } from "@/lib/month";
@@ -23,6 +24,11 @@ export type GuideSlotRow = { id: string; name: string; sampleKey: string | null;
 
 type Fail = { ok: false; message: string; field?: string; status: 400 | 403 | 404 | 409 };
 const fail = (message: string, status: Fail["status"], field?: string): Fail => ({ ok: false, message, status, field });
+const CODE_TAKEN = fail("Mã ngân hàng đã có.", 409, "code");
+const codeRace = (e: unknown): Fail => {
+  if (isUniqueViolation(e, "banks_code_unique")) return CODE_TAKEN;
+  throw e;
+};
 
 // Câu đếm con ghi rõ "banks"."id": Drizzle in cột của truy vấn một bảng không kèm tên bảng, và "id" trong câu con sẽ trỏ nhầm sang bảng con.
 const BANK_ID = sql.raw(`"banks"."id"`);
@@ -75,34 +81,37 @@ async function validManagers(ids: string[]): Promise<boolean> {
 
 export async function createBank(actor: SessionUser, values: BankFormValues, ip?: string | null): Promise<{ ok: true; id: string } | Fail> {
   if (!can(actor, "manage_banks")) return fail("Không có quyền tạo ngân hàng.", 403);
-  if (await codeTaken(values.code)) return fail("Mã ngân hàng đã có.", 409, "code");
+  if (await codeTaken(values.code)) return CODE_TAKEN;
   if (!(await validManagers(values.managerIds))) return fail("Người quản phải là Nhân viên đang hoạt động.", 400, "managerIds");
-  const id = await db.transaction(async (tx) => {
-    const [row] = await tx.insert(banks).values({ code: values.code, name: values.name, sortOrder: values.sortOrder }).returning({ id: banks.id });
-    if (values.managerIds.length) await tx.insert(userManagedBanks).values([...new Set(values.managerIds)].map((userId) => ({ userId, bankId: row.id })));
-    await writeAudit(tx, { userId: actor.id, action: "create_bank", targetType: "banks", targetId: row.id, detail: values, ip });
-    return row.id;
-  });
-  return { ok: true, id };
+  return db
+    .transaction(async (tx) => {
+      const [row] = await tx.insert(banks).values({ code: values.code, name: values.name, sortOrder: values.sortOrder }).returning({ id: banks.id });
+      if (values.managerIds.length) await tx.insert(userManagedBanks).values([...new Set(values.managerIds)].map((userId) => ({ userId, bankId: row.id })));
+      await writeAudit(tx, { userId: actor.id, action: "create_bank", targetType: "banks", targetId: row.id, detail: values, ip });
+      return { ok: true as const, id: row.id };
+    })
+    .catch(codeRace);
 }
 
 export async function updateBank(actor: SessionUser, id: string, values: BankFormValues, ip?: string | null): Promise<{ ok: true } | Fail> {
   if (!canManageBank(actor, id)) return fail("Không tìm thấy ngân hàng.", 404);
   const [before] = await db.select().from(banks).where(eq(banks.id, id));
   if (!before) return fail("Không tìm thấy ngân hàng.", 404);
-  if (await codeTaken(values.code, id)) return fail("Mã ngân hàng đã có.", 409, "code");
+  if (await codeTaken(values.code, id)) return CODE_TAKEN;
   // Giao người quản là việc của quyền Quản lý ngân hàng; người được giao sửa ngân hàng mình thì danh sách người quản giữ nguyên.
   const assign = can(actor, "manage_banks");
   if (assign && !(await validManagers(values.managerIds))) return fail("Người quản phải là Nhân viên đang hoạt động.", 400, "managerIds");
-  await db.transaction(async (tx) => {
-    await tx.update(banks).set({ code: values.code, name: values.name, sortOrder: values.sortOrder }).where(eq(banks.id, id));
-    if (assign) {
-      await tx.delete(userManagedBanks).where(eq(userManagedBanks.bankId, id));
-      if (values.managerIds.length) await tx.insert(userManagedBanks).values([...new Set(values.managerIds)].map((userId) => ({ userId, bankId: id })));
-    }
-    await writeAudit(tx, { userId: actor.id, action: "update_bank", targetType: "banks", targetId: id, detail: { before, after: assign ? values : { ...values, managerIds: undefined } }, ip });
-  });
-  return { ok: true };
+  return db
+    .transaction(async (tx) => {
+      await tx.update(banks).set({ code: values.code, name: values.name, sortOrder: values.sortOrder }).where(eq(banks.id, id));
+      if (assign) {
+        await tx.delete(userManagedBanks).where(eq(userManagedBanks.bankId, id));
+        if (values.managerIds.length) await tx.insert(userManagedBanks).values([...new Set(values.managerIds)].map((userId) => ({ userId, bankId: id })));
+      }
+      await writeAudit(tx, { userId: actor.id, action: "update_bank", targetType: "banks", targetId: id, detail: { before, after: assign ? values : { ...values, managerIds: undefined } }, ip });
+      return { ok: true as const };
+    })
+    .catch(codeRace);
 }
 
 export async function setBankActive(actor: SessionUser, id: string, active: boolean, ip?: string | null): Promise<{ ok: true } | Fail> {
