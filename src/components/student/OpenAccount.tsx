@@ -32,7 +32,8 @@ function CodeBox({ bank }: { bank: StudentBank }) {
         {bank.referralCode && (
           <>
             <span className="text-[13px] text-text-2">Mã giới thiệu</span>
-            <strong className="break-all font-mono text-lg">{bank.referralCode}</strong>
+            {/* Như CopyValue của mgst-app: không chép được bằng nút thì một cú bấm chọn hết mã để chép tay. */}
+            <strong className="break-all font-mono text-lg select-all">{bank.referralCode}</strong>
             {/* Vùng báo nằm cùng hàng với nút: lúc rỗng không thêm hàng trống. */}
             <div className="flex flex-wrap items-center gap-x-2">
               <Button

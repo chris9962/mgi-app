@@ -234,6 +234,8 @@ test.describe("D. B3 mở tài khoản", () => {
     await expect(status).toHaveText("Không sao chép được");
     await expect(panel.getByText("Đã sao chép")).toHaveCount(0);
     await expect(status).toHaveText("", { timeout: 5_000 });
+    // Như CopyValue của mgst-app: chép tay thì một cú bấm chọn hết mã, không chỉ một đoạn giữa hai dấu "-".
+    expect(await panel.getByText(LONG_CODE, { exact: true }).evaluate((el) => getComputedStyle(el).userSelect)).toBe("all");
   });
 
   test("D8 ngân hàng chưa cài hướng dẫn: tab chỉ có mã, ghi đủ ảnh; gửi kiểm tra được khi ngân hàng kia đủ ảnh", async ({ page, request }) => {
