@@ -17,6 +17,6 @@ export default defineConfig({
       use: { ...devices["Desktop Chrome"], viewport: { width: 1366, height: 768 }, video: flowVideo(1366, 768), launchOptions: { slowMo: 300 }, actionTimeout: 20_000, navigationTimeout: 30_000 },
     },
   ],
-  // Test chạy trên bản build production; bun run e2e tự build và bật server, lệnh này chỉ dùng khi gọi playwright trực tiếp mà cổng 3100 trống.
-  webServer: { command: "bun run build && COOKIE_SECURE=false bunx next start -p 3100", url: "http://admin.localhost:3100/login", reuseExistingServer: true, timeout: 300_000 },
+  // Test chạy trên bản build production; bun run e2e tự build và bật server, lệnh này chỉ dùng khi gọi playwright trực tiếp mà cổng 3100 trống. TZ=UTC như scripts/e2e-run.sh.
+  webServer: { command: "bun run build && COOKIE_SECURE=false TZ=UTC bunx next start -p 3100", url: "http://admin.localhost:3100/login", reuseExistingServer: true, timeout: 300_000 },
 });
