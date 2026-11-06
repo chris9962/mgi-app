@@ -1,4 +1,5 @@
 import { inArray, like, or } from "drizzle-orm";
+import { escapeLike } from "../../src/server/search";
 
 // Thiếu biến này thì pg tự nối localhost:5432, tức là một database khác.
 if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL chưa đặt. Chạy test DB bằng bun test:db.");
@@ -6,18 +7,20 @@ if (!process.env.DATABASE_URL) throw new Error("DATABASE_URL chưa đặt. Chạ
 export const TEST_PREFIX = "zz_test_";
 // Dữ liệu danh mục do test tạo mang tiền tố này để dọn được kể cả khi test hỏng giữa chừng.
 export const TEST_NAME = "ZZTEST ";
+// LIKE coi _ là ký tự đại diện: không thoát thì zz_test_% chọn cả zzxtestx... không phải dữ liệu test.
+const startsWith = (prefix: string) => `${escapeLike(prefix)}%`;
 
 export async function cleanTestUsers() {
   const { db } = await import("../../src/server/db/client");
   const s = await import("../../src/server/db/schema");
-  const banks = (await db.select({ id: s.banks.id }).from(s.banks).where(like(s.banks.name, `${TEST_NAME}%`))).map((r) => r.id);
+  const banks = (await db.select({ id: s.banks.id }).from(s.banks).where(like(s.banks.name, startsWith(TEST_NAME)))).map((r) => r.id);
   const codes = (
     await db
       .select({ id: s.referralCodes.id })
       .from(s.referralCodes)
-      .where(or(like(s.referralCodes.displayName, `${TEST_NAME}%`), banks.length ? inArray(s.referralCodes.bankId, banks) : undefined))
+      .where(or(like(s.referralCodes.displayName, startsWith(TEST_NAME)), banks.length ? inArray(s.referralCodes.bankId, banks) : undefined))
   ).map((r) => r.id);
-  const schools = (await db.select({ id: s.schools.id }).from(s.schools).where(like(s.schools.name, `${TEST_NAME}%`))).map((r) => r.id);
+  const schools = (await db.select({ id: s.schools.id }).from(s.schools).where(like(s.schools.name, startsWith(TEST_NAME)))).map((r) => r.id);
   const testCustomers = schools.length ? (await db.select({ id: s.customers.id }).from(s.customers).where(inArray(s.customers.schoolId, schools))).map((r) => r.id) : [];
   if (testCustomers.length) {
     const rows = (await db.select({ id: s.customerBanks.id }).from(s.customerBanks).where(inArray(s.customerBanks.customerId, testCustomers))).map((r) => r.id);
@@ -42,8 +45,8 @@ export async function cleanTestUsers() {
     await db.delete(s.bankPhotoSlots).where(inArray(s.bankPhotoSlots.bankId, banks));
     await db.delete(s.banks).where(inArray(s.banks.id, banks));
   }
-  await db.delete(s.settings).where(like(s.settings.key, "zz_test_%"));
-  const ids = (await db.select({ id: s.users.id }).from(s.users).where(like(s.users.username, `${TEST_PREFIX}%`))).map((r) => r.id);
+  await db.delete(s.settings).where(like(s.settings.key, startsWith(TEST_PREFIX)));
+  const ids = (await db.select({ id: s.users.id }).from(s.users).where(like(s.users.username, startsWith(TEST_PREFIX)))).map((r) => r.id);
   if (ids.length) {
     await db.delete(s.auditLog).where(inArray(s.auditLog.userId, ids));
     await db.delete(s.users).where(inArray(s.users.id, ids));

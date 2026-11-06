@@ -1,5 +1,8 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
+import { eq } from "drizzle-orm";
 import { TEST_NAME, TEST_PREFIX, cleanTestUsers, makeActor } from "./helpers";
+import { db } from "../../src/server/db/client";
+import { settings, users } from "../../src/server/db/schema";
 import { createBank, getGuide, managerOptions, saveGuide, updateBank } from "../../src/server/banks";
 import { createCode, listCodes, updateCode } from "../../src/server/referralCodes";
 import { createSchool, listSchools, searchSchoolOptions, setSchoolActive } from "../../src/server/schools";
@@ -166,5 +169,21 @@ describe("ca biên cấu hình: tìm nhiều từ như mgst-app, mỗi từ mộ
     const found = async (q: string) => (await listCodes(admin, { month: "2026-11", q, bankId: "", hideStopped: false, page: 1 })).rows.map((r) => r.id);
     for (const q of ["anh nguyen tachds", "tachcode anh", "TÁCHDS mã"]) expect([q, await found(q)]).toEqual([q, [code.id]]);
     expect(await found("tachds khongco")).toEqual([]);
+  });
+});
+
+// Chạy cuối file: cleanTestUsers xoá cả tài khoản test mà các describe khác dùng chung.
+describe("ca biên cấu hình: dọn dữ liệu test", () => {
+  test("câu dọn chỉ chọn đúng tiền tố zz_test_: dấu _ là chữ, không phải ký tự đại diện", async () => {
+    const [other] = await db.insert(users).values({ username: "zzxtestxkhac", fullName: "Không phải dữ liệu test", passwordHash: "x", role: "staff" }).returning({ id: users.id });
+    await db.insert(settings).values({ key: "zzxtestxkhac", value: "x" });
+    try {
+      await cleanTestUsers();
+      expect(await db.select({ id: users.id }).from(users).where(eq(users.id, other.id))).toHaveLength(1);
+      expect(await db.select({ key: settings.key }).from(settings).where(eq(settings.key, "zzxtestxkhac"))).toHaveLength(1);
+    } finally {
+      await db.delete(users).where(eq(users.id, other.id));
+      await db.delete(settings).where(eq(settings.key, "zzxtestxkhac"));
+    }
   });
 });

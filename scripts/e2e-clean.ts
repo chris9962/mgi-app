@@ -2,12 +2,15 @@ import { and, asc, eq, inArray, like, or } from "drizzle-orm";
 import { db, pool } from "../src/server/db/client";
 import * as s from "../src/server/db/schema";
 import { DEFAULTS as SETTING_DEFAULTS, KEY as SETTING_KEYS } from "../src/server/settings";
+import { escapeLike } from "../src/server/search";
 import { deleteImage } from "../src/server/storage";
 import type { SettingsValues } from "../src/lib/sms";
 
 export const E2E_PREFIX = "zz_e2e_";
 export const E2E_NAME = "ZZE2E ";
 export const E2E_PASSWORD = "e2e23test";
+// LIKE coi _ là ký tự đại diện: không thoát thì zz_e2e_% chọn cả tài khoản zzxe2ex... không phải của e2e.
+const startsWith = (prefix: string) => `${escapeLike(prefix)}%`;
 
 // Flow Cài đặt lưu vào cài đặt thật của DB local: trả về giá trị trước lần lưu đầu của tài khoản e2e (ghi trong audit), giá trị mặc định thì xoá dòng như lúc chưa ai lưu.
 async function restoreSettings(users: string[]) {
@@ -31,8 +34,8 @@ async function restoreSettings(users: string[]) {
 
 // Dọn theo thứ tự khoá ngoại: mã, ngân hàng, trường do e2e tạo rồi mới tới tài khoản e2e.
 export async function cleanE2e() {
-  const banks = (await db.select({ id: s.banks.id }).from(s.banks).where(like(s.banks.name, `${E2E_NAME}%`))).map((r) => r.id);
-  const users = (await db.select({ id: s.users.id }).from(s.users).where(like(s.users.username, `${E2E_PREFIX}%`))).map((r) => r.id);
+  const banks = (await db.select({ id: s.banks.id }).from(s.banks).where(like(s.banks.name, startsWith(E2E_NAME)))).map((r) => r.id);
+  const users = (await db.select({ id: s.users.id }).from(s.users).where(like(s.users.username, startsWith(E2E_PREFIX)))).map((r) => r.id);
   // Mã do e2e tạo có thể nằm ở ngân hàng không phải của e2e, nên dọn cả theo tên và theo người tạo.
   const codes = (
     await db
@@ -40,13 +43,13 @@ export async function cleanE2e() {
       .from(s.referralCodes)
       .where(
         or(
-          like(s.referralCodes.displayName, `${E2E_NAME}%`),
+          like(s.referralCodes.displayName, startsWith(E2E_NAME)),
           banks.length ? inArray(s.referralCodes.bankId, banks) : undefined,
           users.length ? inArray(s.referralCodes.createdBy, users) : undefined,
         ),
       )
   ).map((r) => r.id);
-  const schools = (await db.select({ id: s.schools.id }).from(s.schools).where(like(s.schools.name, `${E2E_NAME}%`))).map((r) => r.id);
+  const schools = (await db.select({ id: s.schools.id }).from(s.schools).where(like(s.schools.name, startsWith(E2E_NAME)))).map((r) => r.id);
   const customers = schools.length ? (await db.select({ id: s.customers.id }).from(s.customers).where(inArray(s.customers.schoolId, schools))).map((r) => r.id) : [];
   // or() của hai điều kiện đều rỗng trả undefined, và where(undefined) chọn mọi dòng của hồ sơ thật: không có id nào thì không chọn gì.
   const customerBanks =
@@ -84,7 +87,7 @@ export async function cleanE2e() {
     await db.delete(s.bankPhotoSlots).where(inArray(s.bankPhotoSlots.bankId, banks));
     await db.delete(s.banks).where(inArray(s.banks.id, banks));
   }
-  await db.delete(s.schools).where(like(s.schools.name, `${E2E_NAME}%`));
+  await db.delete(s.schools).where(like(s.schools.name, startsWith(E2E_NAME)));
   if (!users.length) return;
   await restoreSettings(users);
   await db.delete(s.auditLog).where(inArray(s.auditLog.userId, users));
