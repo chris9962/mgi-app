@@ -122,6 +122,7 @@ export function OpenAccount({ state, onChange }: { state: StudentState; onChange
   const [leaving, setLeaving] = useState(false);
   const [busySlots, setBusySlots] = useState<string[]>([]);
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
+  const focusError = useRef(false);
   const current = banks.find((b) => b.id === active) ?? banks[0];
   const hasPhoto = banks.some((b) => b.slots.some((s) => s.photo));
   // Đang tải hoặc chụp lại ảnh thì chưa gửi: gửi lúc đó là gửi ảnh cũ, ảnh mới bị bỏ.
@@ -155,6 +156,8 @@ export function OpenAccount({ state, onChange }: { state: StudentState; onChange
     // Hồ sơ đã đổi ở máy chủ (trường vừa đóng, tab khác đã gửi kiểm tra): tải lại để màn khớp máy chủ, báo lỗi ở màn chứ không ở hộp hỏi.
     if (r.status === 409) {
       await onChange();
+      // Nút Quay lại vừa bấm đã ẩn sau khi tải lại: không chuyển tiêu điểm thì nó rơi về đầu trang.
+      focusError.current = true;
       setConfirmBack(false);
       setError(r.message);
       setLeaving(false);
@@ -210,7 +213,16 @@ export function OpenAccount({ state, onChange }: { state: StudentState; onChange
         </div>
       ))}
       {error && (
-        <p role="alert" className="mt-3 text-sm text-danger">
+        <p
+          ref={(el) => {
+            if (!el || !focusError.current) return;
+            focusError.current = false;
+            el.focus();
+          }}
+          tabIndex={-1}
+          role="alert"
+          className="mt-3 text-sm text-danger"
+        >
           {error}
         </p>
       )}

@@ -308,6 +308,8 @@ test.describe("D. B3 mở tài khoản", () => {
       await expect(alertIn(page)).toHaveText("Trường đã đóng.");
       await expect(back).toHaveCount(0);
       await expect(page.getByRole("heading", { name: "Mở tài khoản" })).toBeVisible();
+      // Nút vừa bấm biến mất: tiêu điểm không được rơi về body, người dùng bàn phím phải Tab lại từ đầu trang.
+      await expect(alertIn(page)).toBeFocused();
 
       dbOp("school", SCHOOL.closing, "open");
       await openAt(page, SCHOOL.closing, withPhoto);
@@ -320,6 +322,7 @@ test.describe("D. B3 mở tài khoản", () => {
       await expect(alertIn(page)).toHaveText("Trường đã đóng.");
       await expect(back).toHaveCount(0);
       await expect(page.getByRole("tabpanel").getByLabel("Ảnh màn hình chính: chụp lại")).toBeAttached();
+      await expect(alertIn(page)).toBeFocused();
     } finally {
       dbOp("school", SCHOOL.closing, "open");
     }
