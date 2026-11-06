@@ -148,6 +148,7 @@ export function CodeFormDialog({ banks, initial, onClose }: { banks: { id: strin
           <TextField name="priority" label="Độ ưu tiên" inputMode="numeric" defaultValue={String(start.priority)} error={errors.priority} />
         </div>
         <MultiSelect label="Trường dùng mã này" value={schools} onChange={setSchools} search={searchSchools} placeholder="Gõ để tìm trường…" />
+        {errors.schoolIds && <p className="text-sm text-danger">{errors.schoolIds}</p>}
         {formError && (
           <p role="alert" className="text-sm text-danger">
             {formError}

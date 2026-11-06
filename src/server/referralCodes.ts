@@ -1,7 +1,8 @@
 import { and, asc, count, desc, eq, inArray, ne, or, sql } from "drizzle-orm";
 import { db } from "./db/client";
-import { banks, referralCodeMonths, referralCodeSchools, referralCodes, users } from "./db/schema";
+import { banks, referralCodeMonths, referralCodeSchools, referralCodes, schools, users } from "./db/schema";
 import { writeAudit } from "./audit";
+import { isUniqueViolation } from "./db/errors";
 import { matchesPlain } from "./search";
 import { schoolLabels } from "./schools";
 import { can, canManageBank } from "@/lib/permissions";
@@ -36,6 +37,20 @@ export type CodeRow = {
 
 type Fail = { ok: false; message: string; field?: string; status: 400 | 404 | 409 };
 const fail = (message: string, status: Fail["status"], field?: string): Fail => ({ ok: false, message, status, field });
+const NAME_TAKEN = fail("Tên hiển thị đã có trong ngân hàng này.", 409, "displayName");
+const nameRace = (e: unknown): Fail => {
+  if (isUniqueViolation(e, "referral_codes_bank_display_name")) return NAME_TAKEN;
+  throw e;
+};
+
+// Trường gắn thêm phải còn mở; trường đã gắn rồi mới đóng thì giữ, không thì sửa mã cũng bị chặn.
+async function schoolsOk(ids: string[], kept: string[] = []): Promise<boolean> {
+  const added = [...new Set(ids)].filter((id) => !kept.includes(id));
+  if (!added.length) return true;
+  const rows = await db.select({ id: schools.id }).from(schools).where(and(inArray(schools.id, added), eq(schools.active, true)));
+  return rows.length === added.length;
+}
+const SCHOOLS_BAD = fail("Có trường đã đóng hoặc không còn.", 400, "schoolIds");
 
 // Câu đếm con ghi rõ "referral_codes"."id", không để Drizzle in "id" trần trỏ nhầm sang bảng con.
 const CODE_ID = sql.raw(`"referral_codes"."id"`);
@@ -111,24 +126,29 @@ async function nameTaken(bankId: string, displayName: string, exceptId?: string)
 const record = (v: CodeFormValues) => ({ displayName: v.displayName, code: v.code, qrKey: v.qrKey, openUrl: v.openUrl, monthlyQuota: v.monthlyQuota, priority: v.priority });
 
 export async function createCode(actor: SessionUser, values: CodeFormValues, ip?: string | null): Promise<{ ok: true; id: string } | Fail> {
-  if (!canManageBank(actor, values.bankId)) return fail("Không tìm thấy ngân hàng.", 404, "bankId");
-  if (await nameTaken(values.bankId, values.displayName)) return fail("Tên hiển thị đã có trong ngân hàng này.", 409, "displayName");
-  const id = await db.transaction(async (tx) => {
-    const [row] = await tx.insert(referralCodes).values({ ...record(values), bankId: values.bankId, createdBy: actor.id }).returning({ id: referralCodes.id });
-    const schoolIds = [...new Set(values.schoolIds)];
-    if (schoolIds.length) await tx.insert(referralCodeSchools).values(schoolIds.map((schoolId) => ({ referralCodeId: row.id, schoolId })));
-    await writeAudit(tx, { userId: actor.id, action: "create_referral_code", targetType: "referral_codes", targetId: row.id, detail: values, ip });
-    return row.id;
-  });
-  return { ok: true, id };
+  const [bank] = await db.select({ id: banks.id }).from(banks).where(eq(banks.id, values.bankId));
+  if (!bank || !canManageBank(actor, values.bankId)) return fail("Không tìm thấy ngân hàng.", 404, "bankId");
+  if (await nameTaken(values.bankId, values.displayName)) return NAME_TAKEN;
+  if (!(await schoolsOk(values.schoolIds))) return SCHOOLS_BAD;
+  return db
+    .transaction(async (tx) => {
+      const [row] = await tx.insert(referralCodes).values({ ...record(values), bankId: values.bankId, createdBy: actor.id }).returning({ id: referralCodes.id });
+      const schoolIds = [...new Set(values.schoolIds)];
+      if (schoolIds.length) await tx.insert(referralCodeSchools).values(schoolIds.map((schoolId) => ({ referralCodeId: row.id, schoolId })));
+      await writeAudit(tx, { userId: actor.id, action: "create_referral_code", targetType: "referral_codes", targetId: row.id, detail: values, ip });
+      return { ok: true as const, id: row.id };
+    })
+    .catch(nameRace);
 }
 
 // Ngân hàng của mã không đổi khi sửa: lượt đã giữ chỗ gắn với ngân hàng cũ.
 export async function updateCode(actor: SessionUser, id: string, values: CodeFormValues, ip?: string | null, month = currentYearMonth()): Promise<{ ok: true } | Fail> {
   const [before] = await db.select().from(referralCodes).where(eq(referralCodes.id, id));
   if (!before || !canManageBank(actor, before.bankId)) return fail("Không tìm thấy mã.", 404);
-  if (await nameTaken(before.bankId, values.displayName, id)) return fail("Tên hiển thị đã có trong ngân hàng này.", 409, "displayName");
-  await db.transaction(async (tx) => {
+  if (await nameTaken(before.bankId, values.displayName, id)) return NAME_TAKEN;
+  const linked = (await db.select({ schoolId: referralCodeSchools.schoolId }).from(referralCodeSchools).where(eq(referralCodeSchools.referralCodeId, id))).map((r) => r.schoolId);
+  if (!(await schoolsOk(values.schoolIds, linked))) return SCHOOLS_BAD;
+  return db.transaction(async (tx) => {
     await tx.update(referralCodes).set(record(values)).where(eq(referralCodes.id, id));
     // Sửa số lượt chỉ đổi tháng đang chạy; tháng đã qua giữ số đã chốt.
     if (values.monthlyQuota !== before.monthlyQuota) {
@@ -138,8 +158,8 @@ export async function updateCode(actor: SessionUser, id: string, values: CodeFor
     const schoolIds = [...new Set(values.schoolIds)];
     if (schoolIds.length) await tx.insert(referralCodeSchools).values(schoolIds.map((schoolId) => ({ referralCodeId: id, schoolId })));
     await writeAudit(tx, { userId: actor.id, action: "update_referral_code", targetType: "referral_codes", targetId: id, detail: { before, after: values }, ip });
-  });
-  return { ok: true };
+    return { ok: true as const };
+  }).catch(nameRace);
 }
 
 export async function setCodeActive(actor: SessionUser, id: string, active: boolean, ip?: string | null): Promise<{ ok: true } | Fail> {
