@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { inputClass } from "@/components/ui/Field";
 
 type Filters = { q: string; bankId: string; hideStopped: boolean };
@@ -13,6 +13,14 @@ export function CodeFilters({ month, banks, ...initial }: Filters & { month: str
   const [bankId, setBankId] = useState(initial.bankId);
   const [hideStopped, setHideStopped] = useState(initial.hideStopped);
   const timer = useRef<ReturnType<typeof setTimeout> | null>(null);
+
+  // Gõ rồi bấm sang trang khác trước 300 ms: huỷ lượt tải chờ, không thì trang mới bị kéo về Kho mã.
+  useEffect(
+    () => () => {
+      if (timer.current) clearTimeout(timer.current);
+    },
+    [],
+  );
 
   const go = (next: Filters) => {
     if (timer.current) clearTimeout(timer.current);
