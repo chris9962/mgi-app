@@ -145,3 +145,82 @@ Brief chung ở `docs/plans/2026-11-06-e2e-ca-bien.md`. Mọi ca e2e chạy ở 
 | 14. Điện thoại | Mọi ca chạy ở 390x844 |
 
 Ngày sinh biên và CCCD sai dạng: không áp dụng. B1 không thu ngày sinh, không thu CCCD (quyết định 2026-11-05 ở `../du-an-mo-tai-khoan-hoc-sinh/cau-hoi-kien-truc-2026-11-03.md`, mục B4).
+
+## Kết quả
+
+Agent nhóm A làm ngày 2026-11-06, commit f3fece6 tới commit ghi mục này, trên nhánh `dev`.
+
+### Test đã viết
+
+Agent viết 59 test e2e cho 79 ca ở trên, cộng 1 test DB. Mọi ca trong bảng đều có test; một test có thể phủ nhiều ca.
+
+| Màn | File | Số test |
+|---|---|---|
+| A. Mở link, chọn trường | `e2e/edge-student.spec.ts`, `e2e/edge-student-qr.spec.ts`, `e2e/edge-student-qr-la.spec.ts` | 15 |
+| B. B1 khai thông tin | `e2e/edge-student.spec.ts` | 9 |
+| C. B2 chọn ngân hàng | `e2e/edge-student-banks.spec.ts` | 6 |
+| D. B3 mở tài khoản | `e2e/edge-student-banks.spec.ts` | 9 |
+| E. Tải ảnh | `e2e/edge-student-photos.spec.ts`, `e2e/edge-student-api.spec.ts` | 9 |
+| F. Màn kết quả | `e2e/edge-student-result.spec.ts` | 2 |
+| G. API học sinh | `e2e/edge-student-api.spec.ts` | 9 |
+| File 0 byte ở route nộp ảnh | `tests/db/studentRoutes.test.ts` | 1 test DB |
+
+- Dữ liệu: `scripts/e2e-seed-student.ts` dựng 8 trường, 9 ngân hàng, 11 khung ảnh, 9 mã, tên bắt đầu bằng `ZZE2E HSB `. Lệnh `seed`, `clean` và các lệnh đổi trạng thái chỉ nhận id của trường, hồ sơ, khung, mã mang tiền tố đó.
+- Quét QR dùng camera giả của Chromium phát file y4m dựng từ chuỗi QR (`qrCamera` ở `e2e/edge-student-support.ts`).
+- Kiểm đột biến: bỏ `wrap-anywhere` thì màn kết quả cuộn ngang 1128 px, cả hai test màn kết quả fail. Mọi lỗi dưới đây đều thấy test fail trước khi sửa.
+
+### Lỗi tìm ra và đã sửa
+
+| Ca | Lỗi, góc nhìn học sinh | Commit |
+|---|---|---|
+| A5, B13, C6, D1, D2, D7, F1, F2 | Tên trường, ngân hàng, khung ảnh, họ tên dài không dấu cách đẩy trang cuộn ngang 599 tới 1128 px ở khổ 390 px; nút Sao chép bị mã giới thiệu đè, bấm không được | c8b2f8c |
+| A8 | Máy chủ trả 502 lúc mở web (đang khởi động lại) thì màn ghi "Không lưu được. Thử lại sau ít phút." dù học sinh chưa lưu gì | 4c9e517 |
+| A13, D12 | Gửi kiểm tra bị máy chủ từ chối vì hồ sơ đã đổi thì web đứng ở câu lỗi. Tab khác đã gửi: không sang màn kết quả. Người quản lý vừa thêm khung: khung mới không hiện, bấm mãi không qua | 8eb419b |
+| D13 | Nộp ảnh vào khung người quản lý vừa bỏ thì khung đứng lại với câu "Không tìm thấy khung ảnh.", Gửi kiểm tra khoá tới khi tải lại trang | 1c7b125 |
+| E3 | File 0 byte báo "Chọn ảnh." dù học sinh đã chọn file. Nay báo "File rỗng." như mgst-app | d60471a |
+| D5 | Trình duyệt không có clipboard (trong app Zalo, trang http) mà nút vẫn ghi "Đã sao chép". Nay báo "Không sao chép được", chép cách của `CopyButton` ở mgst-app | 97cf8d9 |
+| C5 | Đang thấy 1 ngân hàng chọn sẵn, lượt được trả lại nên còn 2: bấm Tiếp tục thì kẹt ở câu "Chọn đúng 2 ngân hàng." với danh sách 1 ngân hàng. Nay web tải lại danh sách 2 ngân hàng (việc để lại của giai đoạn 4) | 3a72ae2 |
+
+Commit 54b53a2 và ca9e711 là test, dữ liệu và sửa test.
+
+### Ruling
+
+- Ruling: dữ liệu nhóm A dựng ở `beforeAll`, dọn ở `afterAll` của từng file, không gắn vào `scripts/e2e-seed.ts`. Tên dài không dấu cách của nhóm A không được có mặt khi `e2e/mobile.spec.ts` đo cuộn ngang các trang quản lý. `scripts/e2e-clean.ts` vẫn dọn được vì cùng tiền tố `ZZE2E `.
+- Ruling: chữ dài sửa một chỗ, `wrap-anywhere` ở khung gốc `src/app/student/layout.tsx`, thay vì sửa từng thẻ. Chữ chỉ ngắt giữa từ khi một từ không vừa dòng; tên có dấu cách vẫn ngắt ở dấu cách.
+- Ruling: câu lỗi chép mgst-app là "Không chép được, bấm chọn rồi copy tay". mgi-bank ghi "Không sao chép được": web dùng chữ "Sao chép", và luật chữ cấm câu giải thích. Mã giới thiệu vẫn là chữ chọn được để chép tay.
+- Ruling: Gửi kiểm tra bị máy chủ trả 400 hoặc 409 thì web tải lại hồ sơ rồi mới hiện câu lỗi. Nộp ảnh bị trả 404 hoặc 409 thì web tải lại hồ sơ. B2 bị trả lỗi ở ô `bankIds` thì web tải lại danh sách như lỗi 409 cũ.
+- Ruling cần chủ dự án quyết: trường chưa có ngân hàng nào (B14) vẫn cho khai B1, rồi hiện "Ngân hàng đã hết lượt trong tháng này". Agent giữ theo ruling giai đoạn 4 (hồ sơ giữ `new`). Câu "hết lượt" sai nghĩa với trường chưa có ngân hàng; chủ dự án chọn chặn B1, đổi câu hay giữ.
+- Ruling cần chủ dự án quyết: ngân hàng chưa cài Hướng dẫn (D8) không có khung ảnh nào, nên học sinh gửi kiểm tra ngân hàng đó không cần ảnh. Agent giữ nguyên vì luật B2 đã chốt không xét khung ảnh. Chủ dự án chọn loại ngân hàng 0 khung khỏi B2 hay giữ.
+- Trường đóng sau khi học sinh mở B1 (B12): web báo "Trường đã đóng." dưới form, không chuyển sang màn Trường đã đóng. Agent giữ, vì học sinh không gửi được gì thêm.
+
+### Chờ
+
+Không có. Agent không sửa file dùng chung nào (`src/components/ui/*`, `src/lib/*`, `src/server/*`, `scripts/e2e-seed.ts`, `scripts/e2e-clean.ts`, `e2e/flows/support.ts`).
+
+### Ca chưa test được
+
+| Ca | Lý do |
+|---|---|
+| Link `/t/<id viết hoa>` khi máy đã có hồ sơ ở đúng trường đó: đọc code thấy web hỏi "Đổi trường" giữa hai tên giống nhau (`decideLink` so chuỗi phân biệt hoa thường) | Không test, không sửa: QR do app sinh luôn viết thường, đường `/T/` viết hoa thì Next trả 404. Chủ dự án quyết nếu cần |
+| Safari trên iPhone: mở HEIC trên máy, nén ảnh, Safari cũ không xuất WebP | Playwright của dự án chỉ chạy Chromium |
+| Nginx: 413 dạng HTML khi body quá 22 MB, giới hạn request theo IP | Dev server không có Nginx; route 413 của app đã test (E9) |
+| Link xem ảnh hết hạn sau 1 giờ khi học sinh ở lâu ở B3 | Phải chờ 1 giờ; web ký lại link mỗi lần học sinh quay lại tab |
+| Nhiều HEIC lớn gửi cùng lúc làm app hết RAM | Cần đo tải thật, ngoài phạm vi e2e |
+| Camera thật quét QR mờ, thiếu sáng | Camera giả chỉ phát khung QR rõ nét |
+| Trình duyệt trong app Zalo thật | Giả lập bằng cách bỏ `navigator.clipboard` (D5) |
+| Mất mạng giữa lúc tải ảnh, tải lại cùng khung | Đã có ở `e2e/student.spec.ts`, không viết lại |
+
+### Kết quả các lệnh
+
+Lần chạy cuối, ngày 2026-11-06. Working tree lúc chạy có việc đang làm dở của nhóm B và nhóm C.
+
+| Lệnh | Kết quả |
+|---|---|
+| `bun run test` | 232 pass, 0 fail |
+| `bun test:db` trên DB tạm `zz_test_edge_a` (đã xoá) | 246 pass, 0 fail |
+| `bun run e2e` toàn bộ, dưới khoá, từ commit fab450a | 172 pass, 7 fail. 6 fail nằm ở `edge-business*` và `edge-config*`, là test của nhóm B và C đang viết. 1 fail là A12 |
+| A12 chạy lại riêng, dưới khoá, 3 lần | 3 pass |
+| `bunx tsc --noEmit` | Sạch |
+| `bun run lint` | 0 lỗi, 3 cảnh báo `<img>`: 2 cảnh báo cũ, 1 cảnh báo ở `e2e/edge-config-users.spec.ts` của nhóm C |
+
+A12 fail ở lượt toàn bộ vì dev server chậm. Lệnh tải lại `/` mất 3,6 giây, rồi `/api/customers/me` chưa trả lời sau 5 giây. Lúc đó nhóm khác đang sửa file nguồn, nên dev server biên dịch lại. Chạy riêng thì A12 qua cả 3 lần, nên agent không sửa test.
