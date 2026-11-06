@@ -18,6 +18,10 @@ describe("tham số URL của trang nghiệp vụ", () => {
     for (const day of ["0001-01-01", "0000-01-01", "1899-12-31"]) expect([day, parseCustomerFilters({ from: day, to: day })]).toMatchObject([day, { from: "", to: "" }]);
     expect(parseVoucherFilters({ from: "1900-01-01", to: "9999-12-31" })).toMatchObject({ from: "1900-01-01", to: "9999-12-31" });
   });
+
+  test("tháng 13, tháng 00, ngày 32 bị bỏ, không ném lỗi", () => {
+    for (const day of ["2026-13-01", "2026-00-10", "2026-01-32", "2026-02-30"]) expect([day, parseCustomerFilters({ from: day, to: day })]).toMatchObject([day, { from: "", to: "" }]);
+  });
 });
 
 describe("tách từ khoá như mgst-app", () => {
