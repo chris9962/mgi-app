@@ -19,7 +19,7 @@ export function BottomNav({ items, menuOpen, onOpenMenu, moreRef }: { items: Men
   const pathname = (usePathname() ?? "/").replace(/^\/admin(?=\/|$)/, "") || "/";
   // transform-gpu ép lớp GPU riêng: không có thì WebKit vẽ sai chỗ phần tử fixed lúc thanh địa chỉ ẩn hiện.
   return (
-    <nav aria-label="Điều hướng nhanh" className="fixed inset-x-0 bottom-0 z-30 hidden border-t border-line bg-sidebar pb-[env(safe-area-inset-bottom,0px)] text-sidebar-ink-2 transform-gpu will-change-transform mobile:flex">
+    <nav aria-label="Điều hướng nhanh" inert={menuOpen} className="fixed inset-x-0 bottom-0 z-30 hidden border-t border-line bg-sidebar pb-[env(safe-area-inset-bottom,0px)] text-sidebar-ink-2 transform-gpu will-change-transform mobile:flex">
       {items.map((item) => {
         const active = pathname === item.href || (!item.exact && pathname.startsWith(item.href + "/"));
         return (

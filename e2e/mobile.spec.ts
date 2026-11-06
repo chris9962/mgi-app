@@ -76,6 +76,26 @@ test("điện thoại: ngăn đóng thì phím Tab không vào link của ngăn"
   expect(inDrawer).toEqual([]);
 });
 
+test("điện thoại: ngăn mở thì Tab và Shift+Tab không ra nội dung bị ngăn che, nội dung rời cây trợ năng", async ({ browser }) => {
+  const page = await loginAs(browser, "zz_e2e_admin", PHONE);
+  await page.goto("/customers");
+  await page.waitForLoadState("networkidle");
+  await bottomNav(page).getByRole("button", { name: "Thêm" }).click();
+  await expect(sidebar(page)).toBeVisible();
+  // Bộ chọn role của Playwright không xét inert; hỏi thẳng cây trợ năng của Chromium.
+  const { nodes } = await (await page.context().newCDPSession(page)).send("Accessibility.getFullAXTree");
+  expect(nodes.filter((n) => !n.ignored && ["main", "banner"].includes(String(n.role?.value)))).toEqual([]);
+  expect(nodes.some((n) => !n.ignored && n.role?.value === "navigation" && n.name?.value === "Điều hướng chính")).toBe(true);
+  const outside = () => page.evaluate(() => (document.activeElement && document.activeElement !== document.body && !document.activeElement.closest("#main-nav") ? document.activeElement.outerHTML.slice(0, 80) : null));
+
+  await page.locator('#main-nav button[aria-controls="account-menu"]').focus();
+  await page.keyboard.press("Tab");
+  expect(await outside()).toBeNull();
+  await page.getByRole("button", { name: "Đóng menu điều hướng" }).focus();
+  await page.keyboard.press("Shift+Tab");
+  expect(await outside()).toBeNull();
+});
+
 test("điện thoại: đóng ngăn bằng Esc hay lớp phủ thì trang cuộn lại được", async ({ browser }) => {
   const page = await loginAs(browser, "zz_e2e_admin", PHONE);
   const more = bottomNav(page).getByRole("button", { name: "Thêm" });
