@@ -85,10 +85,11 @@ export function GuideDialog({ bankId, bankName, onClose }: { bankId: string; ban
       open
       title={`Hướng dẫn mở tài khoản - ${bankName}`}
       onClose={onClose}
+      dismissible={!pending}
       width={600}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>
+          <Button variant="secondary" disabled={pending} onClick={onClose}>
             Huỷ
           </Button>
           <Button onClick={save} disabled={pending || !slots || uploading !== null}>

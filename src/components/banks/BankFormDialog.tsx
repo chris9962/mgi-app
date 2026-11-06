@@ -45,10 +45,11 @@ export function BankFormDialog({ initial, canAssign, onClose }: { initial?: Bank
       open
       title={start.id ? "Sửa ngân hàng" : "Thêm ngân hàng"}
       onClose={onClose}
+      dismissible={!pending}
       width={560}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>
+          <Button variant="secondary" disabled={pending} onClick={onClose}>
             Huỷ
           </Button>
           <Button type="submit" form="bank-form" disabled={pending}>

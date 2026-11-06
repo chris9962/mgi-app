@@ -358,3 +358,47 @@ test("Hướng dẫn: huỷ hộp chọn ảnh mẫu thì hộp Hướng dẫn v
   await page.keyboard.press("Escape");
   await expect(g).toBeHidden();
 });
+
+test("Thêm ngân hàng, Hướng dẫn: đang lưu thì Huỷ bị khoá, không có nút Đóng, nhấn Esc 4 lần không đóng hộp; máy chủ báo lỗi thì câu báo hiện trong hộp, Huỷ đóng được", async ({ page }) => {
+  await apiLogin(page, "zz_e2e_admin");
+  await createBank(page, "ZZCGIUHOP", "ZZE2E Giữ hộp");
+  const cases: { button: string; title: string | RegExp; url: string; submit: string; fill: (d: Locator) => Promise<void> }[] = [
+    {
+      button: "Thêm ngân hàng",
+      title: "Thêm ngân hàng",
+      url: "**/api/admin/banks",
+      submit: "Tạo ngân hàng",
+      fill: async (d) => {
+        await d.getByLabel("Mã ngân hàng").fill("ZZCGIUMOI");
+        await d.getByLabel("Tên ngân hàng").fill("ZZE2E Giữ hộp mới");
+      },
+    },
+    { button: "Hướng dẫn mở tài khoản ZZE2E Giữ hộp", title: /Hướng dẫn mở tài khoản/, url: "**/api/admin/banks/*/guide", submit: "Lưu", fill: (d) => d.getByLabel("Tên ảnh 1").fill("Ảnh một") },
+  ];
+  for (const c of cases) {
+    await open(page, "/banks");
+    // Giữ request ghi tới khi test cho đi; máy chủ giả trả 500 nên dữ liệu không đổi.
+    let release = () => {};
+    const gate = new Promise<void>((r) => (release = r));
+    await page.route(c.url, async (route) => {
+      if (route.request().method() === "GET") return route.continue();
+      await gate;
+      await route.fulfill({ status: 500 });
+    });
+    await page.getByRole("button", { name: c.button, exact: true }).click();
+    const d = page.getByRole("dialog", { name: c.title });
+    await c.fill(d);
+    await d.getByRole("button", { name: c.submit, exact: true }).click();
+    await expect(d.getByRole("button", { name: c.submit, exact: true }), c.button).toBeDisabled();
+    await expect(d.getByRole("button", { name: "Huỷ" }), c.button).toBeDisabled();
+    await expect(d.getByRole("button", { name: "Đóng" }), c.button).toHaveCount(0);
+    for (let i = 0; i < 4; i++) await page.keyboard.press("Escape");
+    await expect(d, c.button).toBeVisible();
+    release();
+    await expect(d.getByRole("alert"), c.button).toHaveText("Không lưu được. Thử lại sau ít phút.");
+    await expect(d.getByRole("button", { name: "Đóng" }), c.button).toBeVisible();
+    await d.getByRole("button", { name: "Huỷ" }).click();
+    await expect(page.getByRole("dialog"), c.button).toHaveCount(0);
+    await page.unroute(c.url);
+  }
+});

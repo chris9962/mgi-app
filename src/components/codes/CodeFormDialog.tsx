@@ -100,10 +100,11 @@ export function CodeFormDialog({ banks, initial, onClose }: { banks: { id: strin
       open
       title={start.id ? "Sửa mã giới thiệu" : "Thêm mã giới thiệu"}
       onClose={onClose}
+      dismissible={!pending}
       width={600}
       footer={
         <>
-          <Button variant="secondary" onClick={onClose}>
+          <Button variant="secondary" disabled={pending} onClick={onClose}>
             Huỷ
           </Button>
           <Button type="submit" form="code-form" disabled={pending || uploading}>

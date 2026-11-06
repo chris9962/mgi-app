@@ -539,3 +539,30 @@ test("Mã: huỷ hộp chọn ảnh QR thì hộp Thêm mã vẫn mở, chữ đ
   await page.keyboard.press("Escape");
   await expect(d).toBeHidden();
 });
+
+test("Thêm mã: đang lưu thì Huỷ bị khoá, không có nút Đóng, nhấn Esc 4 lần không đóng hộp; máy chủ báo lỗi thì câu báo hiện trong hộp, Huỷ đóng được", async ({ page }) => {
+  await apiLogin(page, "zz_e2e_admin");
+  await createBank(page, "ZZCMAGIU", "ZZE2E Mã giữ hộp", [], "0");
+  await open(page, "/banks/codes");
+  // Giữ request ghi tới khi test cho đi; máy chủ giả trả 500 nên không tạo mã.
+  let release = () => {};
+  const gate = new Promise<void>((r) => (release = r));
+  await page.route("**/api/admin/referral-codes", async (route) => {
+    await gate;
+    await route.fulfill({ status: 500 });
+  });
+  const d = await openAdd(page);
+  await d.getByLabel("Tên hiển thị").fill("ZZE2E Mã giữ hộp");
+  await d.getByLabel("Mã text (Mã giới thiệu)").fill("ZZC-GIU");
+  await d.getByRole("button", { name: "Tạo mã" }).click();
+  await expect(d.getByRole("button", { name: "Tạo mã" })).toBeDisabled();
+  await expect(d.getByRole("button", { name: "Huỷ" })).toBeDisabled();
+  await expect(d.getByRole("button", { name: "Đóng" })).toHaveCount(0);
+  for (let i = 0; i < 4; i++) await page.keyboard.press("Escape");
+  await expect(d).toBeVisible();
+  release();
+  await expect(d.getByRole("alert")).toHaveText("Không lưu được. Thử lại sau ít phút.");
+  await expect(d.getByRole("button", { name: "Đóng" })).toBeVisible();
+  await d.getByRole("button", { name: "Huỷ" }).click();
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+});
