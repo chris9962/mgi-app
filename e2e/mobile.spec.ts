@@ -228,6 +228,22 @@ test("điện thoại: hộp thoại nằm trọn bề ngang màn hình, nút g�
   await expect(submit).toBeInViewport();
 });
 
+test("điện thoại: hộp thoại mở thì trang phía sau không cuộn", async ({ browser }) => {
+  const page = await loginAs(browser, "zz_e2e_admin", PHONE);
+  await page.goto("/banks/codes");
+  await page.waitForLoadState("networkidle");
+  await page.getByRole("button", { name: "Thêm mã" }).click();
+  await expect(page.getByRole("dialog", { name: "Thêm mã giới thiệu" })).toBeVisible();
+  expect(await bodyOverflow(page)).toBe("hidden");
+  await page.mouse.move(8, 400);
+  await page.mouse.wheel(0, 600);
+  await page.waitForTimeout(300);
+  expect(await page.evaluate(() => scrollY)).toBe(0);
+  await page.keyboard.press("Escape");
+  await expect(page.getByRole("dialog")).toHaveCount(0);
+  expect(await bodyOverflow(page)).toBe("visible");
+});
+
 test("máy tính 1366x768: không có thanh đáy, sidebar hiện sẵn", async ({ browser }) => {
   const page = await loginAs(browser, "zz_e2e_admin", DESKTOP);
   await expect(bottomNav(page)).toBeHidden();
