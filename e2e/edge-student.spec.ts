@@ -132,6 +132,33 @@ test.describe("A. Mở link và chọn trường", () => {
     await expect(page.getByRole("heading", { name: "Thông tin" })).toBeVisible();
   });
 
+  test("A19 bấm Thử lại khi mạng vẫn lỗi: nút ghi Đang thử lại và không gửi thêm request trong lúc chờ, lỗi thì về Thử lại, tiêu điểm giữ ở nút", async ({ page }) => {
+    await onDevice(page, device(SCHOOL.photo));
+    let calls = 0;
+    let gate = Promise.resolve();
+    await page.route("**/api/schools/**", async (route) => {
+      calls += 1;
+      await gate;
+      await route.abort("internetdisconnected");
+    });
+    await page.goto("/");
+    await expect(page.getByRole("heading", { level: 1, name: "Không tải được" })).toBeVisible();
+    let release = () => {};
+    gate = new Promise<void>((resolve) => (release = resolve));
+    await page.getByRole("button", { name: "Thử lại" }).click();
+    const busy = page.getByRole("button", { name: "Đang thử lại" });
+    await expect(busy).toHaveAttribute("aria-disabled", "true");
+    await busy.click({ force: true });
+    expect(calls).toBe(2);
+    release();
+    const retry = page.getByRole("button", { name: "Thử lại", exact: true });
+    await expect(retry).toBeVisible();
+    await expect(retry).not.toHaveAttribute("aria-disabled");
+    await expect(retry).toBeFocused();
+    await expect(page.getByText(NETWORK)).toBeVisible();
+    expect(calls).toBe(2);
+  });
+
   test("A17 mất mạng lần đầu mở link trường: Thử lại vào B1 của trường đó; máy có hồ sơ trường khác thì Thử lại hỏi đổi trường", async ({ page, request }) => {
     let calls = 0;
     await page.route("**/api/schools/**", (r) => (calls++ === 0 ? r.abort("internetdisconnected") : r.continue()));

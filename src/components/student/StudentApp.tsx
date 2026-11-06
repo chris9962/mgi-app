@@ -72,6 +72,7 @@ async function resolveScreen(linkId?: string): Promise<Screen> {
 export function StudentApp({ linkId }: { linkId?: string }) {
   const [screen, setScreen] = useState<Screen>({ kind: "loading" });
   const [scanning, setScanning] = useState(false);
+  const [retrying, setRetrying] = useState(false);
   const loads = useRef(0);
 
   // Đồng bộ với localStorage và máy chủ lúc mở web: máy giữ trường và token, máy chủ giữ hồ sơ.
@@ -113,8 +114,19 @@ export function StudentApp({ linkId }: { linkId?: string }) {
         <>
           <EndBlock main title="Không tải được" hint={screen.message} />
           <Bottom>
-            <Button large block onClick={() => go(screen.link)}>
-              Thử lại
+            {/* Như ErrorState của mgst-app: aria-disabled thay disabled để tiêu điểm không rời nút giữa lúc chờ. */}
+            <Button
+              large
+              block
+              aria-disabled={retrying || undefined}
+              onClick={async () => {
+                if (retrying) return;
+                setRetrying(true);
+                await go(screen.link);
+                setRetrying(false);
+              }}
+            >
+              {retrying ? "Đang thử lại" : "Thử lại"}
             </Button>
           </Bottom>
         </>
