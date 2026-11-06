@@ -107,6 +107,13 @@
 @custom-variant mobile (@media (max-width: 900px));
 @custom-variant narrow (@media (max-width: 600px));
 
+/* Ngăn trượt mở thì trang phía sau đứng yên; áp theo khổ màn nên xoay qua 900 px là hết khoá. */
+@media (max-width: 900px) {
+  body:has(#main-nav[data-open]) {
+    overflow: hidden;
+  }
+}
+
 /* Bảng rộng cuộn ngang trong khung của nó, cả trang không trượt ngang (chép .table-scroll của mgst-app). */
 @utility table-scroll {
   /* Phần tử absolute trong bảng (sr-only, thông báo đã chép) neo vào khung cuộn; không có thì nó neo vào tài liệu và kéo trang rộng ra. */

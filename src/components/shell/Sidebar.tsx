@@ -53,7 +53,7 @@ export function Sidebar({ groups, fullName, title, mobileOpen = false, onMobileC
     };
   }, [menuOpen]);
 
-  // Dưới 900 px sidebar là ngăn trượt: mở thì focus vào ngăn, nghe Esc và khoá cuộn trang phía sau.
+  // Ngăn trượt mở thì focus vào ngăn và nghe Esc; khoá cuộn trang nằm ở globals.css, chỉ áp dưới 900 px.
   useEffect(() => {
     if (!mobileOpen) return;
     closeButton.current?.focus();
@@ -61,11 +61,7 @@ export function Sidebar({ groups, fullName, title, mobileOpen = false, onMobileC
       if (e.key === "Escape" && !e.defaultPrevented) onMobileClose?.();
     };
     document.addEventListener("keydown", onKey);
-    document.body.style.overflow = "hidden";
-    return () => {
-      document.removeEventListener("keydown", onKey);
-      document.body.style.overflow = "";
-    };
+    return () => document.removeEventListener("keydown", onKey);
   }, [mobileOpen, onMobileClose]);
 
   function toggleTheme() {
@@ -85,6 +81,7 @@ export function Sidebar({ groups, fullName, title, mobileOpen = false, onMobileC
       {mobileOpen && <div aria-hidden className="fixed inset-0 z-40 hidden bg-black/40 mobile:block" onClick={onMobileClose} />}
       <nav
         id="main-nav"
+        data-open={mobileOpen || undefined}
         aria-label="Điều hướng chính"
         className={clsx(
           "flex w-[248px] flex-none flex-col border-r border-line bg-sidebar text-sidebar-ink",

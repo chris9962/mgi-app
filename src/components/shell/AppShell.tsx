@@ -1,12 +1,15 @@
 "use client";
 
 import { usePathname } from "next/navigation";
-import { useCallback, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useRef, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import { BottomNav } from "./BottomNav";
 import { bottomNavItems } from "./bottomNavItems";
 import type { MenuGroup } from "./menu";
 import { Sidebar } from "./Sidebar";
+
+// Khớp variant mobile trong globals.css.
+const MOBILE = "(max-width: 900px)";
 
 export function AppShell({ groups, fullName, title, children }: { groups: MenuGroup[]; fullName: string; title: string; children: ReactNode }) {
   const pathname = usePathname();
@@ -14,6 +17,16 @@ export function AppShell({ groups, fullName, title, children }: { groups: MenuGr
   const [openedAt, setOpenedAt] = useState<string | null>(null);
   const menuOpen = openedAt !== null && openedAt === pathname;
   const more = useRef<HTMLButtonElement>(null);
+
+  // Màn rộng qua 900 px thì sidebar thành cột cố định: bỏ trạng thái ngăn, không thì nội dung còn inert và Esc còn đòi focus nút Thêm đã ẩn.
+  useEffect(() => {
+    const query = matchMedia(MOBILE);
+    const onChange = () => {
+      if (!query.matches) setOpenedAt(null);
+    };
+    query.addEventListener("change", onChange);
+    return () => query.removeEventListener("change", onChange);
+  }, []);
 
   // Giữ nguyên hàm qua các lần render: effect của Sidebar phụ thuộc hàm này, chạy lại là focus nhảy về nút Đóng.
   // flushSync: thanh đáy còn inert tới khi React vẽ lại, focus trước đó thì trình duyệt bỏ qua.

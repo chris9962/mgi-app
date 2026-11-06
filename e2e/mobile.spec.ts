@@ -124,6 +124,22 @@ test("điện thoại: bấm Quay lại của trình duyệt khi ngăn đang m�
   expect(await bodyOverflow(page)).toBe("visible");
 });
 
+test("ngăn đang mở mà màn rộng quá 900 px thì ngăn đóng, trang hết khoá cuộn, Esc không cướp focus", async ({ browser }) => {
+  const page = await loginAs(browser, "zz_e2e_admin", PHONE);
+  await page.goto("/customers");
+  await page.waitForLoadState("networkidle");
+  await bottomNav(page).getByRole("button", { name: "Thêm" }).click();
+  await expect(sidebar(page)).toBeVisible();
+  await page.setViewportSize({ width: 1366, height: 768 });
+  await expect.poll(() => bodyOverflow(page)).toBe("visible");
+  const search = page.getByRole("search").getByRole("textbox");
+  await search.focus();
+  await page.keyboard.press("Escape");
+  await expect(search).toBeFocused();
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(sidebar(page)).toBeHidden();
+});
+
 test("điện thoại: đóng ngăn bằng Esc hay lớp phủ thì trang cuộn lại được", async ({ browser }) => {
   const page = await loginAs(browser, "zz_e2e_admin", PHONE);
   const more = bottomNav(page).getByRole("button", { name: "Thêm" });
