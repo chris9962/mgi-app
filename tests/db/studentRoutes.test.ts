@@ -95,6 +95,11 @@ describe("route nộp ảnh nhận multipart", () => {
     expect([badSlot.status, (await badSlot.json()).field]).toEqual([400, "slotId"]);
   });
 
+  test("file 0 byte thì 400 báo file rỗng như mgst-app, không báo Chọn ảnh", async () => {
+    const res = await photosRoute(photoReq(form({ customerBankId: UUID, slotId: UUID, file: new Blob([]) }), `Bearer ${token}`));
+    expect([res.status, await res.json()]).toEqual([400, { message: "File rỗng.", field: "file" }]);
+  });
+
   test("body không phải multipart thì 400", async () => {
     const res = await photosRoute(new Request(`${SITE}/api/customers/me/photos`, { method: "POST", headers: { Origin: SITE, Authorization: `Bearer ${token}`, "Content-Type": "application/json" }, body: "{}" }));
     expect(res.status).toBe(400);
