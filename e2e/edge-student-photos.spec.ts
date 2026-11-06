@@ -3,10 +3,10 @@ import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import sharp from "sharp";
 import { BANK, SCHOOL, SLOT } from "../scripts/e2e-data-student";
-import { PHONE, PHOTO, apiCreate, apiPhotos, apiPick, device, info, onDevice, useEdgeData, type ApiStudent } from "./edge-student-support";
+import { PHONE, PHOTO, apiCreate, apiPhotos, apiPick, device, info, onDevice, withEdgeData, type ApiStudent } from "./edge-student-support";
 
 test.use(PHONE);
-useEdgeData();
+withEdgeData();
 
 const MAIN = "Ảnh màn hình chính";
 const TRANSFER = "Ảnh chuyển khoản";

@@ -3,9 +3,9 @@ import { readFileSync } from "node:fs";
 import { crc32, deflateSync } from "node:zlib";
 import { expect, test, type APIRequestContext } from "@playwright/test";
 import { BANK, SCHOOL, SLOT } from "../scripts/e2e-data-student";
-import { ORIGIN, STUDENT, apiCreate, apiPhotos, apiPick, info, photoFile, useEdgeData, type ApiStudent } from "./edge-student-support";
+import { ORIGIN, STUDENT, apiCreate, apiPhotos, apiPick, info, photoFile, withEdgeData, type ApiStudent } from "./edge-student-support";
 
-useEdgeData();
+withEdgeData();
 
 const UNKNOWN = "e2e0a000-0000-4000-8000-0000000fffff";
 // Câu lỗi tiếng Anh mặc định của zod hoặc của Next không được lọt tới học sinh.

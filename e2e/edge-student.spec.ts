@@ -17,12 +17,12 @@ import {
   fromDevice,
   info,
   onDevice,
-  useEdgeData,
+  withEdgeData,
   watchDialogs,
 } from "./edge-student-support";
 
 test.use(PHONE);
-useEdgeData();
+withEdgeData();
 
 const UNKNOWN = "e2e0a000-0000-4000-8000-0000000fffff";
 const next = (page: import("@playwright/test").Page) => page.getByRole("button", { name: "Tiếp tục" });

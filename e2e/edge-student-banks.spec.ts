@@ -13,13 +13,13 @@ import {
   expectNoSideScroll,
   info,
   onDevice,
-  useEdgeData,
+  withEdgeData,
   watchDialogs,
   type ApiStudent,
 } from "./edge-student-support";
 
 test.use(PHONE);
-useEdgeData();
+withEdgeData();
 
 const next = (page: Page) => page.getByRole("button", { name: "Tiếp tục" });
 const alertIn = (page: Page) => page.getByRole("main").getByRole("alert");

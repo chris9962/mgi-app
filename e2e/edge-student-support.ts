@@ -15,7 +15,7 @@ export const PHONE = { baseURL: STUDENT, viewport: { width: 390, height: 844 }, 
 export const dbOp = (...args: string[]) => execFileSync("bun", ["--env-file=.env.local", "scripts/e2e-seed-student.ts", ...args], { encoding: "utf8", timeout: 60_000 });
 
 // Dữ liệu tên rất dài chỉ sống trong lúc file chạy: trang quản lý của nhóm khác không thấy nó khi đo cuộn ngang.
-export function useEdgeData() {
+export function withEdgeData() {
   test.beforeAll(() => void dbOp("seed"));
   test.afterAll(() => void dbOp("clean"));
 }

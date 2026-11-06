@@ -1,10 +1,10 @@
 import { expect, test, type Page } from "@playwright/test";
 import { BANK, NAME, SCHOOL } from "../scripts/e2e-data-student";
-import { PHONE, apiCreate, apiPhotos, apiPick, apiSubmit, dbOp, device, expectInsideScreen, expectNoSideScroll, info, onDevice, useEdgeData, type ApiStudent } from "./edge-student-support";
+import { PHONE, apiCreate, apiPhotos, apiPick, apiSubmit, dbOp, device, expectInsideScreen, expectNoSideScroll, info, onDevice, withEdgeData, type ApiStudent } from "./edge-student-support";
 
 // Máy đặt múi giờ khác Việt Nam: màn kết quả vẫn phải hiện giờ Việt Nam.
 test.use({ ...PHONE, timezoneId: "America/New_York" });
-useEdgeData();
+withEdgeData();
 
 const LONG_NAME = "NguyễnThịMinhKhai".repeat(6).slice(0, 100);
 const LONG_CLASS = "12A1CHUYENTOANTINHOC";
@@ -40,7 +40,7 @@ test("F1, F2, F4, F5 họ tên 100 ký tự không dấu cách, tên ngân hàng
 });
 
 test("F3, F6, F7 có voucher, một ngân hàng Đạt một Không đạt: khối App PVI có QR và nút Mở app PVI, không có chữ voucher, câu không đạt xuống dòng", async ({ page, request }) => {
-  const s = await submitted(request, "Phạm Có Voucher");
+  const s = await submitted(request, "Phạm Có Quà");
   dbOp("voucher", s.id);
   dbOp("review", s.id, "passed,failed");
   const { pviAppUrl } = await s.me();

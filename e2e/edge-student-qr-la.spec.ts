@@ -1,8 +1,8 @@
 import { expect, test } from "@playwright/test";
-import { PHONE, cameraOptions, qrCamera, useEdgeData } from "./edge-student-support";
+import { PHONE, cameraOptions, qrCamera, withEdgeData } from "./edge-student-support";
 
 test.use({ ...PHONE, ...cameraOptions(qrCamera("https://zalo.me/g/khong-phai-link-truong")) });
-useEdgeData();
+withEdgeData();
 
 test("A16 camera thấy QR không phải link trường: báo không phải của trường, không chuyển màn", async ({ page }) => {
   await page.goto("/");
