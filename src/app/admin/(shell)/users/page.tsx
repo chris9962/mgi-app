@@ -8,7 +8,7 @@ import { bankText, formDefaults, permissionText, statusTag } from "@/components/
 import { ROLE_LABEL } from "@/lib/types";
 import { readParam, type Params } from "@/lib/urlParams";
 import { requirePage } from "@/server/auth/current";
-import { SEARCH_MAX_LENGTH } from "@/server/search";
+import { SEARCH_MAX_LENGTH } from "@/lib/search";
 import { listUsers, PAGE_SIZE } from "@/server/users";
 
 export const metadata = { title: "Tài khoản" };

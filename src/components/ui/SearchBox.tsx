@@ -1,5 +1,5 @@
 import { Search } from "lucide-react";
-import { SEARCH_MAX_LENGTH } from "@/server/search";
+import { SEARCH_MAX_LENGTH } from "@/lib/search";
 
 // Ô tìm gửi bằng form GET: kết quả lọc ở máy chủ, giữ được trên URL.
 export function SearchBox({ action, placeholder, defaultValue, hidden = {} }: { action: string; placeholder: string; defaultValue: string; hidden?: Record<string, string> }) {

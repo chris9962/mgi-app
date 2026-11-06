@@ -3,7 +3,7 @@
 import { useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
 import { inputClass } from "@/components/ui/Field";
-import { SEARCH_MAX_LENGTH } from "@/server/search";
+import { SEARCH_MAX_LENGTH } from "@/lib/search";
 
 type Filters = { q: string; bankId: string; hideStopped: boolean };
 

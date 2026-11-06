@@ -1,11 +1,8 @@
 import { and, like, or, sql, type AnyColumn, type SQL } from "drizzle-orm";
+import { searchTerms } from "@/lib/search";
 import { plain } from "@/lib/text";
 
-export const SEARCH_MAX_LENGTH = 100;
-export const SEARCH_MAX_TERMS = 8;
-
-// Như mgst-app: cắt trần ở máy chủ vì URL gõ tay không qua maxLength của ô tìm, mỗi từ thành một điều kiện.
-export const searchTerms = (q: string): string[] => plain(q.slice(0, SEARCH_MAX_LENGTH)).trim().split(/\s+/).filter(Boolean).slice(0, SEARCH_MAX_TERMS);
+export { SEARCH_MAX_LENGTH, SEARCH_MAX_TERMS, searchTerms } from "@/lib/search";
 
 // Postgres coi % và _ trong LIKE là ký tự đại diện; thoát bằng \ (ký tự thoát mặc định) để tìm đúng chữ đã gõ.
 export const escapeLike = (s: string) => s.replace(/[\\%_]/g, (c) => `\\${c}`);

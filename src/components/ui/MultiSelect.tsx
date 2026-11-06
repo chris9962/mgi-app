@@ -3,7 +3,7 @@
 import { clsx } from "clsx";
 import { Search, X } from "lucide-react";
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
-import { SEARCH_MAX_LENGTH } from "@/server/search";
+import { SEARCH_MAX_LENGTH } from "@/lib/search";
 import { inputClass } from "./Field";
 
 export type Option = { id: string; label: string };
