@@ -107,7 +107,8 @@ test("API: ký tự NUL, ký tự điều khiển, nửa cặp surrogate ở m�
     let node = body as Record<string, unknown>;
     for (const k of keys.slice(0, -1)) node = node[k] as Record<string, unknown>;
     const last = keys.at(-1)!;
-    node[last] = `${String(node[last] ?? "")}${ch}x`;
+    // Ô trống thì có chữ đứng trước ký tự lạ: tab ở đầu ô bị cắt như dấu cách, ô còn lại chữ hợp lệ.
+    node[last] = `${String(node[last] || "a")}${ch}x`;
     return body;
   };
   try {
