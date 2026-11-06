@@ -1,5 +1,6 @@
 import { z } from "zod";
 import { removeDiacritics } from "./text";
+import { CONTROL_CHAR_MESSAGE, noControlChar } from "./controlChars";
 
 // Loại tin duy nhất hiện có; DB chỉ nhận giá trị này (check sms_messages_kind).
 export const SMS_KIND_VOUCHER = "voucher";
@@ -45,6 +46,7 @@ const url = z
   .trim()
   .refine((v) => v === "" || /^https?:\/\/\S/i.test(v), { message: "Link phải bắt đầu bằng http:// hoặc https://", abort: true })
   .refine((v) => !/\s/.test(v), { message: "Link không được có dấu cách", abort: true })
+  .refine(noControlChar, { message: CONTROL_CHAR_MESSAGE, abort: true })
   .max(URL_MAX, `Link tối đa ${URL_MAX} ký tự`);
 
 // Biến gõ sai như {HOTEN} không được thay, phụ huynh nhận nguyên chữ {HOTEN}: chặn từ lúc lưu mẫu.

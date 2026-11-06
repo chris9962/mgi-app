@@ -1,4 +1,5 @@
 import { z } from "zod";
+import { CONTROL_CHAR_MESSAGE, noControlChar } from "./controlChars";
 
 // Không đặt luật độ dài như mgst-app: nhân viên gõ trên điện thoại, mỗi luật thêm một cuộc gọi hỏi hỗ trợ.
 export const PasswordForm = z
@@ -11,7 +12,7 @@ export const PasswordForm = z
 export type PasswordFormValues = z.output<typeof PasswordForm>;
 
 export const InfoForm = z.object({
-  fullName: z.string().trim().min(1, "Nhập họ tên"),
+  fullName: z.string().trim().min(1, "Nhập họ tên").refine(noControlChar, CONTROL_CHAR_MESSAGE),
   phone: z
     .string()
     .transform((v) => v.replace(/[\s.]/g, "") || null)

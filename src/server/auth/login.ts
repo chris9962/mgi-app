@@ -3,6 +3,7 @@ import { db } from "../db/client";
 import { users } from "../db/schema";
 import { verifyPassword } from "./password";
 import { LOGIN_LOCK_MINUTES, LOGIN_MAX_ATTEMPTS } from "@/lib/types";
+import { noControlChar } from "@/lib/controlChars";
 
 export type LoginResult =
   | { ok: true; userId: string; code?: undefined; message?: undefined }
@@ -71,6 +72,8 @@ export async function checkPasswordWithLock(account: { id: string; passwordHash:
 
 export async function attemptLogin(rawUsername: string, password: string): Promise<LoginResult> {
   const username = rawUsername.trim().toLowerCase();
+  // Tên có ký tự điều khiển không thể có thật, và NUL làm Postgres báo lỗi 500: không hỏi DB, báo như tên không có thật.
+  if (!noControlChar(username)) return phantomAttempt(username, password);
   const [account] = await db.select().from(users).where(eq(users.username, username));
   if (!account || !account.active) return phantomAttempt(username, password);
   const result = await checkPasswordWithLock(account, password);

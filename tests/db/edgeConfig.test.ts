@@ -8,6 +8,7 @@ import { createCode, listCodes, updateCode } from "../../src/server/referralCode
 import { createSchool, listSchools, searchSchoolOptions, setSchoolActive } from "../../src/server/schools";
 import { createUser, listUsers, resetPassword, setActive, updateUser } from "../../src/server/users";
 import { SESSION_COOKIE, createSession } from "../../src/server/auth/session";
+import { attemptLogin } from "../../src/server/auth/login";
 import { GET as schoolExportRoute } from "../../src/app/api/admin/schools/export/route";
 import { GET as schoolOptionsRoute } from "../../src/app/api/admin/schools/options/route";
 import { GET as managerOptionsRoute } from "../../src/app/api/admin/users/options/route";
@@ -95,6 +96,12 @@ describe("ca biên cấu hình: tài khoản", () => {
     expect(await updateUser(manager, admin.id, userForm("edge_admin", { role: "admin" }))).toMatchObject({ ok: false, status: 403 });
     expect(await createUser(manager, userForm("edge_new_admin", { role: "admin" }))).toMatchObject({ ok: false, status: 403 });
     expect(await resetPassword(admin, admin.id)).toMatchObject({ ok: false, status: 400 });
+  });
+
+  test("đăng nhập với tên có NUL hay ký tự điều khiển báo sai như tên không có thật, không lỗi", async () => {
+    for (const username of [`${TEST_PREFIX}edge_admin\u0000`, "\u0000", `${TEST_PREFIX}edge\u0001admin`]) {
+      expect([JSON.stringify(username), await attemptLogin(username, "x")]).toEqual([JSON.stringify(username), expect.objectContaining({ ok: false, code: "bad_credentials" })]);
+    }
   });
 
   test("SĐT có dấu cách, dấu chấm lưu thành 10 số liền", async () => {
