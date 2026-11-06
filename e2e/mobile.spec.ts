@@ -112,6 +112,18 @@ test("điện thoại: menu tài khoản mở trong ngăn thì Esc đầu chỉ 
   await expect(more).toBeFocused();
 });
 
+test("điện thoại: bấm Quay lại của trình duyệt khi ngăn đang mở thì ngăn đóng, trang hết khoá cuộn", async ({ browser }) => {
+  const page = await loginAs(browser, "zz_e2e_admin", PHONE);
+  await bottomNav(page).getByRole("link", { name: "Hồ sơ học sinh" }).click();
+  await expect(page).toHaveURL(/\/customers$/);
+  await bottomNav(page).getByRole("button", { name: "Thêm" }).click();
+  await expect(sidebar(page)).toBeVisible();
+  await page.goBack();
+  await expect(page).toHaveURL(/\/users$/);
+  await expect(sidebar(page)).toBeHidden();
+  expect(await bodyOverflow(page)).toBe("visible");
+});
+
 test("điện thoại: đóng ngăn bằng Esc hay lớp phủ thì trang cuộn lại được", async ({ browser }) => {
   const page = await loginAs(browser, "zz_e2e_admin", PHONE);
   const more = bottomNav(page).getByRole("button", { name: "Thêm" });

@@ -1,5 +1,6 @@
 "use client";
 
+import { usePathname } from "next/navigation";
 import { useCallback, useRef, useState, type ReactNode } from "react";
 import { flushSync } from "react-dom";
 import { BottomNav } from "./BottomNav";
@@ -8,13 +9,16 @@ import type { MenuGroup } from "./menu";
 import { Sidebar } from "./Sidebar";
 
 export function AppShell({ groups, fullName, title, children }: { groups: MenuGroup[]; fullName: string; title: string; children: ReactNode }) {
-  const [menuOpen, setMenuOpen] = useState(false);
+  const pathname = usePathname();
+  // Ngăn chỉ mở trên trang lúc bấm Thêm: chuyển trang kiểu nào (cả nút Quay lại) cũng đóng, không cần effect.
+  const [openedAt, setOpenedAt] = useState<string | null>(null);
+  const menuOpen = openedAt !== null && openedAt === pathname;
   const more = useRef<HTMLButtonElement>(null);
 
   // Giữ nguyên hàm qua các lần render: effect của Sidebar phụ thuộc hàm này, chạy lại là focus nhảy về nút Đóng.
   // flushSync: thanh đáy còn inert tới khi React vẽ lại, focus trước đó thì trình duyệt bỏ qua.
   const closeMenu = useCallback(() => {
-    flushSync(() => setMenuOpen(false));
+    flushSync(() => setOpenedAt(null));
     more.current?.focus();
   }, []);
 
@@ -27,7 +31,7 @@ export function AppShell({ groups, fullName, title, children }: { groups: MenuGr
       <div className="flex min-w-0 flex-1 flex-col mobile:pb-[calc(52px+env(safe-area-inset-bottom,0px))] mobile:[&>main]:p-4" inert={menuOpen}>
         {children}
       </div>
-      <BottomNav items={bottomNavItems(groups)} menuOpen={menuOpen} onOpenMenu={() => setMenuOpen(true)} moreRef={more} />
+      <BottomNav items={bottomNavItems(groups)} menuOpen={menuOpen} onOpenMenu={() => setOpenedAt(pathname)} moreRef={more} />
     </div>
   );
 }
