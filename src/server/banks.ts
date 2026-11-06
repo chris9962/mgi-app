@@ -25,6 +25,7 @@ export type GuideSlotRow = { id: string; name: string; sampleKey: string | null;
 type Fail = { ok: false; message: string; field?: string; status: 400 | 403 | 404 | 409 };
 const fail = (message: string, status: Fail["status"], field?: string): Fail => ({ ok: false, message, status, field });
 const CODE_TAKEN = fail("Mã ngân hàng đã có.", 409, "code");
+const GUIDE_CHANGED = fail("Hướng dẫn đã có người sửa. Mở lại để xem bản mới.", 409);
 const codeRace = (e: unknown): Fail => {
   if (isUniqueViolation(e, "banks_code_unique")) return CODE_TAKEN;
   throw e;
@@ -140,6 +141,9 @@ export async function saveGuide(actor: SessionUser, bankId: string, values: Guid
   const current = await getGuide(bankId);
   if (!current) return fail("Không tìm thấy ngân hàng.", 404);
   const currentIds = new Set(current.slots.map((s) => s.id));
+  // Bản cũ ở tab khác không còn khung vừa thêm: lưu đè thì khung đó bị bỏ mà không ai biết.
+  const seen = new Set(values.seenSlotIds);
+  if (seen.size !== currentIds.size || [...currentIds].some((id) => !seen.has(id))) return GUIDE_CHANGED;
   if (values.slots.some((s) => s.id && !currentIds.has(s.id))) return fail("Khung ảnh không thuộc ngân hàng này.", 400, "slots");
   await db.transaction(async (tx) => {
     await tx.update(banks).set({ guide: values.steps }).where(eq(banks.id, bankId));

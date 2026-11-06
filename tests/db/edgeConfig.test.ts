@@ -72,7 +72,19 @@ describe("ca biên cấu hình: dữ liệu đã đổi hoặc không có", () =
 
   test("hướng dẫn của ngân hàng không có: đọc ra null, lưu trả 404", async () => {
     expect(await getGuide(MISSING)).toBeNull();
-    expect(await saveGuide(admin, MISSING, GuideForm.parse({ steps: [], slots: [{ name: "A", sampleKey: null, checkName: false, checkCode: false }] }))).toMatchObject({ ok: false, status: 404 });
+    expect(await saveGuide(admin, MISSING, GuideForm.parse({ steps: [], slots: [{ name: "A", sampleKey: null, checkName: false, checkCode: false }], seenSlotIds: [] }))).toMatchObject({ ok: false, status: 404 });
+  });
+
+  test("hai tab sửa hướng dẫn: tab 1 thêm khung, tab 2 lưu bản cũ thì báo hướng dẫn đã đổi, khung tab 1 vừa thêm vẫn còn", async () => {
+    const bank = await createBank(admin, bankForm("ZZTHAITAB", "Hai tab hướng dẫn"));
+    if (!bank.ok) throw new Error(bank.message);
+    const slot = (name: string, id?: string) => ({ ...(id ? { id } : {}), name, sampleKey: null, checkName: false, checkCode: false });
+    const save = (slots: object[], seenSlotIds: string[]) => saveGuide(admin, bank.id, GuideForm.parse({ steps: ["Tải app"], slots, seenSlotIds }));
+    expect((await save([slot("Một")], [])).ok).toBe(true);
+    const seen = (await getGuide(bank.id))!.slots.map((s) => s.id);
+    expect((await save([slot("Một", seen[0]), slot("Hai")], seen)).ok).toBe(true);
+    expect(await save([slot("Một sửa", seen[0])], seen)).toEqual({ ok: false, status: 409, message: "Hướng dẫn đã có người sửa. Mở lại để xem bản mới." });
+    expect((await getGuide(bank.id))!.slots.map((s) => s.name)).toEqual(["Một", "Hai"]);
   });
 
   test("mã với ngân hàng không có trả 404 ở ô ngân hàng; trường không có, trường đã đóng bị từ chối khi gắn thêm, trường đã gắn rồi mới đóng vẫn giữ", async () => {

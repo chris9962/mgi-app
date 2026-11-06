@@ -53,12 +53,12 @@ describe("ngân hàng", () => {
   test("bỏ khung ảnh thì ghi removed_at, không xoá dòng", async () => {
     const bank = await createBank(manager, form("ZZTG", "G"));
     if (!bank.ok) throw new Error(bank.message);
-    const g = (slots: object[]) => GuideForm.parse({ steps: ["Tải app", "Mở tài khoản"], slots });
+    const g = (slots: object[], seenSlotIds: string[] = []) => GuideForm.parse({ steps: ["Tải app", "Mở tài khoản"], slots, seenSlotIds });
     expect((await saveGuide(manager, bank.id, g([{ name: "Ảnh màn hình chính", sampleKey: null, checkName: true, checkCode: true }, { name: "Ảnh chuyển khoản", sampleKey: null, checkName: true, checkCode: false }]))).ok).toBe(true);
     const first = (await getGuide(bank.id))!;
     expect(first.steps).toEqual(["Tải app", "Mở tài khoản"]);
     expect(first.slots.map((s) => s.name)).toEqual(["Ảnh màn hình chính", "Ảnh chuyển khoản"]);
-    expect((await saveGuide(manager, bank.id, g([{ ...first.slots[0], name: "Màn hình chính" }]))).ok).toBe(true);
+    expect((await saveGuide(manager, bank.id, g([{ ...first.slots[0], name: "Màn hình chính" }], first.slots.map((s) => s.id)))).ok).toBe(true);
     const after = (await getGuide(bank.id))!;
     expect(after.slots.map((s) => s.name)).toEqual(["Màn hình chính"]);
     const rows = await db.select().from(bankPhotoSlots).where(eq(bankPhotoSlots.bankId, bank.id));
@@ -71,9 +71,9 @@ describe("ngân hàng", () => {
     const a = await createBank(manager, form("ZZTH", "H"));
     const b = await createBank(manager, form("ZZTI", "I"));
     if (!a.ok || !b.ok) throw new Error("tạo ngân hàng lỗi");
-    await saveGuide(manager, a.id, GuideForm.parse({ steps: [], slots: [{ name: "A1", sampleKey: null, checkName: false, checkCode: false }] }));
+    await saveGuide(manager, a.id, GuideForm.parse({ steps: [], slots: [{ name: "A1", sampleKey: null, checkName: false, checkCode: false }], seenSlotIds: [] }));
     const slotOfA = (await getGuide(a.id))!.slots[0];
-    const r = await saveGuide(manager, b.id, GuideForm.parse({ steps: [], slots: [{ ...slotOfA }] }));
+    const r = await saveGuide(manager, b.id, GuideForm.parse({ steps: [], slots: [{ ...slotOfA }], seenSlotIds: [] }));
     expect(r.ok).toBe(false);
   });
 

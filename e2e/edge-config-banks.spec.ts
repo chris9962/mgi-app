@@ -3,7 +3,7 @@ import { api, apiLogin, asUser, createBank, createUser, expectDialogFits, LONG_W
 
 const escape = (s: string) => s.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 const rowOf = (page: Page, name: string) => page.getByRole("row", { name: new RegExp(escape(name)) });
-const guideBody = (steps: string[], slots: { id?: string; name: string }[]) => ({ steps, slots: slots.map((s) => ({ ...s, sampleKey: null, checkName: false, checkCode: false })) });
+const guideBody = (steps: string[], slots: { id?: string; name: string }[], seenSlotIds: string[] = []) => ({ steps, slots: slots.map((s) => ({ ...s, sampleKey: null, checkName: false, checkCode: false })), seenSlotIds });
 const guideDialog = (page: Page) => page.getByRole("dialog", { name: /Hướng dẫn mở tài khoản/ });
 const MISSING = "00000000-0000-4000-8000-00000000c0de";
 const TOO_LARGE = "Ảnh lớn hơn 20 MB.";
@@ -185,7 +185,7 @@ test("Ngân hàng: Nhân viên được giao chỉ sửa ngân hàng mình, khô
   for (const id of ["abc", "' or 1=1"]) expect((await api(admin, "PATCH", `/api/admin/banks/${encodeURIComponent(id)}`, edit)).status).toBe(404);
 });
 
-test("Hướng dẫn: hai tab cùng mở, tab 1 bỏ một khung rồi lưu, tab 2 lưu bản cũ thì báo lỗi, không tạo lại khung đã bỏ", async ({ browser }) => {
+test("Hướng dẫn: hai tab cùng mở, tab 1 bỏ một khung rồi lưu, tab 2 lưu bản cũ thì báo hướng dẫn đã đổi, không tạo lại khung đã bỏ", async ({ browser }) => {
   const one = await asUser(browser, "zz_e2e_admin");
   const id = await createBank(one, "ZZCHAITAB", "ZZE2E Hướng dẫn hai tab");
   expect((await api(one, "PUT", `/api/admin/banks/${id}/guide`, guideBody(["Tải app"], [{ name: "Ảnh một" }, { name: "Ảnh hai" }]))).status).toBe(204);
@@ -202,9 +202,35 @@ test("Hướng dẫn: hai tab cùng mở, tab 1 bỏ một khung rồi lưu, tab
   const g2 = guideDialog(two);
   await g2.getByLabel("Tên ảnh 1").fill("Ảnh một sửa");
   await g2.getByRole("button", { name: "Lưu" }).click();
-  await expect(g2.getByRole("alert")).toBeVisible();
+  await expect(g2.getByRole("alert")).toHaveText("Hướng dẫn đã có người sửa. Mở lại để xem bản mới.");
   await open(one, "/banks");
   await expect(rowOf(one, "ZZE2E Hướng dẫn hai tab")).toContainText("1 ảnh");
+});
+
+test("Hướng dẫn: hai tab cùng mở, tab 1 thêm khung rồi lưu, tab 2 lưu bản cũ thì báo hướng dẫn đã đổi, khung tab 1 vừa thêm vẫn còn", async ({ browser }) => {
+  const one = await asUser(browser, "zz_e2e_admin");
+  const id = await createBank(one, "ZZCTHEMTAB", "ZZE2E Hướng dẫn thêm khung");
+  expect((await api(one, "PUT", `/api/admin/banks/${id}/guide`, guideBody(["Tải app"], [{ name: "Ảnh một" }, { name: "Ảnh hai" }]))).status).toBe(204);
+  const two = await one.context().newPage();
+  for (const page of [one, two]) {
+    await open(page, "/banks");
+    await page.getByRole("button", { name: "Hướng dẫn mở tài khoản ZZE2E Hướng dẫn thêm khung" }).click();
+    await expect(guideDialog(page).getByLabel("Tên ảnh 2")).toHaveValue("Ảnh hai");
+  }
+  const g1 = guideDialog(one);
+  await g1.getByRole("button", { name: "Thêm ảnh" }).click();
+  await g1.getByLabel("Tên ảnh 3").fill("Ảnh ba");
+  await g1.getByRole("button", { name: "Lưu" }).click();
+  await expect(g1).toBeHidden();
+  const g2 = guideDialog(two);
+  await g2.getByLabel("Tên ảnh 1").fill("Ảnh một sửa");
+  await g2.getByRole("button", { name: "Lưu" }).click();
+  await expect(g2.getByRole("alert")).toHaveText("Hướng dẫn đã có người sửa. Mở lại để xem bản mới.");
+  await open(one, "/banks");
+  await expect(rowOf(one, "ZZE2E Hướng dẫn thêm khung")).toContainText("3 ảnh");
+  await one.getByRole("button", { name: "Hướng dẫn mở tài khoản ZZE2E Hướng dẫn thêm khung" }).click();
+  await expect(guideDialog(one).getByLabel("Tên ảnh 1")).toHaveValue("Ảnh một");
+  await expect(guideDialog(one).getByLabel("Tên ảnh 3")).toHaveValue("Ảnh ba");
 });
 
 test("Hướng dẫn: ngân hàng mới ghi Chưa cài, Chưa giao; tên ảnh trống, 21 bước, bỏ hết khung, 11 khung đều báo lỗi; dòng trống và số thứ tự bị bỏ; file không phải ảnh bị từ chối", async ({ page }) => {

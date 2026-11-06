@@ -15,7 +15,7 @@ describe("khoá ảnh trong form", () => {
     expect(code("../../.env.local").success).toBe(false);
   });
   test("ảnh mẫu phải nằm trong thư mục samples", () => {
-    const g = (sampleKey: unknown) => GuideForm.safeParse({ steps: [], slots: [{ name: "A", sampleKey, checkName: false, checkCode: false }] }).success;
+    const g = (sampleKey: unknown) => GuideForm.safeParse({ steps: [], slots: [{ name: "A", sampleKey, checkName: false, checkCode: false }], seenSlotIds: [] }).success;
     expect(g(null)).toBe(true);
     expect(g(`samples/2026-11-05/${UUID}.jpg`)).toBe(true);
     expect(g(`qr/2026-11-05/${UUID}.jpg`)).toBe(false);

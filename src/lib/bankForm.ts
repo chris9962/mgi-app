@@ -26,5 +26,7 @@ export const GuideSlot = z.object({
 export const GuideForm = z.object({
   steps: z.array(z.string().trim().min(1).refine(noControlChar, CONTROL_CHAR_MESSAGE)).max(20, "Tối đa 20 bước"),
   slots: z.array(GuideSlot).min(1, "Cần ít nhất 1 ảnh cần nộp").max(10, "Tối đa 10 ảnh"),
+  // Khung ảnh người sửa thấy lúc mở hộp: máy chủ chỉ lưu khi bộ khung vẫn như vậy.
+  seenSlotIds: z.array(z.uuid()).max(10),
 });
 export type GuideFormValues = z.output<typeof GuideForm>;

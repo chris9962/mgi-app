@@ -26,6 +26,7 @@ export function GuideDialog({ bankId, bankName, onClose }: { bankId: string; ban
   const [photoError, setPhotoError] = useState<{ key: string; message: string } | null>(null);
   const fileInput = useRef<HTMLInputElement>(null);
   const uploadFor = useRef<string | null>(null);
+  const seenSlotIds = useRef<string[]>([]);
 
   // Tải hướng dẫn đang lưu của ngân hàng từ máy chủ khi mở hộp thoại.
   useEffect(() => {
@@ -34,6 +35,7 @@ export function GuideDialog({ bankId, bankName, onClose }: { bankId: string; ban
       .then((r) => (r.ok ? r.json() : Promise.reject()))
       .then((g: { steps: string[]; slots: Omit<Slot, "key">[] }) => {
         if (stale) return;
+        seenSlotIds.current = g.slots.flatMap((s) => (s.id ? [s.id] : []));
         setSteps(g.steps.join("\n"));
         setSlots(g.slots.length ? g.slots.map((s) => ({ ...s, key: s.id ?? localKey() })) : [{ key: localKey(), name: "", sampleKey: null, checkName: true, checkCode: true }]);
       })
@@ -67,6 +69,7 @@ export function GuideDialog({ bankId, bankName, onClose }: { bankId: string; ban
     const raw = {
       steps: steps.split("\n").map((s) => s.replace(/^\s*\d+[.)]\s*/, "").trim()).filter(Boolean),
       slots: slots.map(({ id, name, sampleKey, checkName, checkCode }) => ({ ...(id ? { id } : {}), name, sampleKey, checkName, checkCode })),
+      seenSlotIds: seenSlotIds.current,
     };
     const parsed = GuideForm.safeParse(raw);
     if (!parsed.success) return setError(parsed.error.issues[0]?.message ?? "Dữ liệu không hợp lệ.");
