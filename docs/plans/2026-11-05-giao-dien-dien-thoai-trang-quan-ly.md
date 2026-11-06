@@ -113,3 +113,41 @@ Việc để lại sau review lần 1:
 - Trong "Việc để lại" ở trên, ba mục đã xong: khoá cuộn khi xoay máy (mục 6), Esc ở menu tài khoản (mục 4), huy hiệu dev server (commit `9c88d32`).
 - Trang chi tiết có tên quá dài: vạch ngăn sau nút quay lại vẫn có thể nằm lẻ cuối hàng trên.
 - `env(safe-area-inset-bottom)` bằng 0 khi thẻ viewport thiếu `viewport-fit=cover`, nên thanh đáy chưa chừa vùng cử chỉ của iPhone. mgst-app cũng vậy.
+
+### Sửa theo review lần 2
+
+Reviewer đọc bản `a69e386`: 9 mục của lần 1 đúng, có 1 lỗi Important mới do mục 5 gây ra. Coordinator thêm 2 lỗi Minor và 1 đề xuất. Mỗi mục một commit. Test e2e viết trước; lúc đó agent quay video đang giữ e2e, nên bằng chứng RED chạy sau trên code trước khi sửa.
+
+1. Important, `55f1751`. Ngăn đã đóng vì chuyển trang không tự mở lại khi về đúng trang cũ. Trước đây mở ngăn ở `/customers`, bấm Quay lại, rồi bấm lại Hồ sơ học sinh (hoặc bấm Tới) là ngăn bật lại kèm nội dung inert và khoá cuộn. Lúc render thấy đã sang trang khác thì AppShell bỏ hẳn trạng thái, không dùng effect.
+2. `5bbdc56`. Trạng thái ngăn so cả đường dẫn lẫn chuỗi lọc (`useSearchParams`). Quay lại từ `/customers?status=new` về `/customers` cũng đóng ngăn. Trang quản lý đọc cookie nên render động, `useSearchParams` không cần bọc Suspense.
+3. `9846c6d`. Dưới 900 px, mở Bộ lọc thì focus vào mục lọc đang chọn, không nằm ở nút bị bảng che. Xong và Esc vẫn trả focus về nút. Chuỗi media query 900 px dùng chung ở `src/lib/breakpoints.ts`.
+4. `4b185b1`. Bảng Bộ lọc chỉ đứng trên thanh đáy khi màn thấp (variant `dock`: rộng tới 900 px và cao tới 780 px). Màn cao thì bảng treo ngay dưới nút; ở màn hẹp bảng neo vào thanh tiêu đề như trước lần sửa 1.
+
+Bằng chứng RED→GREEN: chạy test mới trên file của commit trước khi sửa thì fail, trên HEAD thì pass. Mục 1 chạy trên `a69e386`, mục 2 trên `55f1751`, mục 3 trên `5bbdc56`, mục 4 trên `9846c6d`.
+
+Số đo cho ngưỡng 780 px. Bảng Bộ lọc được đo ở chế độ treo dưới nút, tại 4 trang có Bộ lọc.
+
+| Khổ | Đỉnh bảng | Phần ngoài khung giá trị | Cần cao tối thiểu (khung giá trị 420 px) | Cần với nội dung hiện có | Kết quả |
+|---|---|---|---|---|---|
+| 375x548 | 152 | 124 | 761 | 633 | đứng trên thanh đáy |
+| 390x844 | 152 | 124 | 761 | 633 | treo dưới nút |
+| 844x390 | 60 | 63 | 608 | 480 | đứng trên thanh đáy |
+| 820x1180 | 60 | 63 | 608 | 480 | treo dưới nút |
+
+"Cần cao tối thiểu" là đỉnh bảng cộng phần ngoài khung giá trị, cộng khung giá trị cao nhất 420 px, cộng 8 px khe và 57 px thanh đáy.
+
+Ruling của lượt sửa:
+
+- Ngưỡng `dock` là cao tới 780 px. Màn hẹp cần 761 px cho trường hợp khung giá trị cao nhất, nên lấy 780 để dư 19 px. Màn 600 đến 900 px chỉ cần 608 px, nhưng một ngưỡng chung dễ hiểu hơn. Cái giá: màn rộng 600 đến 900 px, cao 609 đến 780 px vẫn đứng trên thanh đáy dù treo được.
+- Lưới của bảng Bộ lọc có `grid-rows-[minmax(0,1fr)]` ở mọi khổ, để khi đứng trên thanh đáy hàng nút không bị cắt. Ở máy tính, hàng `1fr` trong lưới cao tự động vẫn cao theo nội dung và giãn tới `min-h-[220px]`. Ảnh chụp ở 1366 px cho thấy bảng không đổi.
+- Focus chỉ chuyển vào bảng khi màn dưới 900 px, đúng như review yêu cầu. Máy tính giữ cách cũ.
+
+Test sau lượt sửa:
+- `bun run test`: 227/227.
+- `bun test:db`: 225/225, trên DB tạm `zz_test_mobile` (đã xoá).
+- `bun run e2e`: 44/44. Trong đó `e2e/mobile.spec.ts` có 22 test.
+- `bun run e2e:flows`: 11/11, gồm flow 11 trang quản lý trên điện thoại. Video được quay lại.
+- `bunx tsc --noEmit` sạch.
+- `bun run lint` sạch, còn 2 cảnh báo `<img>` có từ trước.
+
+Việc để lại sau review lần 2: không có việc mới. Hai mục còn lại của lần 1 (vạch ngăn ở trang chi tiết có tên dài, `viewport-fit=cover`) vẫn như cũ.
