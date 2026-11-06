@@ -6,7 +6,8 @@ export const readParam = (sp: Params, key: string): string => {
   return ((Array.isArray(v) ? v[0] : v) ?? "").replaceAll("\u0000", "");
 };
 
-const isDay = (v: string) => /^\d{4}-\d{2}-\d{2}$/.test(v) && new Date(`${v}T00:00:00Z`).toISOString().slice(0, 10) === v;
+// Năm 0001 lùi 7 giờ thành năm 0, Postgres không nhận và trang lỗi 500.
+const isDay = (v: string) => /^\d{4}-\d{2}-\d{2}$/.test(v) && v >= "1900-01-01" && new Date(`${v}T00:00:00Z`).toISOString().slice(0, 10) === v;
 
 export const readDay = (sp: Params, key: string): string => (isDay(readParam(sp, key)) ? readParam(sp, key) : "");
 
