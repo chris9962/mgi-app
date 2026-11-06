@@ -31,4 +31,10 @@ describe("scripts/e2e-videos.ts", () => {
     };
     expect(videoCopies(report, "/out")).toEqual([]);
   });
+
+  // Playwright ghi tên video theo thứ tự mở trang nhưng thêm vào báo cáo theo thứ tự lưu xong: tab phụ ngắn lưu xong trước.
+  test("tab phụ lưu xong trước vẫn lấy video.webm của trang chính", () => {
+    const report = { suites: [{ file: "04-hoc-sinh.spec.ts", specs: [spec("04-hoc-sinh.spec.ts", "Flow 4", "flows", [{ status: "passed", attachments: [video("/r/e/video-1.webm"), video("/r/e/video.webm")] }])] }] };
+    expect(videoCopies(report, "/out").map((c) => c.from)).toEqual(["/r/e/video.webm"]);
+  });
 });

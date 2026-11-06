@@ -8,7 +8,7 @@ export type VideoCopy = { from: string; to: string; title: string; status: strin
 
 const specsOf = (suite: Suite): Spec[] => [...(suite.specs ?? []), ...(suite.suites ?? []).flatMap(specsOf)];
 
-// Video đầu là trang chính của flow; trang bật thêm (link mở tab mới) cũng có video riêng nhưng chỉ vài giây trống.
+// Trang chính của flow mở đầu tiên nên video là video.webm; tab bật thêm (link mở tab mới) là video-1.webm, chỉ vài giây.
 export function videoCopies(report: Suite, outDir: string): VideoCopy[] {
   return specsOf(report)
     .flatMap((spec) =>
@@ -16,7 +16,8 @@ export function videoCopies(report: Suite, outDir: string): VideoCopy[] {
         .filter((t) => t.projectName === "flows")
         .flatMap((t) => {
           const last = t.results.at(-1);
-          const path = last?.attachments.find((a) => a.name === "video" && a.path)?.path;
+          const videos = (last?.attachments ?? []).filter((a) => a.name === "video" && a.path);
+          const path = (videos.find((a) => basename(a.path!) === "video.webm") ?? videos[0])?.path;
           return path ? [{ from: path, to: join(outDir, `${basename(spec.file).replace(/\.spec\.ts$/, "")}.webm`), title: spec.title, status: last!.status }] : [];
         }),
     )
