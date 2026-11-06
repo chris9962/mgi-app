@@ -11,7 +11,8 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
   if (!auth.ok) return auth.response;
   const { id } = await params;
   if (!isUuid(id) || !canManageBank(auth.user, id)) return notFound();
-  return Response.json(await getGuide(id));
+  const guide = await getGuide(id);
+  return guide ? Response.json(guide) : notFound();
 }
 
 export async function PUT(request: Request, { params }: { params: Promise<{ id: string }> }) {

@@ -124,19 +124,21 @@ export async function setBankActive(actor: SessionUser, id: string, active: bool
   return { ok: true };
 }
 
-export async function getGuide(bankId: string): Promise<{ steps: string[]; slots: GuideSlotRow[] }> {
+export async function getGuide(bankId: string): Promise<{ steps: string[]; slots: GuideSlotRow[] } | null> {
   const [bank] = await db.select({ guide: banks.guide }).from(banks).where(eq(banks.id, bankId));
+  if (!bank) return null;
   const slots = await db
     .select({ id: bankPhotoSlots.id, name: bankPhotoSlots.name, sampleKey: bankPhotoSlots.sampleKey, checkName: bankPhotoSlots.checkName, checkCode: bankPhotoSlots.checkCode })
     .from(bankPhotoSlots)
     .where(and(eq(bankPhotoSlots.bankId, bankId), isNull(bankPhotoSlots.removedAt)))
     .orderBy(asc(bankPhotoSlots.sortOrder), asc(bankPhotoSlots.name));
-  return { steps: Array.isArray(bank?.guide) ? (bank.guide as string[]) : [], slots };
+  return { steps: Array.isArray(bank.guide) ? (bank.guide as string[]) : [], slots };
 }
 
 export async function saveGuide(actor: SessionUser, bankId: string, values: GuideFormValues, ip?: string | null): Promise<{ ok: true } | Fail> {
   if (!canManageBank(actor, bankId)) return fail("Không tìm thấy ngân hàng.", 404);
   const current = await getGuide(bankId);
+  if (!current) return fail("Không tìm thấy ngân hàng.", 404);
   const currentIds = new Set(current.slots.map((s) => s.id));
   if (values.slots.some((s) => s.id && !currentIds.has(s.id))) return fail("Khung ảnh không thuộc ngân hàng này.", 400, "slots");
   await db.transaction(async (tx) => {

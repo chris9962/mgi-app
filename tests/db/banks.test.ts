@@ -55,11 +55,11 @@ describe("ngân hàng", () => {
     if (!bank.ok) throw new Error(bank.message);
     const g = (slots: object[]) => GuideForm.parse({ steps: ["Tải app", "Mở tài khoản"], slots });
     expect((await saveGuide(manager, bank.id, g([{ name: "Ảnh màn hình chính", sampleKey: null, checkName: true, checkCode: true }, { name: "Ảnh chuyển khoản", sampleKey: null, checkName: true, checkCode: false }]))).ok).toBe(true);
-    const first = await getGuide(bank.id);
+    const first = (await getGuide(bank.id))!;
     expect(first.steps).toEqual(["Tải app", "Mở tài khoản"]);
     expect(first.slots.map((s) => s.name)).toEqual(["Ảnh màn hình chính", "Ảnh chuyển khoản"]);
     expect((await saveGuide(manager, bank.id, g([{ ...first.slots[0], name: "Màn hình chính" }]))).ok).toBe(true);
-    const after = await getGuide(bank.id);
+    const after = (await getGuide(bank.id))!;
     expect(after.slots.map((s) => s.name)).toEqual(["Màn hình chính"]);
     const rows = await db.select().from(bankPhotoSlots).where(eq(bankPhotoSlots.bankId, bank.id));
     expect(rows).toHaveLength(2);
@@ -72,7 +72,7 @@ describe("ngân hàng", () => {
     const b = await createBank(manager, form("ZZTI", "I"));
     if (!a.ok || !b.ok) throw new Error("tạo ngân hàng lỗi");
     await saveGuide(manager, a.id, GuideForm.parse({ steps: [], slots: [{ name: "A1", sampleKey: null, checkName: false, checkCode: false }] }));
-    const slotOfA = (await getGuide(a.id)).slots[0];
+    const slotOfA = (await getGuide(a.id))!.slots[0];
     const r = await saveGuide(manager, b.id, GuideForm.parse({ steps: [], slots: [{ ...slotOfA }] }));
     expect(r.ok).toBe(false);
   });
