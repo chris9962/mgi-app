@@ -40,7 +40,7 @@ export function FilterButton({ sections, onClear }: { sections: FilterSection[];
   }, [open]);
 
   return (
-    <div className="relative narrow:static">
+    <div className="relative">
       <Button
         ref={trigger}
         variant="secondary"
@@ -58,11 +58,15 @@ export function FilterButton({ sections, onClear }: { sections: FilterSection[];
           </span>
         )}
       </Button>
+      {/* Dưới 900 px bảng đứng ngay trên thanh đáy, cao tối đa phần màn còn lại: treo dưới nút thì màn thấp đẩy nút Xong xuống sau thanh đáy. */}
       {open && (
-        <div ref={panel} className="absolute top-full right-0 z-20 mt-2 flex w-[min(520px,calc(100vw-32px))] flex-col overflow-hidden rounded-2xl border border-line bg-card shadow-lg narrow:right-4 narrow:left-4 narrow:w-auto">
-          {/* Màn hẹp như mgst-app: một cột, các mục lọc thành hàng cuộn ngang ở trên. */}
-          <div className="grid min-h-[220px] grid-cols-[160px_1fr] narrow:grid-cols-1 narrow:grid-rows-[auto_minmax(0,1fr)]">
-            <nav aria-label="Mục lọc" className="flex flex-col gap-0.5 border-r border-line bg-panel p-2 narrow:flex-row narrow:items-center narrow:overflow-x-auto narrow:border-r-0 narrow:border-b">
+        <div
+          ref={panel}
+          className="absolute top-full right-0 z-20 mt-2 flex w-[min(520px,calc(100vw-32px))] flex-col overflow-hidden rounded-2xl border border-line bg-card shadow-lg mobile:fixed mobile:top-auto mobile:right-4 mobile:bottom-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom,0px)+8px)] mobile:mt-0 mobile:max-h-[calc(100svh-var(--bottom-nav-h)-env(safe-area-inset-bottom,0px)-16px)] narrow:left-4 narrow:w-auto"
+        >
+          {/* Màn hẹp không đủ chỗ cho cột mục lọc 160 px nên chuyển một cột như mgst-app. */}
+          <div className="grid min-h-[220px] grid-cols-[160px_1fr] mobile:min-h-0 mobile:flex-1 mobile:grid-rows-[minmax(0,1fr)] narrow:grid-cols-1 narrow:grid-rows-[auto_minmax(0,1fr)]">
+            <nav aria-label="Mục lọc" className="flex flex-col gap-0.5 border-r border-line bg-panel p-2 mobile:overflow-y-auto narrow:flex-row narrow:items-center narrow:overflow-x-auto narrow:border-r-0 narrow:border-b">
               {sections.map((s) => (
                 <button
                   key={s.id}
@@ -80,7 +84,7 @@ export function FilterButton({ sections, onClear }: { sections: FilterSection[];
                 </button>
               ))}
             </nav>
-            <div id={paneId} role="region" aria-label={selected?.label} className="max-h-[min(60dvh,420px)] overflow-y-auto p-4">
+            <div id={paneId} role="region" aria-label={selected?.label} className="max-h-[min(60dvh,420px)] overflow-y-auto p-4 mobile:min-h-0">
               {selected?.content}
             </div>
           </div>

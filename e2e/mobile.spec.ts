@@ -247,6 +247,27 @@ test("điện thoại 320 và 390 px: thanh đáy một hàng chữ, nội dung 
   }
 });
 
+test("điện thoại thấp 375x548 và nằm ngang 844x390: hàng nút của bảng Bộ lọc nằm trên thanh đáy, mục cuối cuộn tới được", async ({ browser }) => {
+  const page = await loginAs(browser, "zz_e2e_admin", PHONE);
+  for (const viewport of [
+    { width: 375, height: 548 },
+    { width: 844, height: 390 },
+  ]) {
+    await page.setViewportSize(viewport);
+    await page.goto("/customers");
+    await page.waitForLoadState("networkidle");
+    await page.getByRole("button", { name: "Bộ lọc" }).click();
+    const navTop = (await box(bottomNav(page))).top;
+    for (const name of ["Xong", "Bỏ hết bộ lọc"]) {
+      const button = await box(page.getByRole("button", { name }));
+      expect([viewport.width, name, button.top >= 0, button.bottom <= navTop]).toEqual([viewport.width, name, true, true]);
+    }
+    const last = page.getByRole("radio", { name: "Không có ngân hàng" });
+    await last.scrollIntoViewIfNeeded();
+    expect((await box(last)).bottom).toBeLessThanOrEqual(navTop);
+  }
+});
+
 test("điện thoại: hộp thoại mở thì trang phía sau không cuộn", async ({ browser }) => {
   const page = await loginAs(browser, "zz_e2e_admin", PHONE);
   await page.goto("/banks/codes");
