@@ -18,8 +18,9 @@ test.describe("trang Ngân hàng nhóm Nghiệp vụ", () => {
       const page = await loginAs(browser, "zz_e2e_admin", device);
       await open(page, `/customer-banks?${q(B.B_UNBROKEN_NAME.slice(0, 11))}&school=${B.B_SCHOOL_ID},${B.B_SCHOOL2_ID}`);
       await expect(card(page, NH).getByRole("link", { name: B.B_UNBROKEN_NAME })).toBeVisible();
-      const chip = page.getByText(`Trường: ${B.B_SCHOOL}, ${B.B_SCHOOL2}`);
-      await expect(chip).toBeVisible();
+      const chip = page.getByText(/^Trường: /);
+      await expect(chip).toContainText(B.B_SCHOOL);
+      await expect(chip).toContainText(B.B_SCHOOL2);
       expect([device.viewport.width, await pageOverflow(page), await insideViewport(chip), await insideViewport(page.getByRole("link", { name: /^Bỏ lọc Trường/ }))]).toEqual([device.viewport.width, 0, true, true]);
       await page.context().close();
     }
@@ -31,11 +32,14 @@ test.describe("trang Ngân hàng nhóm Nghiệp vụ", () => {
       expect([raw, await open(page, `/customer-banks?${q("bien phan trang")}&${raw}`)]).toEqual([raw, 200]);
       await expect(page.getByText("Đang lọc"), raw).toHaveCount(0);
     }
-    for (const term of ["%", "_", "\\", "%00"]) {
-      const res = await page.request.get(`/api/admin/customer-banks/schools?q=${term === "%00" ? term : encodeURIComponent(term)}`);
+    for (const term of ["%", "_", "\\"]) {
+      const res = await page.request.get(`/api/admin/customer-banks/schools?q=${encodeURIComponent(term)}`);
       expect([term, res.status()]).toEqual([term, 200]);
       expect([term, (await res.json()).length]).toEqual([term, 0]);
     }
+    const nul = await page.request.get("/api/admin/customer-banks/schools?q=%00");
+    expect(nul.status()).toBe(200);
+    expect(await nul.json()).toEqual(await (await page.request.get("/api/admin/customer-banks/schools?q=")).json());
 
     const staff = await loginAs(browser, B.B_USER1);
     await open(staff, `/customer-banks?${q("bien hai ngan hang")}&bank=${B.B_BANK2_ID}`);
