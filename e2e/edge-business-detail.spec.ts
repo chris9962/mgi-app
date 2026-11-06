@@ -158,7 +158,7 @@ test("Trang 4 Sửa thông tin: ô trống, chỉ khoảng trắng, quá dài, S
   expect(patches.length).toBe(2);
 });
 
-test("Trang 4 ghi chú: ô nhập chặn ở 1.000 ký tự, API từ chối 1.001 ký tự và ký tự điều khiển, cắt khoảng trắng đầu cuối; hai tab cùng sửa thì người lưu sau ghi đè", async ({ browser }) => {
+test("Trang 4 ghi chú: ô nhập chặn ở 1.000 ký tự, API từ chối 1.001 ký tự và ký tự điều khiển, cắt khoảng trắng đầu cuối; hai tab cùng sửa thì người lưu sau ghi đè; mất mạng báo ở dòng báo chung", async ({ browser }) => {
   const a = await loginAs(browser, "zz_e2e_admin");
   const b = await loginAs(browser, "zz_e2e_admin");
   await open(a, detail(B.B_IDS.note));
@@ -194,9 +194,22 @@ test("Trang 4 ghi chú: ô nhập chặn ở 1.000 ký tự, API từ chối 1.0
   await expect(b.getByRole("dialog")).toHaveCount(0);
   await a.reload();
   await expect(bank1(a).getByRole("region", { name: "Ghi chú nội bộ" }).locator("p")).toHaveText("Ghi chú của tab B");
+
+  const noteUrl = "**/api/admin/customer-banks/*/note";
+  await a.route(noteUrl, (route) => route.abort());
+  await bank1(a).getByRole("button", { name: /^Sửa ghi chú/ }).click();
+  const note = a.getByRole("dialog", { name: "Ghi chú nội bộ" });
+  await note.getByRole("textbox").fill("Ghi chú lúc mất mạng");
+  await note.getByRole("button", { name: "Lưu" }).click();
+  await expect(note.getByRole("alert")).toHaveText("Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.");
+  await expect(note.getByRole("textbox")).not.toHaveAttribute("aria-invalid", "true");
+  await a.unroute(noteUrl);
+  await note.getByRole("button", { name: "Lưu" }).click();
+  await expect(a.getByRole("dialog")).toHaveCount(0);
+  await expect(bank1(a).getByRole("region", { name: "Ghi chú nội bộ" }).locator("p")).toHaveText("Ghi chú lúc mất mạng");
 });
 
-test("Trang 4 tải ảnh thay thế: không chọn file, file 0 byte, file chữ đổi đuôi .jpg, file 21 MB báo dưới ô Ảnh; tab khác vừa đánh dấu Đạt thì báo không thay được", async ({ browser }) => {
+test("Trang 4 tải ảnh thay thế: không chọn file, file 0 byte, file chữ đổi đuôi .jpg, file 21 MB, 23 MB báo dưới ô Ảnh; mất mạng báo ở dòng báo chung; chọn lại đúng ảnh đang chọn thì hộp thoại không đóng; tab khác vừa đánh dấu Đạt thì báo không thay được", async ({ browser }) => {
   const a = await loginAs(browser, B.B_USER1);
   const b = await loginAs(browser, B.B_USER1);
   await open(b, detail(B.B_IDS.replace));
@@ -209,6 +222,7 @@ test("Trang 4 tải ảnh thay thế: không chọn file, file 0 byte, file ch�
     ["0 byte", { name: "rong.jpg", mimeType: "image/jpeg", buffer: Buffer.alloc(0) }, "Chọn ảnh."],
     ["chữ đổi đuôi", { name: "chu.jpg", mimeType: "image/jpeg", buffer: Buffer.from("đây không phải ảnh") }, "Chỉ nhận ảnh jpg, png, webp hoặc heic."],
     ["21 MB", { name: "lon.jpg", mimeType: "image/jpeg", buffer: Buffer.concat([readFileSync(PHOTO), Buffer.alloc(21 * 1024 * 1024)]) }, "Ảnh lớn hơn 20 MB."],
+    ["23 MB, máy chủ chặn theo Content-Length", { name: "lon.jpg", mimeType: "image/jpeg", buffer: Buffer.concat([readFileSync(PHOTO), Buffer.alloc(23 * 1024 * 1024)]) }, "Ảnh lớn hơn 20 MB."],
   ] as const) {
     await file.setInputFiles(input ? [input] : []);
     await upload.click();
@@ -217,9 +231,17 @@ test("Trang 4 tải ảnh thay thế: không chọn file, file 0 byte, file ch�
     await expect(dialog).toBeVisible();
   }
 
+  await b.route("**/photos", (route) => route.abort());
+  await file.setInputFiles(PHOTO);
+  await upload.click();
+  await expect(dialog.getByRole("alert")).toHaveText("Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.");
+  await expect(file).not.toHaveAttribute("aria-invalid", "true");
+  await b.unroute("**/photos");
+
   await open(a, detail(B.B_IDS.replace));
   await markPassed(a);
   await file.setInputFiles(PHOTO);
+  await expect(dialog, "chọn lại đúng ảnh đang chọn").toBeVisible();
   await upload.click();
   await expect(dialog.getByRole("alert")).toHaveText("Ngân hàng đã Đạt, không thay được ảnh.", { timeout: 30_000 });
 });

@@ -12,7 +12,7 @@ Seed riêng ở `scripts/e2e-seed-business.ts`, gắn vào `scripts/e2e-seed.ts`
 - Ngân hàng B1 tên khoảng 80 ký tự có dấu cách, B2 tên ngắn, B3 không có hồ sơ nào. Mỗi ngân hàng một khung ảnh, một mã giới thiệu.
 - Tài khoản Nhân viên: `zz_e2e_bien1` quản B1, `zz_e2e_bien2` quản B2 và có quyền Xuất Excel, `zz_e2e_bien3` quản B3.
 - 16 hồ sơ "Biên Phân Trang 01" tới "16": B1 Đạt, có voucher, có tin SMS lỗi. Hồ sơ 16 có thêm B2 đang chờ kiểm tra.
-- Hồ sơ "Biên Giờ Khuya" tạo 23:30 ngày 31/10/2026 giờ Việt Nam, "Biên Giờ Sớm" tạo 00:30 ngày 01/11/2026. Voucher cấp lúc 23:45 và 00:15.
+- Hồ sơ "Biên Giờ Khuya" tạo 23:30 ngày 31/10/2026 giờ Việt Nam, "Biên Giờ Sớm" tạo 00:30 ngày 01/11/2026. Voucher cấp lúc 23:45 và 00:45.
 - Hồ sơ tên dài 100 ký tự có dấu cách, hồ sơ tên 100 ký tự liền không dấu cách kèm ghi chú 1.000 ký tự liền.
 - Hồ sơ tên có `<script>`, `<img onerror>`, ngoặc kép, ngoặc đơn, `%`, `_`, `\`, emoji, chữ `Ð`, và hồ sơ có tên, lớp, phụ huynh bắt đầu bằng `=`, `+`, `-`, `@`.
 - Hồ sơ chỉ có B2, hồ sơ có cả B1 và B2 kèm ảnh ở cả hai, hồ sơ chưa chọn ngân hàng, hai hồ sơ trùng tên và SĐT.
@@ -44,7 +44,7 @@ Tên hồ sơ không chứa chữ mà test cũ dùng để tìm (`xuat`, `kiem a
 | T3-18 | 4 | Lọc Trạng thái rồi Số ngân hàng đạt, bấm Quay lại của trình duyệt | URL, chip, ô chọn trong bảng Bộ lọc về đúng bước trước |
 | T3-19 | 5 | 16 hồ sơ | Trang 1 đúng 15 dòng, ghi "1–15 trên 16", có nút Sau; trang 2 một dòng, "16–16 trên 16" |
 | T3-20 | 5 | Lọc còn đúng 15 hồ sơ | "1 / 1", không có nút Sau |
-| T3-21 | 5, 9 | Đang ở trang 2 có một dòng của bộ lọc Chờ kiểm tra; dòng đó được đánh dấu xong; tải lại | Về trang cuối mới, không hiện trang rỗng |
+| T3-21 | 5, 9 | Chuyển sang SMS-10: Trang 3 và Tin SMS lỗi dùng chung cách kẹp trang về trang cuối, trang SMS có nút làm dòng biến mất ngay trên trang | Xem SMS-10 |
 | T3-22 | 6 | Hồ sơ tạo 23:30 ngày 31/10 và 00:30 ngày 01/11 giờ Việt Nam | Cột Ngày ghi "31/10 23:30" và "01/11 00:30"; 00:30 đứng trên |
 | T3-23 | 6 | Lọc từ ngày bằng tới ngày 31/10/2026, rồi 01/11/2026 | Lấy trọn ngày giờ Việt Nam: ngày 31/10 ra hồ sơ 23:30, ngày 01/11 ra hồ sơ 00:30 |
 | T3-24 | 6 | URL từ ngày lớn hơn tới ngày | Bảng rỗng, chip ghi đúng hai ngày, không lỗi; ô ngày trong bảng Bộ lọc chặn chọn ngược bằng `min`, `max` |
@@ -124,7 +124,7 @@ Không áp dụng: loại 7 (trang không có form), loại 9 (trang chỉ đọ
 | VC-02 | 2, 4 | URL `q=%00`, `q=%`, `from=0001-01-01`, `page=-1` | Không lỗi 500 |
 | VC-03 | 3 | Tìm mã một phần chữ thường; họ tên không dấu; nhiều từ khác thứ tự | Ra đúng mã |
 | VC-04 | 5 | 16 mã của 16 hồ sơ | Trang 1 đúng 15 dòng, trang 2 một dòng |
-| VC-05 | 6 | Mã cấp 23:45 ngày 31/10 và 00:15 ngày 01/11; lọc trọn ngày | Hiện đúng giờ Việt Nam; ngày 31/10 ra mã 23:45, ngày 01/11 ra mã 00:15 |
+| VC-05 | 6 | Mã cấp 23:45 ngày 31/10 và 00:45 ngày 01/11; lọc trọn ngày | Hiện đúng giờ Việt Nam; ngày 31/10 ra mã 23:45, ngày 01/11 ra mã 00:45 |
 | VC-06 | 8 | `zz_e2e_bien1` không có quyền voucher | Trang 404, API 403 |
 | VC-07 | 10 | Tìm không khớp | "Không có mã khớp bộ lọc." |
 | VC-08 | 11 | Xuất Excel có lọc, không có dòng nào, ký tự công thức | Như T3-29 tới T3-31 |
@@ -144,6 +144,7 @@ Không áp dụng: loại 7, 9 (trang chỉ đọc), loại 12, 13.
 | SMS-07 | 8 | `zz_e2e_bien1` gọi Gửi lại tin của hồ sơ chỉ có B2 | 404 |
 | SMS-08 | 9 | Hai tab cùng Gửi lại một tin | Tab sau báo "Tin này không ở trạng thái lỗi." ở dòng báo chung, ô SĐT không bị đánh dấu sai |
 | SMS-09 | 10 | `zz_e2e_bien3`; lọc Đã gửi khi không có tin đã gửi nào khớp; tìm không khớp | "Không có tin lỗi."; "Không có tin khớp bộ lọc." |
+| SMS-10 | 5, 9 | Đang ở trang 2 chỉ có một tin lỗi; Gửi lại tin đó | Trang tải lại về trang còn dòng, không hiện trang rỗng |
 
 Không áp dụng: loại 6 (cột Gửi lúc dùng chung hàm giờ Việt Nam với Trang 3, đã xét ở T3-22), loại 11 (trang không có Xuất Excel), loại 12, 13.
 
@@ -155,3 +156,64 @@ Không áp dụng: loại 6 (cột Gửi lúc dùng chung hàm giờ Việt Nam 
 | DB-02 | Bộ lọc ngày năm 0001 và 0000 | Bỏ qua, không ném lỗi |
 | DB-03 | Tìm nhiều từ khác thứ tự, bỏ từ giữa, quá 8 từ, quá 100 ký tự | Mỗi từ là một điều kiện; cắt ở 8 từ và 100 ký tự như mgst-app |
 | DB-04 | Nhân viên đã mở trang rồi bị bỏ giao ngân hàng, bấm Đạt | 404, không ghi lịch sử |
+
+## Kết quả
+
+Test nằm ở `e2e/edge-business.spec.ts` (Trang 3), `e2e/edge-business-detail.spec.ts` (Trang 4), `e2e/edge-business-lists.spec.ts` (Ngân hàng, Mã voucher, Tin SMS lỗi), `tests/db/edgeBusiness.test.ts`, `tests/unit/edgeBusiness.test.ts`. Hàm dùng chung của các file e2e ở `e2e/edge-business-support.ts`.
+
+### Lỗi tìm ra và đã sửa
+
+| Ca | Lỗi người dùng gặp | Commit |
+|---|---|---|
+| T3-05, NH-02, VC-02, SMS-02, T3-33, DB-01 | URL hay ô tìm có `%00` làm trang và file Excel lỗi 500 | 7a23481 |
+| T3-16, VC-02, DB-02 | URL lọc ngày năm 0001 hay 0000 làm trang lỗi 500 | 4d6712e |
+| T3-16 | URL lọc ngày tháng 13 hay ngày 32 làm trang lỗi 500 | b836181 |
+| T3-07, NH-03, VC-03, SMS-03, DB-03 | Gõ nhiều từ khác thứ tự hay bỏ từ giữa ("trang 07 bien") ra 0 hồ sơ | 804897c |
+| T3-10 | Dán cả trang chữ vào ô tìm: ô nhận hết, URL dài tới mức máy chủ trả 431 | 56d0910 |
+| T4-02 | Chi tiết hồ sơ có họ tên, phụ huynh, ghi chú liền không dấu cách: cả trang cuộn ngang gần 7.000 px | 0b80d11 |
+| SMS-08 | Hai tab cùng Gửi lại một tin: tab sau đánh dấu ô SĐT nhận là sai, không có dòng báo chung | 3d7d526 |
+| SMS-09 | Lọc Đã gửi mà không có tin khớp thì báo "Chưa có tin nào." | 20ff26e |
+| T4-15 | Tải ảnh thay thế file trên 22 MB: câu báo nằm ở cuối hộp thoại, ô Ảnh không bị đánh dấu sai như file 21 MB | cd206ed |
+| T4-26 | Lưu ghi chú lúc mất mạng: câu "Không kết nối được máy chủ" nằm dưới ô ghi chú và đánh dấu ô sai | bf7fa66 |
+| T4-27 | Tải ảnh thay thế: huỷ hộp chọn file hay chọn lại đúng ảnh đang chọn thì cả hộp thoại đóng. Hộp Hướng dẫn ngân hàng và hộp Mã giới thiệu dùng chung `Dialog` nên cũng bị | ab3249d |
+
+Thêm ca trong lúc viết test:
+- T4-26 (loại 7, 13): mất mạng khi lưu ghi chú và khi tải ảnh thay thế. Câu báo hiện ở dòng báo chung, ô nhập không bị đánh dấu sai; mạng có lại thì lưu được.
+- T4-27 (loại 13): chọn lại đúng ảnh đang chọn. Chrome thấy lựa chọn không đổi thì phát sự kiện `cancel` từ ô file, như khi người dùng huỷ hộp chọn file. Sự kiện này nổi lên thẻ `<dialog>`, và `Dialog` coi nó như phím Esc. Hộp thoại phải giữ nguyên, bấm Tải lên vẫn gửi ảnh đang chọn. Test tải ảnh thay thế treo tới hết giờ vì lỗi này: bước T4-26 chọn `photo.jpg`, bước cuối chọn lại đúng file đó, hộp thoại đóng, Playwright chờ mãi nút Tải lên.
+- T4-15 thêm file 23 MB: máy chủ chặn theo Content-Length trước khi đọc file, đường chặn này trả lỗi không gắn ô.
+- T3-16 thêm `to=2026-13-01`: test này tìm ra lỗi 500 riêng, khác lỗi năm 0001.
+
+### Ruling
+
+- Tìm nhiều từ: mỗi từ là một điều kiện, không theo thứ tự; máy chủ cắt chuỗi ở 100 ký tự rồi lấy tối đa 8 từ. Chép `searchTerms` ở `../mgst-app/src/lib/search.ts`. Tìm SĐT giữ nguyên luật cũ: 3 tới 10 chữ số sau khi bỏ dấu cách và dấu chấm. Mã voucher vẫn so cả chuỗi, thêm cắt ở 100 ký tự.
+- Ô tìm nhận tối đa 100 ký tự (`maxLength`), như `SEARCH_MAX_LENGTH` của mgst-app.
+- Ký tự NUL: mgst-app không có luật. Máy chủ bỏ NUL khỏi tham số URL và mẫu LIKE, phần còn lại vẫn tìm. Postgres không lưu được NUL, nên bỏ đi thì kết quả giống hệt khi không gõ NUL. Ô chọn trường với `q=%00` vì thế trả như ô trống.
+- Ngày trên URL trước 1900-01-01 bị bỏ qua như ngày sai: mgst-app không có luật, chương trình bắt đầu năm 2026 nên không có bản ghi nào trước 1900.
+- Hai tab cùng sửa ghi chú: người lưu sau ghi đè, giữ như code hiện có. Ghi chú là chữ nội bộ, không đổi trạng thái, voucher hay SMS.
+- Lỗi không thuộc ô nào (409 vì tab khác vừa làm, 404, mất mạng) hiện ở dòng báo chung `role="alert"`, ô nhập không bị đánh dấu sai. Hộp Sửa thông tin và Tải ảnh thay thế đã làm vậy; hộp Gửi lại SMS và Ghi chú chép theo.
+- Bảng Bộ lọc mở lại thì giữ mục lọc vừa chọn ở cột trái, kể cả sau khi bấm Quay lại của trình duyệt. Đây là cách `FilterButton` đang làm; giá trị trong mục vẫn khớp URL. Test T3-18 bấm mục Trạng thái trước khi kiểm ô chọn.
+- T3-21 chuyển sang SMS-10: Trang 3 và Tin SMS lỗi kẹp trang cùng một cách, trang SMS có nút Gửi lại làm dòng biến mất ngay trên trang.
+- DB-04 (bị bỏ giao ngân hàng giữa phiên) test bằng test DB: e2e không đổi được quyền giữa chừng mà không đụng tài khoản của nhóm khác.
+
+### Chờ
+
+- Xuất Excel trang Trường với `q=%00` vẫn lỗi 500. Route `src/app/api/admin/schools/export/route.ts` đọc `q` bằng `searchParams.get`, không qua `readParam`, rồi `exportSchools` ghi `q` vào `audit_log.detail` (jsonb không nhận NUL). Đã thử bằng test DB tạm: câu insert vào `audit_log` lỗi. Trang này thuộc nhóm C nên nhóm B không sửa.
+- Ô tìm của Trường, Tài khoản, Kho mã và ô chọn người quản vẫn tìm cả chuỗi bằng `matchesPlain`, chưa tách từ như mgst-app. Gõ "anh nguyen" không ra "Nguyễn Thị Anh". Các trang này thuộc nhóm C.
+
+### Ca chưa test được
+
+- Tài khoản bị khoá hay bị tắt giữa phiên ở các trang nghiệp vụ: phần đăng nhập và phiên thuộc nhóm C. Nhóm B chỉ test được ca bị bỏ giao ngân hàng (DB-04).
+- Tin SMS đang gửi chuyển sang lỗi đúng lúc người dùng bấm Gửi lại: cần worker SMS chạy thật, e2e không bật worker.
+- Ảnh HEIC, ảnh rất lớn về số pixel ở Tải ảnh thay thế: đường xử lý ảnh dùng chung với web học sinh, nhóm A test ở đó. Nhóm B test file chữ đổi đuôi, 0 byte, 21 MB, 23 MB, mất mạng và chọn lại đúng ảnh đang chọn.
+
+### Kết quả các lệnh
+
+Chạy 2026-11-06 trên nhánh `dev`, sau commit ab3249d. Lúc chạy, working tree còn thay đổi chưa commit của nhóm A.
+
+| Lệnh | Kết quả |
+|---|---|
+| `bun run test` | 232 pass, 0 fail |
+| `bunx tsc --noEmit` | 0 lỗi |
+| `bun run lint` | 0 lỗi, 2 cảnh báo `no-img-element` có từ trước ở `GuideDialog.tsx` và `CodeFormDialog.tsx` |
+| `bun test:db` trên DB tạm `zz_test_edge_b` | 253 pass, 0 fail |
+| `bun run e2e e2e/edge-business.spec.ts e2e/edge-business-detail.spec.ts e2e/edge-business-lists.spec.ts` | 32 pass, 0 fail |
