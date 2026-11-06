@@ -1,6 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { BANK, NAME, SCHOOL } from "../scripts/e2e-data-student";
-import { PHONE, apiCreate, apiPhotos, apiPick, apiSubmit, dbOp, device, expectInsideScreen, expectNoSideScroll, info, onDevice, withEdgeData, type ApiStudent } from "./edge-student-support";
+import { PHONE, apiCreate, apiPhotos, apiPick, apiSubmit, dbOp, device, expectInsideBox, expectInsideScreen, expectNoSideScroll, info, onDevice, withEdgeData, type ApiStudent } from "./edge-student-support";
 
 // Máy đặt múi giờ khác Việt Nam: màn kết quả vẫn phải hiện giờ Việt Nam.
 test.use({ ...PHONE, timezoneId: "America/New_York" });
@@ -31,7 +31,7 @@ test("F1, F2, F4, F5 họ tên 100 ký tự không dấu cách, tên ngân hàng
   await expect(banks(page).getByText("Chờ kiểm tra")).toHaveCount(2);
   await expect(page.getByRole("region", { name: "App PVI" })).toHaveCount(0);
   await expectNoSideScroll(page);
-  await expectInsideScreen(page, banks(page).getByText("Chờ kiểm tra"));
+  await expectInsideBox(banks(page).getByRole("listitem"), ":scope > *");
   await expectInsideScreen(page, page.getByRole("heading", { level: 1 }));
 
   dbOp("submitted", s.id, "2026-11-05T17:30:00Z");
@@ -61,7 +61,7 @@ test("F3, F6, F7 có voucher, một ngân hàng Đạt một Không đạt: kh�
   await expect(page.getByText(/voucher/i)).toHaveCount(0);
   await expect(page.getByText(/ZZE2E-HSB/)).toHaveCount(0);
   await expectNoSideScroll(page);
-  await expectInsideScreen(page, banks(page).locator("li > *"));
+  await expectInsideBox(banks(page).getByRole("listitem"), ":scope > *");
 
   await page.reload();
   await expect(banks(page).getByText("Không đạt", { exact: true })).toHaveCount(1);

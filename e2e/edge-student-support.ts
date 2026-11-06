@@ -106,6 +106,23 @@ export async function expectInsideScreen(page: Page, selector: ReturnType<Page["
     expect(box.right, "phần tử tràn mép phải").toBeLessThanOrEqual(width);
 }
 
+// Phần tử con phải nằm trọn trong khung của chính nó: đo với khung cha, không đo với màn hình.
+export async function expectInsideBox(boxes: Locator, childSelector: string) {
+  const gaps = await boxes.evaluateAll(
+    (els, selector) =>
+      els.flatMap((el) => {
+        const outer = el.getBoundingClientRect();
+        return [...el.querySelectorAll(selector)].map((child) => {
+          const inner = child.getBoundingClientRect();
+          return { left: inner.left - outer.left, right: outer.right - inner.right, top: inner.top - outer.top, bottom: outer.bottom - inner.bottom };
+        });
+      }),
+    childSelector,
+  );
+  expect(gaps.length, "không thấy phần tử con").toBeGreaterThan(0);
+  for (const gap of gaps) for (const [side, value] of Object.entries(gap)) expect(value, `tràn cạnh ${side} của khung`).toBeGreaterThanOrEqual(-0.5);
+}
+
 // Ô tick, vòng tròn đánh dấu phải giữ kích thước khi chữ bên cạnh dài: phần tử flex thiếu flex-none bị bóp hẹp.
 export async function expectBoxSize(items: Locator, width: number, height: number) {
   const boxes = await items.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().toJSON() as { width: number; height: number }));

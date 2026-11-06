@@ -11,6 +11,7 @@ import {
   dbOp,
   device,
   expectBoxSize,
+  expectInsideBox,
   expectInsideScreen,
   expectNoSideScroll,
   info,
@@ -108,7 +109,7 @@ test.describe("C. B2 chọn ngân hàng", () => {
     await expect(page.getByText("Đã chọn 2/2.")).toBeVisible();
     await expectNoSideScroll(page);
     await expectInsideScreen(page, buttons);
-    await expectInsideScreen(page, buttons.locator("svg"));
+    await expectInsideBox(buttons, ":scope > span");
   });
 
   test("C7 bấm đúp Tiếp tục: giữ chỗ một lần, vào B3, không có câu lỗi", async ({ page, request }) => {
@@ -136,6 +137,7 @@ test.describe("D. B3 mở tài khoản", () => {
     await expectNoSideScroll(page);
     const tabs = page.getByRole("tablist", { name: "Ngân hàng đã chọn" });
     await expectInsideScreen(page, tabs.getByRole("tab"));
+    await expectInsideBox(tabs.getByRole("tab"), ":scope > span[aria-hidden]");
 
     const panel = page.getByRole("tabpanel");
     await expect(panel.getByRole("listitem").filter({ hasText: /^Tải app|^Mở https|^Nhập/ })).toHaveText(GUIDE_LONG);
