@@ -217,13 +217,13 @@ test("Trang 4 ghi chú: ô nhập chặn ở 1.000 ký tự, API từ chối 1.0
   await expect(bank1(a).getByRole("region", { name: "Ghi chú nội bộ" }).locator("p")).toHaveText("Ghi chú lúc mất mạng");
 });
 
-// Giữ request lại tới khi test cho đi; máy chủ giả trả 204 nên dữ liệu không đổi.
-async function hold(page: Page, url: string) {
+// Giữ request lại tới khi test cho đi; máy chủ giả trả lời nên dữ liệu không đổi.
+async function hold(page: Page, url: string, reply: { status: number; json?: object } = { status: 204 }) {
   let release = () => {};
   const gate = new Promise<void>((resolve) => (release = resolve));
   await page.route(url, async (route) => {
     await gate;
-    await route.fulfill({ status: 204 });
+    await route.fulfill(reply);
   });
   return release;
 }
@@ -249,6 +249,29 @@ test("Trang 4: đang tải ảnh thay thế hay đang lưu ghi chú thì Huỷ b
     release();
     await expect(page.getByRole("dialog"), title).toHaveCount(0);
     await page.unroute(url);
+  }
+});
+
+test("Trang 4 hộp Đạt đang gửi: nhấn Esc 4 lần hay trình duyệt tự đóng thẻ dialog thì hộp vẫn mở, không có nút Đóng; máy chủ trả 409 thì câu báo hiện trong hộp, Huỷ rồi bấm Đạt mở lại được hộp", async ({ browser }) => {
+  const page = await loginAs(browser, "zz_e2e_admin");
+  await open(page, detail(B.B_IDS.note));
+  const confirm = page.getByRole("dialog", { name: "Đánh dấu Đạt" });
+  // Chrome tự đóng <dialog> ở lần Esc thứ ba liền hay khi bấm Back trên Android, không phát cancel; dialog.close() giả lần đóng đó.
+  for (const how of ["Esc 4 lần", "dialog.close()"] as const) {
+    const release = await hold(page, "**/review", { status: 409, json: { message: TAKEN } });
+    await bank1(page).getByRole("button", { name: "Đạt", exact: true }).click();
+    await confirm.getByRole("button", { name: "Đạt", exact: true }).click();
+    await expect(confirm.getByRole("button", { name: "Huỷ" }), how).toBeDisabled();
+    if (how === "Esc 4 lần") for (let i = 0; i < 4; i++) await page.keyboard.press("Escape");
+    else await confirm.evaluate((el) => (el as HTMLDialogElement).close());
+    await expect(confirm, how).toBeVisible();
+    await expect(confirm.getByRole("button", { name: "Đóng" }), how).toHaveCount(0);
+    release();
+    await expect(confirm.getByRole("alert"), how).toHaveText(TAKEN);
+    await expect(confirm.getByRole("button", { name: "Đóng" }), how).toBeVisible();
+    await confirm.getByRole("button", { name: "Huỷ" }).click();
+    await expect(page.getByRole("dialog"), how).toHaveCount(0);
+    await page.unroute("**/review");
   }
 });
 

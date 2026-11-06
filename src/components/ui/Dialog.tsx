@@ -3,9 +3,10 @@
 import { X } from "lucide-react";
 import { useId, useLayoutEffect, useRef, type ReactNode } from "react";
 
-type Props = { open: boolean; title: string; onClose: () => void; footer?: ReactNode; children: ReactNode; width?: number };
+// Như mgst-app: dismissible={false} ẩn nút Đóng và bỏ qua Esc, cho hộp đang gửi vì request đã đi thì đóng hộp không huỷ được.
+type Props = { open: boolean; title: string; onClose: () => void; footer?: ReactNode; children: ReactNode; width?: number; dismissible?: boolean };
 
-export function Dialog({ open, title, onClose, footer, children, width = 480 }: Props) {
+export function Dialog({ open, title, onClose, footer, children, width = 480, dismissible = true }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
   const closingByCode = useRef(false);
   const titleId = useId();
@@ -37,11 +38,13 @@ export function Dialog({ open, title, onClose, footer, children, width = 480 }: 
         // Huỷ hộp chọn file hay chọn lại đúng file cũ cũng phát `cancel` từ ô file và nổi lên tới đây; chỉ Esc phát trên chính thẻ dialog.
         if (e.target !== e.currentTarget) return;
         e.preventDefault();
-        onClose();
+        if (dismissible) onClose();
       }}
-      onClose={() => {
+      onClose={(e) => {
         if (closingByCode.current) closingByCode.current = false;
-        else onClose();
+        else if (dismissible) onClose();
+        // Chrome tự đóng ở lần Esc thứ ba liền hay khi bấm Back trên Android mà không phát cancel: mở lại cho khớp state của React.
+        else e.currentTarget.showModal();
       }}
       style={{ width }}
       // Tên trường, tên ngân hàng liền một chữ dài hơn hộp: cho xuống hàng ở bất kỳ ký tự nào, không đẩy nút Đóng ra ngoài.
@@ -51,9 +54,11 @@ export function Dialog({ open, title, onClose, footer, children, width = 480 }: 
         <h2 id={titleId} className="min-w-0 text-[17px] font-semibold">
           {title}
         </h2>
-        <button type="button" onClick={onClose} aria-label="Đóng" className="grid size-9 flex-none place-items-center rounded-lg border border-line text-text-2 hover:bg-surface">
-          <X size={16} aria-hidden />
-        </button>
+        {dismissible && (
+          <button type="button" onClick={onClose} aria-label="Đóng" className="grid size-9 flex-none place-items-center rounded-lg border border-line text-text-2 hover:bg-surface">
+            <X size={16} aria-hidden />
+          </button>
+        )}
       </div>
       <div className="flex flex-col gap-4 px-5 py-5">{children}</div>
       {footer && <div className="flex justify-end gap-2 border-t border-line px-5 py-4">{footer}</div>}

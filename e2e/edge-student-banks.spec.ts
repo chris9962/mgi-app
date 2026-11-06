@@ -359,7 +359,7 @@ test.describe("D. B3 mở tài khoản", () => {
     await confirm.getByRole("button", { name: "Quay lại", exact: true }).click();
     await deleting;
     await expect(confirm.getByRole("button", { name: "Huỷ" })).toBeDisabled();
-    await confirm.getByRole("button", { name: "Đóng" }).click();
+    await expect(confirm.getByRole("button", { name: "Đóng" })).toHaveCount(0);
     await page.keyboard.press("Escape");
     await expect(confirm).toBeVisible();
     release();
