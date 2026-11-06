@@ -81,6 +81,12 @@ describe("tìm nhiều từ như mgst-app: mỗi từ một điều kiện, khô
     expect(names((await listSms(admin, parseSmsFilters({ q: "anh edgeb", status: "all" }), 1)).rows)).toEqual(["Edgeb Nguyễn Thị Anh"]);
   });
 
+  test("Mã voucher: mỗi từ khớp mã hoặc họ tên như ô tìm của mgst-app", async () => {
+    for (const q of ["nta anh", "anh zztestedgeb-nta", "11a3 edgeb", "NGUYỄN aaaa"]) expect([q, names((await listVouchers(admin, parseVoucherFilters({ q }), 1)).rows)]).toEqual([q, ["Edgeb Nguyễn Thị Anh"]]);
+    expect(names((await listVouchers(admin, parseVoucherFilters({ q: "nta nam" }), 1)).rows)).toEqual([]);
+    expect((await exportVouchers(admin, parseVoucherFilters({ q: "nta anh" }), null)).ok).toBe(true);
+  });
+
   test("cắt ở 8 từ và 100 ký tự: phần thừa không thành điều kiện", async () => {
     const nine = "edgeb nguyen thi anh edgeb nguyen thi anh khongcotrongten";
     expect(names((await listCustomers(admin, parseCustomerFilters({ q: nine }), 1)).rows)).toEqual(["Edgeb Nguyễn Thị Anh"]);

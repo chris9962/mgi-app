@@ -123,6 +123,9 @@ test.describe("Trang 12 Mã voucher", () => {
     await open(page, `/vouchers?${q("trang 07 bien")}`);
     await expect(meta(page, VC, "mã")).toHaveText("1 mã");
     await expect(rows(page, VC)).toContainText(B.bPageVoucher(7));
+    await open(page, `/vouchers?${q("bpt07 phan trang")}`);
+    await expect(meta(page, VC, "mã")).toHaveText("1 mã");
+    await expect(rows(page, VC)).toContainText(B.bPageVoucher(7));
     await open(page, `/vouchers?${q("bien phan trang")}`);
     await expect(meta(page, VC, "mã")).toHaveText("16 mã");
     await expect(rows(page, VC)).toHaveCount(15);

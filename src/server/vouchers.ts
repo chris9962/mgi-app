@@ -1,7 +1,7 @@
 import { and, count, desc, eq, gte, like, lt, or, type SQL } from "drizzle-orm";
 import { db } from "./db/client";
 import { customers, schools, vouchers } from "./db/schema";
-import { containsPattern, likeEachTerm, SEARCH_MAX_LENGTH } from "./search";
+import { containsPattern, searchTerms } from "./search";
 import { can } from "@/lib/permissions";
 import { dayRange } from "@/lib/urlParams";
 import type { VoucherFilters } from "@/lib/voucherFilters";
@@ -14,7 +14,8 @@ export type VoucherRow = { id: string; code: string; customerId: string; fullNam
 export function voucherWhere(f: VoucherFilters): SQL | undefined {
   const { start, end } = dayRange(f.from, f.to);
   return and(
-    f.q ? or(like(vouchers.code, containsPattern(f.q.slice(0, SEARCH_MAX_LENGTH).toUpperCase())), likeEachTerm(customers.nameSearch, f.q)) : undefined,
+    // Như ô tìm tài khoản của mgst-app: mỗi từ khớp mã hoặc họ tên, "bpt07 phan trang" ra mã BPT07 của Biên Phân Trang.
+    and(...searchTerms(f.q).map((t) => or(like(vouchers.code, containsPattern(t.toUpperCase())), like(customers.nameSearch, containsPattern(t))))),
     start ? gte(vouchers.issuedAt, start) : undefined,
     end ? lt(vouchers.issuedAt, end) : undefined,
   );
