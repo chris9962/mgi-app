@@ -117,7 +117,8 @@ test("đăng nhập: đã đăng nhập mà mở /login thì về trang chủ; A
   await apiLogin(page, "zz_e2e_admin");
   await page.goto("/login");
   await expect(page).toHaveURL(/\/users$/);
-  for (const headers of [{}, { Origin: "http://evil.example" }, { Origin: "http://bank.localhost:3100" }, { Origin: "not a url" }]) {
+  const origins: Record<string, string>[] = [{}, { Origin: "http://evil.example" }, { Origin: "http://bank.localhost:3100" }, { Origin: "not a url" }];
+  for (const headers of origins) {
     expect((await api(page, "POST", "/api/admin/login", { username: "zz_e2e_admin", password: "x" }, headers)).status).toBe(403);
     expect((await api(page, "POST", "/api/admin/logout", undefined, headers)).status).toBe(403);
   }
