@@ -33,7 +33,6 @@ function PviQr({ state }: { state: StudentState }) {
 }
 
 export function Result({ state }: { state: StudentState }) {
-  const failedWithPass = state.voucher ? state.banks.filter((b) => b.status === "failed") : [];
   return (
     <>
       <AppHead school={state.school.name} title={`${state.customer.fullName} - ${state.customer.className}`} />
@@ -53,11 +52,6 @@ export function Result({ state }: { state: StudentState }) {
         ))}
       </ul>
       <PviQr state={state} />
-      {failedWithPass.map((b) => (
-        <p key={b.id} className="mt-3 text-sm text-text-2">
-          {b.name} không đạt: nhân viên gọi cho phụ huynh để hướng dẫn.
-        </p>
-      ))}
       <Bottom>
         <ZaloBox url={state.zaloUrl} text="Cần hỏi: kết bạn Zalo với nhân viên." />
       </Bottom>

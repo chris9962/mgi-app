@@ -39,7 +39,7 @@ test("F1, F2, F4, F5 họ tên 100 ký tự không dấu cách, tên ngân hàng
   await expect(page.getByText("Đã gửi 06/11/2026 00:30. Nhân viên kiểm tra trong giờ làm việc.")).toBeVisible();
 });
 
-test("F3, F6, F7 có voucher, một ngân hàng Đạt một Không đạt: khối App PVI có QR và nút Mở app PVI, không có chữ voucher, câu không đạt xuống dòng", async ({ page, request }) => {
+test("F3, F6, F7 có voucher, một ngân hàng Đạt một Không đạt: khối App PVI có QR và nút Mở app PVI, không có chữ voucher, không có câu nhân viên gọi cho phụ huynh", async ({ page, request }) => {
   const s = await submitted(request, "Phạm Có Quà");
   dbOp("voucher", s.id);
   dbOp("review", s.id, "passed,failed");
@@ -49,8 +49,7 @@ test("F3, F6, F7 có voucher, một ngân hàng Đạt một Không đạt: kh�
   await expect(page.getByText(/^Kiểm tra xong \d{2}\/\d{2}\/\d{4} \d{2}:\d{2}$/)).toBeVisible();
   await expect(banks(page).getByText(/^(✓\s*)?Đạt$/)).toHaveCount(1);
   await expect(banks(page).getByText("Không đạt", { exact: true })).toHaveCount(1);
-  await expect(page.getByText(`${NAME.bankLongWord} không đạt: nhân viên gọi cho phụ huynh để hướng dẫn.`)).toBeVisible();
-  await expect(page.getByText(`${NAME.bankLongSpace} không đạt`)).toHaveCount(0);
+  await expect(page.getByText(/gọi cho phụ huynh/)).toHaveCount(0);
   expect(pviAppUrl, "Cài đặt chưa có link app PVI").toMatch(/^https?:\/\//);
   const pvi = page.getByRole("region", { name: "App PVI" });
   await expect(pvi.getByRole("img", { name: "QR mở app PVI" })).toBeVisible();

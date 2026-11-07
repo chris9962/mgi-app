@@ -124,7 +124,7 @@ Brief chung ở `docs/plans/2026-11-06-e2e-ca-bien.md`. Mọi ca e2e chạy ở 
 | F3 | Có voucher, link app PVI đã cài | Khối App PVI có QR và nút "Mở app PVI" trỏ đúng link, mở tab mới. Không có chữ "voucher", không có mã voucher |
 | F4 | Chưa có voucher | Không có khối App PVI |
 | F5 | Gửi lúc 23:30 giờ Việt Nam, máy đặt múi giờ New York | Hiện "Đã gửi 05/11/2026 23:30" |
-| F6 | Một ngân hàng Đạt, một Không đạt (tên dài), có voucher | Câu "<tên> không đạt: nhân viên gọi cho phụ huynh để hướng dẫn." xuống dòng trong khung |
+| F6 | Một ngân hàng Đạt, một Không đạt (tên dài), có voucher | Không có câu "nhân viên gọi cho phụ huynh" ở màn kết quả (chủ dự án chốt 2026-11-07). |
 | F7 | Tải lại màn kết quả | Giữ nguyên trạng thái, không có nút Gửi kiểm tra |
 | F8 | Khối Zalo có link dài ở màn hết lượt, màn không có ngân hàng phù hợp, màn kết quả | QR và chữ nằm trọn trong khối, khối nằm trọn trong khổ 390 px |
 
