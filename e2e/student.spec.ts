@@ -53,8 +53,8 @@ test("Học sinh quét link trường, khai thông tin, chọn 2 ngân hàng, n�
     await page.getByRole("tab", { name: new RegExp(tab) }).click();
     const names = await panel.locator('input[type="file"]').evaluateAll((els) => els.map((el) => el.getAttribute("aria-label")!.split(":")[0]));
     for (const name of names) {
-      await panel.getByLabel(`${name}: chụp hoặc chọn ảnh`).setInputFiles(PHOTO);
-      await expect(panel.getByLabel(`${name}: chụp lại`)).toBeAttached({ timeout: 30_000 });
+      await panel.getByLabel(`${name}: chọn ảnh`).setInputFiles(PHOTO);
+      await expect(panel.getByLabel(`${name}: chọn lại`)).toBeAttached({ timeout: 30_000 });
     }
     await expect(page.getByRole("tab", { name: new RegExp(tab) })).toContainText("đủ ảnh");
   }
@@ -86,8 +86,8 @@ test("đang tải ảnh thì không gửi kiểm tra được; tải ảnh lỗi
   const send = page.getByRole("button", { name: "Gửi kiểm tra" });
   for (const tab of ["ZZE2E HS MB", "ZZE2E HS TPBank"]) {
     await page.getByRole("tab", { name: new RegExp(tab) }).click();
-    await panel.getByLabel("Ảnh màn hình chính: chụp hoặc chọn ảnh").setInputFiles(PHOTO);
-    await expect(panel.getByLabel("Ảnh màn hình chính: chụp lại")).toBeAttached({ timeout: 30_000 });
+    await panel.getByLabel("Ảnh màn hình chính: chọn ảnh").setInputFiles(PHOTO);
+    await expect(panel.getByLabel("Ảnh màn hình chính: chọn lại")).toBeAttached({ timeout: 30_000 });
   }
   await expect(send).toBeEnabled();
 
@@ -97,7 +97,7 @@ test("đang tải ảnh thì không gửi kiểm tra được; tải ảnh lỗi
     await gate;
     await route.continue();
   });
-  await panel.getByLabel("Ảnh màn hình chính: chụp lại").setInputFiles(PHOTO);
+  await panel.getByLabel("Ảnh màn hình chính: chọn lại").setInputFiles(PHOTO);
   await expect(panel.getByText("Đang tải ảnh")).toBeVisible();
   await expect(send).toBeDisabled();
   release();
@@ -106,11 +106,11 @@ test("đang tải ảnh thì không gửi kiểm tra được; tải ảnh lỗi
   await page.unroute("**/api/customers/me/photos");
 
   await page.route("**/api/customers/me/photos", (route) => route.abort("connectionreset"));
-  await panel.getByLabel("Ảnh màn hình chính: chụp lại").setInputFiles(PHOTO);
+  await panel.getByLabel("Ảnh màn hình chính: chọn lại").setInputFiles(PHOTO);
   await expect(panel.getByRole("alert")).toContainText("Không tải được ảnh");
   await expect(panel.getByText("Đang tải ảnh")).toHaveCount(0);
   await page.unroute("**/api/customers/me/photos");
-  await panel.getByLabel("Ảnh màn hình chính: chụp lại").setInputFiles(PHOTO);
+  await panel.getByLabel("Ảnh màn hình chính: chọn lại").setInputFiles(PHOTO);
   await expect(panel.getByRole("alert")).toHaveCount(0, { timeout: 30_000 });
   await expect(send).toBeEnabled();
 });

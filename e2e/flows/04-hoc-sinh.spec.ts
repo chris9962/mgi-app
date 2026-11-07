@@ -22,8 +22,8 @@ test("Flow 4: học sinh mở link QR, chọn 2 ngân hàng, nộp ảnh, gửi 
     await expect(page.getByRole("heading", { name: "Mở tài khoản" })).toBeVisible();
   };
   const upload = async (slot: string) => {
-    await panel.getByLabel(`${slot}: chụp hoặc chọn ảnh`).setInputFiles(PHOTO);
-    await expect(panel.getByLabel(`${slot}: chụp lại`)).toBeAttached({ timeout: 30_000 });
+    await panel.getByLabel(`${slot}: chọn ảnh`).setInputFiles(PHOTO);
+    await expect(panel.getByLabel(`${slot}: chọn lại`)).toBeAttached({ timeout: 30_000 });
   };
 
   await test.step("Mở web khi chưa quét QR", async () => {

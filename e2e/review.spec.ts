@@ -34,8 +34,8 @@ async function submittedStudent(browser: Browser): Promise<Page> {
     await page.getByRole("tab", { name: new RegExp(tab) }).click();
     const names = await panel.locator('input[type="file"]').evaluateAll((els) => els.map((el) => el.getAttribute("aria-label")!.split(":")[0]));
     for (const name of names) {
-      await panel.getByLabel(`${name}: chụp hoặc chọn ảnh`).setInputFiles(PHOTO);
-      await expect(panel.getByLabel(`${name}: chụp lại`)).toBeAttached({ timeout: 30_000 });
+      await panel.getByLabel(`${name}: chọn ảnh`).setInputFiles(PHOTO);
+      await expect(panel.getByLabel(`${name}: chọn lại`)).toBeAttached({ timeout: 30_000 });
     }
   }
   await page.getByRole("button", { name: "Gửi kiểm tra" }).click();

@@ -125,7 +125,7 @@ export function OpenAccount({ state, onChange }: { state: StudentState; onChange
   const focusError = useRef(false);
   const current = banks.find((b) => b.id === active) ?? banks[0];
   const hasPhoto = banks.some((b) => b.slots.some((s) => s.photo));
-  // Đang tải hoặc chụp lại ảnh thì chưa gửi: gửi lúc đó là gửi ảnh cũ, ảnh mới bị bỏ.
+  // Đang tải hoặc chọn lại ảnh thì chưa gửi: gửi lúc đó là gửi ảnh cũ, ảnh mới bị bỏ.
   const ready = banks.length > 0 && banks.every(complete) && busySlots.length === 0;
   const markBusy = (slotId: string, busy: boolean) => setBusySlots((list) => (busy ? [...list, slotId] : list.filter((id) => id !== slotId)));
   // Ảnh vừa nộp có thể lấp đúng khung mà câu lỗi đang nhắc: câu cũ không được ở lại tới lần bấm sau.

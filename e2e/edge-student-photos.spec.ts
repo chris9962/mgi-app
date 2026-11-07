@@ -32,14 +32,14 @@ function countUploads(page: Page) {
 }
 
 async function pick(page: Page, slot: string, file: string | { name: string; mimeType: string; buffer: Buffer }) {
-  await page.getByRole("tabpanel").getByLabel(`${slot}: chụp hoặc chọn ảnh`).setInputFiles(file);
+  await page.getByRole("tabpanel").getByLabel(`${slot}: chọn ảnh`).setInputFiles(file);
 }
 
 test("E1 file văn bản đổi đuôi .jpg: báo chỉ nhận ảnh, khung vẫn trống", async ({ page, request }) => {
   await atB3(page, request, "Ảnh Giả Đuôi");
   await pick(page, MAIN, { name: "anh.jpg", mimeType: "image/jpeg", buffer: Buffer.from("đây không phải ảnh, chỉ là chữ") });
   await expect(slotItem(page, MAIN).getByRole("alert")).toHaveText("Chỉ nhận ảnh jpg, png, webp hoặc heic.");
-  await expect(page.getByRole("tabpanel").getByLabel(`${MAIN}: chụp hoặc chọn ảnh`)).toBeEnabled();
+  await expect(page.getByRole("tabpanel").getByLabel(`${MAIN}: chọn ảnh`)).toBeEnabled();
 });
 
 test("E2 file .txt: báo không mở được ảnh, không gửi lên máy chủ", async ({ page, request }) => {
@@ -67,7 +67,7 @@ test("E4 file HEIC 21 MB trình duyệt không mở được: báo lớn hơn 20
 test("E5 ảnh HEIC thật mà Chrome không mở được: gửi bản gốc, máy chủ đổi WebP, khung ghi Đã gửi", async ({ page, request }) => {
   const s = await atB3(page, request, "Ảnh Máy Android");
   await pick(page, MAIN, { name: "IMG_0002.HEIC", mimeType: "image/heic", buffer: readFileSync("tests/fixtures/heic-320x240.heic") });
-  await expect(page.getByRole("tabpanel").getByLabel(`${MAIN}: chụp lại`)).toBeAttached({ timeout: 30_000 });
+  await expect(page.getByRole("tabpanel").getByLabel(`${MAIN}: chọn lại`)).toBeAttached({ timeout: 30_000 });
   await expect(slotItem(page, MAIN).getByText("Đã gửi")).toBeVisible();
   const photo = (await s.me()).banks[0].slots[0].photo!;
   expect(new URL(photo.url).pathname).toMatch(/\.webp$/);
@@ -78,9 +78,9 @@ test("E6, E7 ảnh JPEG 6000x8000 và ảnh PNG 1x1: gửi được, ảnh lớn
   const big = await sharp({ create: { width: 6000, height: 8000, channels: 3, background: { r: 30, g: 120, b: 200 } } }).jpeg({ quality: 90 }).toBuffer();
   const tiny = await sharp({ create: { width: 1, height: 1, channels: 3, background: { r: 0, g: 0, b: 0 } } }).png().toBuffer();
   await pick(page, MAIN, { name: "lon.jpg", mimeType: "image/jpeg", buffer: big });
-  await expect(page.getByRole("tabpanel").getByLabel(`${MAIN}: chụp lại`)).toBeAttached({ timeout: 60_000 });
+  await expect(page.getByRole("tabpanel").getByLabel(`${MAIN}: chọn lại`)).toBeAttached({ timeout: 60_000 });
   await pick(page, TRANSFER, { name: "nho.png", mimeType: "image/png", buffer: tiny });
-  await expect(page.getByRole("tabpanel").getByLabel(`${TRANSFER}: chụp lại`)).toBeAttached({ timeout: 30_000 });
+  await expect(page.getByRole("tabpanel").getByLabel(`${TRANSFER}: chọn lại`)).toBeAttached({ timeout: 30_000 });
   const [main, transfer] = (await s.me()).banks[0].slots;
   expect(main.photo!.sizeBytes).toBeLessThanOrEqual(300 * 1024);
   expect(transfer.photo!.sizeBytes).toBeGreaterThan(0);
@@ -102,12 +102,12 @@ test("E8 đang tải ảnh ở một khung: ô chọn của khung đó khoá, kh
   const send = page.getByRole("button", { name: "Gửi kiểm tra" });
   await pick(page, MAIN, PHOTO);
   await expect(slotItem(page, MAIN).getByText("Đang tải ảnh")).toBeVisible();
-  await expect(page.getByRole("tabpanel").getByLabel(`${MAIN}: chụp hoặc chọn ảnh`)).toBeDisabled();
+  await expect(page.getByRole("tabpanel").getByLabel(`${MAIN}: chọn ảnh`)).toBeDisabled();
   await pick(page, TRANSFER, PHOTO);
-  await expect(page.getByRole("tabpanel").getByLabel(`${TRANSFER}: chụp lại`)).toBeAttached({ timeout: 30_000 });
+  await expect(page.getByRole("tabpanel").getByLabel(`${TRANSFER}: chọn lại`)).toBeAttached({ timeout: 30_000 });
   await expect(slotItem(page, MAIN).getByText("Đang tải ảnh")).toBeVisible();
   await expect(send).toBeDisabled();
   release();
-  await expect(page.getByRole("tabpanel").getByLabel(`${MAIN}: chụp lại`)).toBeAttached({ timeout: 30_000 });
+  await expect(page.getByRole("tabpanel").getByLabel(`${MAIN}: chọn lại`)).toBeAttached({ timeout: 30_000 });
   await expect(send).toBeEnabled();
 });

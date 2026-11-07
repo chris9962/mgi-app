@@ -37,8 +37,8 @@ async function openAt(page: Page, schoolId: string, s: ApiStudent) {
 
 async function uploadIn(page: Page, slot: string) {
   const panel = page.getByRole("tabpanel");
-  await panel.getByLabel(`${slot}: chụp hoặc chọn ảnh`).setInputFiles(PHOTO);
-  await expect(panel.getByLabel(`${slot}: chụp lại`)).toBeAttached({ timeout: 30_000 });
+  await panel.getByLabel(`${slot}: chọn ảnh`).setInputFiles(PHOTO);
+  await expect(panel.getByLabel(`${slot}: chọn lại`)).toBeAttached({ timeout: 30_000 });
 }
 
 test.describe("C. B2 chọn ngân hàng", () => {
@@ -283,7 +283,7 @@ test.describe("D. B3 mở tài khoản", () => {
     const confirm = page.getByRole("dialog", { name: "Quay lại chọn ngân hàng" });
     await confirm.getByRole("button", { name: "Huỷ" }).click();
     await expect(confirm).toHaveCount(0);
-    await expect(page.getByRole("tabpanel").getByLabel("Ảnh màn hình chính: chụp lại")).toBeAttached();
+    await expect(page.getByRole("tabpanel").getByLabel("Ảnh màn hình chính: chọn lại")).toBeAttached();
     expect((await s.me()).banks[0].slots[0].photo).not.toBeNull();
   });
 
@@ -335,7 +335,7 @@ test.describe("D. B3 mở tài khoản", () => {
       await expect(confirm).toHaveCount(0);
       await expect(alertIn(page)).toHaveText("Trường đã đóng.");
       await expect(back).toHaveCount(0);
-      await expect(page.getByRole("tabpanel").getByLabel("Ảnh màn hình chính: chụp lại")).toBeAttached();
+      await expect(page.getByRole("tabpanel").getByLabel("Ảnh màn hình chính: chọn lại")).toBeAttached();
       await expect(alertIn(page)).toBeFocused();
     } finally {
       dbOp("school", SCHOOL.closing, "open");
@@ -394,7 +394,7 @@ test.describe("D. B3 mở tài khoản", () => {
     await openAt(page, SCHOOL.photo, s);
     await expect(page.getByRole("heading", { name: "Mở tài khoản" })).toBeVisible();
     expect((await request.delete(`${STUDENT}/api/customers/me/banks`, { headers: s.auth })).status()).toBe(204);
-    await page.getByRole("tabpanel").getByLabel("Ảnh màn hình chính: chụp hoặc chọn ảnh").setInputFiles(PHOTO);
+    await page.getByRole("tabpanel").getByLabel("Ảnh màn hình chính: chọn ảnh").setInputFiles(PHOTO);
     await expect(page.getByRole("heading", { name: "Chọn 2 ngân hàng" })).toBeVisible({ timeout: 30_000 });
     await expect(page.getByText("Hồ sơ đã gửi kiểm tra.")).toHaveCount(0);
     await expect(alertIn(page)).toHaveCount(0);
@@ -466,8 +466,8 @@ test.describe("D. B3 mở tài khoản", () => {
     await late;
     await page.evaluate(() => new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve))));
     const panel = page.getByRole("tabpanel");
-    await expect(panel.getByLabel("Ảnh màn hình chính: chụp lại")).toBeAttached();
-    await expect(panel.getByLabel("Ảnh màn hình chính: chụp hoặc chọn ảnh")).toHaveCount(0);
+    await expect(panel.getByLabel("Ảnh màn hình chính: chọn lại")).toBeAttached();
+    await expect(panel.getByLabel("Ảnh màn hình chính: chọn ảnh")).toHaveCount(0);
   });
 
   test("D18 link ảnh mẫu, ảnh đã nộp, ảnh QR hết hạn trả 403: khung vẫn ghi Đã gửi, khung giữ kích thước, trang không cuộn ngang", async ({ page, request }) => {
@@ -491,7 +491,7 @@ test.describe("D. B3 mở tài khoản", () => {
     await expect.poll(() => denied.length).toBeGreaterThanOrEqual(3);
     const main = panel.getByRole("listitem").filter({ hasText: "Ảnh màn hình chính" });
     await expect(main.getByText("Đã gửi")).toBeVisible();
-    await expect(main.getByText("Chụp lại")).toBeVisible();
+    await expect(main.getByText("Chọn lại")).toBeVisible();
     await expect(main.getByText("Ảnh mẫu", { exact: true })).toBeVisible();
     await expectBoxSize(qr, 96, 96);
     for (const box of [main.locator("label"), main.getByRole("button", { name: "Xem ảnh mẫu Ảnh màn hình chính" })]) expect((await box.boundingBox())!.height).toBeCloseTo(160, 0);
@@ -528,7 +528,7 @@ test.describe("D. B3 mở tài khoản", () => {
     dbOp("slot-remove", SLOT.stale2);
     try {
       const panel = page.getByRole("tabpanel");
-      await panel.getByLabel("Ảnh 2: chụp hoặc chọn ảnh").setInputFiles(PHOTO);
+      await panel.getByLabel("Ảnh 2: chọn ảnh").setInputFiles(PHOTO);
       await expect(panel.getByText("2. Ảnh 2")).toHaveCount(0, { timeout: 30_000 });
       await expect(send).toBeEnabled();
       await send.click();
@@ -550,7 +550,7 @@ test.describe("D. B3 mở tài khoản", () => {
       await send.click();
       await expect(alertIn(page)).toHaveText("Còn khung chưa có ảnh.");
       await tab(page, NAME.stale).click();
-      await expect(page.getByRole("tabpanel").getByLabel("Ảnh mới: chụp hoặc chọn ảnh")).toBeAttached();
+      await expect(page.getByRole("tabpanel").getByLabel("Ảnh mới: chọn ảnh")).toBeAttached();
       await expect(send).toBeDisabled();
       await uploadIn(page, "Ảnh mới");
       await expect(alertIn(page)).toHaveCount(0);

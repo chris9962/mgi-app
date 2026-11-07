@@ -85,7 +85,7 @@ export function PhotoSlot({
             slot.photo ? "border-ok bg-card" : "border-dashed border-field-border bg-card text-text-2",
           )}
         >
-          <input type="file" accept="image/*" className="sr-only" disabled={busy} onChange={pick} aria-label={`${slot.name}: ${slot.photo ? "chụp lại" : "chụp hoặc chọn ảnh"}`} />
+          <input type="file" accept="image/*" className="sr-only" disabled={busy} onChange={pick} aria-label={`${slot.name}: ${slot.photo ? "chọn lại" : "chọn ảnh"}`} />
           {slot.photo ? (
             <>
               {/* eslint-disable-next-line @next/next/no-img-element */}
@@ -94,7 +94,7 @@ export function PhotoSlot({
                 <span className="text-ok-ink">
                   <span aria-hidden>✓ </span>Đã gửi
                 </span>
-                <span>Chụp lại</span>
+                <span>Chọn lại</span>
               </span>
             </>
           ) : (
@@ -102,7 +102,7 @@ export function PhotoSlot({
               <span aria-hidden className="text-2xl leading-none">
                 +
               </span>
-              <span>Chụp hoặc chọn ảnh</span>
+              <span>Chọn ảnh</span>
             </>
           )}
           {busy && (

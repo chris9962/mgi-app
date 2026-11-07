@@ -218,11 +218,11 @@ test.describe("A. Mở link và chọn trường", () => {
     await page.getByRole("button", { name: NAME.p3 }).click();
     await next(page).click();
     const panel = page.getByRole("tabpanel");
-    await panel.getByLabel("Ảnh màn hình chính: chụp hoặc chọn ảnh").setInputFiles("public/brand/photo.jpg");
-    await expect(panel.getByLabel("Ảnh màn hình chính: chụp lại")).toBeAttached({ timeout: 30_000 });
+    await panel.getByLabel("Ảnh màn hình chính: chọn ảnh").setInputFiles("public/brand/photo.jpg");
+    await expect(panel.getByLabel("Ảnh màn hình chính: chọn lại")).toBeAttached({ timeout: 30_000 });
     await page.reload();
     await expect(page.getByRole("heading", { name: "Mở tài khoản" })).toBeVisible();
-    await expect(page.getByRole("tabpanel").getByLabel("Ảnh màn hình chính: chụp lại")).toBeAttached();
+    await expect(page.getByRole("tabpanel").getByLabel("Ảnh màn hình chính: chọn lại")).toBeAttached();
   });
 
   test("A13 hai tab ở B3: tab kia đã gửi kiểm tra, bấm Gửi kiểm tra thì sang màn kết quả", async ({ page, request }) => {
