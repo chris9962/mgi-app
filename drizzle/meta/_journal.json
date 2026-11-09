@@ -71,6 +71,13 @@
       "when": 1794222033053,
       "tag": "0009_wild_zombie",
       "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1794226934786,
+      "tag": "0010_bank_logo_key",
+      "breakpoints": true
     }
   ]
 }

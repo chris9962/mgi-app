@@ -3,8 +3,8 @@ import { existsSync } from "node:fs";
 import { join } from "node:path";
 import bankList from "../../scripts/data/banks.json";
 
-test("logo của danh sách ngân hàng seed trỏ tới file có thật trong public", () => {
-  const missing = bankList.filter((b) => !existsSync(join(import.meta.dir, "../../public", b.logo))).map((b) => b.code);
+test("logo của danh sách ngân hàng seed trỏ tới file có thật trong scripts/data/bank-logos", () => {
+  const missing = bankList.filter((b) => !existsSync(join(import.meta.dir, "../../scripts/data/bank-logos", b.logo))).map((b) => b.code);
   expect(missing).toEqual([]);
 });
 

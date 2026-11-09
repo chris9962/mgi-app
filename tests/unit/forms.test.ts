@@ -1,6 +1,6 @@
 import { describe, expect, test } from "bun:test";
 import { CodeForm } from "../../src/lib/codeForm";
-import { GuideForm } from "../../src/lib/bankForm";
+import { BankForm, GuideForm } from "../../src/lib/bankForm";
 import { ADMIN_FOLDERS, allowedExt, extForMime, isAdminImageKey, isImageKey } from "../../src/lib/imageKey";
 
 const UUID = "3f2b9c1e-8a4d-4f6b-9c2e-1a2b3c4d5e6f";
@@ -49,12 +49,22 @@ describe("ảnh học sinh", () => {
     expect(extForMime("image/heif")).toBe("heic");
     expect(extForMime("text/html")).toBeNull();
   });
+  test("logo ngân hàng chỉ nhận khoá ảnh trong thư mục logos hoặc null; không gửi thì để trống", () => {
+    const bank = (extra: object) => BankForm.safeParse({ code: "MB", name: "MB Bank", sortOrder: "1", managerIds: [], ...extra });
+    expect(bank({ logoKey: `logos/2026-11-05/${UUID}.webp` }).success).toBe(true);
+    expect(bank({ logoKey: null }).success).toBe(true);
+    expect(bank({}).success).toBe(true);
+    expect(bank({ logoKey: `samples/2026-11-05/${UUID}.webp` }).success).toBe(false);
+    expect(bank({ logoKey: "/banks/mb.webp" }).success).toBe(false);
+    expect(bank({ logoKey: "" }).success).toBe(false);
+  });
   test("trang quản lý không tải ảnh vào thư mục proofs", () => {
     expect(ADMIN_FOLDERS).not.toContain("proofs");
   });
-  test("route đọc ảnh của trang quản lý chỉ đọc ảnh mẫu và ảnh QR, ảnh học sinh chờ kiểm quyền theo ngân hàng", () => {
+  test("route đọc ảnh của trang quản lý chỉ đọc ảnh mẫu, ảnh QR và logo, ảnh học sinh chờ kiểm quyền theo ngân hàng", () => {
     expect(isAdminImageKey(`samples/2026-11-05/${UUID}.jpg`)).toBe(true);
     expect(isAdminImageKey(`qr/2026-11-05/${UUID}.png`)).toBe(true);
+    expect(isAdminImageKey(`logos/2026-11-05/${UUID}.webp`)).toBe(true);
     expect(isAdminImageKey(`proofs/2026-11-05/${UUID}.webp`)).toBe(false);
     expect(isAdminImageKey("../x")).toBe(false);
   });

@@ -1,0 +1,1 @@
+ALTER TABLE "banks" RENAME COLUMN "logo" TO "logo_key";

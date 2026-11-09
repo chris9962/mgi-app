@@ -1,6 +1,6 @@
 export type CustomerStatus = "new" | "banks_selected" | "pending_review" | "reviewed" | "no_bank";
 
-export type StudentSchool = { id: string; name: string; active: boolean; banks: { id: string; name: string; logo: string | null }[] };
+export type StudentSchool = { id: string; name: string; active: boolean; banks: { id: string; name: string; logoUrl: string | null }[] };
 
 export type CustomerBankStatus = "selected" | "pending" | "passed" | "failed";
 
@@ -26,7 +26,7 @@ export type StudentState = {
   reviewedAt: string | null;
   parentPhone: string;
   voucher: { smsSentAt: string | null } | null;
-  eligibleBanks: { id: string; name: string; logo: string | null }[];
+  eligibleBanks: { id: string; name: string; logoUrl: string | null }[];
   existingBanks: string[];
   banks: StudentBank[];
   zaloUrl: string;

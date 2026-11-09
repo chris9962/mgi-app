@@ -1,8 +1,8 @@
-export const FOLDERS = ["samples", "qr", "proofs"] as const;
+export const FOLDERS = ["samples", "qr", "logos", "proofs"] as const;
 export type Folder = (typeof FOLDERS)[number];
 
-// Ảnh chứng minh của học sinh chỉ đi qua route của học sinh; trang quản lý chỉ tải ảnh mẫu và ảnh QR.
-export const ADMIN_FOLDERS = ["samples", "qr"] as const satisfies readonly Folder[];
+// Ảnh chứng minh của học sinh chỉ đi qua route của học sinh; trang quản lý chỉ tải ảnh mẫu, ảnh QR và logo ngân hàng.
+export const ADMIN_FOLDERS = ["samples", "qr", "logos"] as const satisfies readonly Folder[];
 
 export const MAX_IMAGE_BYTES = 20 * 1024 * 1024;
 
@@ -14,7 +14,7 @@ export const isImageKey = (key: string, folder?: Folder): boolean => KEY.test(ke
 // Ảnh học sinh chỉ người quản ngân hàng của dòng đó được xem: route chung của trang quản lý không đọc thư mục proofs.
 export const isAdminImageKey = (key: string): boolean => ADMIN_FOLDERS.some((f) => isImageKey(key, f));
 
-// Ảnh mẫu và ảnh QR hiện cho học sinh trên mọi trình duyệt; Chrome và Android không hiện được HEIC.
+// Ảnh mẫu, ảnh QR và logo hiện cho học sinh trên mọi trình duyệt; Chrome và Android không hiện được HEIC.
 // Ảnh học sinh giữ HEIC gốc khi máy chủ không đổi được sang WebP: nhân viên vẫn có ảnh để xem.
 export const allowedExt = (folder: Folder, ext: string): boolean =>
   folder === "proofs" ? ["jpg", "png", "webp", "heic"].includes(ext) : FOLDERS.includes(folder) && ["jpg", "png", "webp"].includes(ext);

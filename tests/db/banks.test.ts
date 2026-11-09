@@ -50,6 +50,22 @@ describe("ngân hàng", () => {
     expect((await listBanks(me))[0].managers.map((m) => m.id)).toEqual([staff.id]);
   });
 
+  test("logo ngân hàng: tạo kèm logo, sửa đổi logo, không gửi logo thì giữ, gửi null thì bỏ; danh sách trả khoá logo", async () => {
+    const LOGO_1 = "logos/2026-11-09/3f2b9c1e-8a4d-4f6b-9c2e-1a2b3c4d5e6f.webp";
+    const LOGO_2 = "logos/2026-11-09/6c7d8e9f-1a2b-4c3d-8e4f-5a6b7c8d9e0f.webp";
+    const withLogo = (logoKey: string | null) => BankForm.parse({ code: "ZZTL", name: TEST_NAME + "L", sortOrder: "1", managerIds: [], logoKey });
+    const bank = await createBank(manager, withLogo(LOGO_1));
+    if (!bank.ok) throw new Error(bank.message);
+    const logoOf = async () => (await listBanks(manager)).find((b) => b.id === bank.id)?.logoKey;
+    expect(await logoOf()).toBe(LOGO_1);
+    expect((await updateBank(manager, bank.id, withLogo(LOGO_2))).ok).toBe(true);
+    expect(await logoOf()).toBe(LOGO_2);
+    expect((await updateBank(manager, bank.id, form("ZZTL", "L"))).ok).toBe(true);
+    expect(await logoOf()).toBe(LOGO_2);
+    expect((await updateBank(manager, bank.id, withLogo(null))).ok).toBe(true);
+    expect(await logoOf()).toBeNull();
+  });
+
   test("bỏ khung ảnh thì ghi removed_at, không xoá dòng", async () => {
     const bank = await createBank(manager, form("ZZTG", "G"));
     if (!bank.ok) throw new Error(bank.message);

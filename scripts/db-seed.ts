@@ -1,6 +1,9 @@
-import { and, count, eq, isNull } from "drizzle-orm";
+import { readFileSync } from "node:fs";
+import { join } from "node:path";
+import { and, count, eq, inArray, isNull } from "drizzle-orm";
 import { db, pool } from "../src/server/db/client";
 import { banks, provinces, wards } from "../src/server/db/schema";
+import { putImage } from "../src/server/storage";
 import bankList from "./data/banks.json";
 import vnAddress from "./data/vnAddress.json";
 
@@ -23,15 +26,19 @@ async function seedAddress(): Promise<string> {
   return `Nạp ${vnAddress.provinces.length} tỉnh, ${vnAddress.wards.length} xã.`;
 }
 
-// 12 ngân hàng chép từ mgst-app 2026-11-05, logo từ bộ logo VietQR. Ngân hàng đã có thì chỉ điền logo còn trống, không đè tên, thứ tự, trạng thái Quản trị đã sửa.
+// 12 ngân hàng chép từ mgst-app 2026-11-05, logo từ bộ logo VietQR. Ngân hàng đã có thì không đè tên, thứ tự, trạng thái Quản trị đã sửa.
 async function seedBanks(): Promise<string> {
-  const added = await db.insert(banks).values(bankList).onConflictDoNothing({ target: banks.code }).returning({ code: banks.code });
-  let filled = 0;
-  for (const b of bankList) {
-    const rows = await db.update(banks).set({ logo: b.logo }).where(and(eq(banks.code, b.code), isNull(banks.logo))).returning({ id: banks.id });
-    filled += rows.length;
+  const rows = bankList.map((b) => ({ code: b.code, name: b.name, sortOrder: b.sortOrder, active: b.active }));
+  const added = await db.insert(banks).values(rows).onConflictDoNothing({ target: banks.code }).returning({ code: banks.code });
+  // Logo ở đây chỉ để khởi đầu: ngân hàng đã có logo do Quản trị tải lên thì giữ nguyên.
+  const missing = await db.select({ code: banks.code }).from(banks).where(and(inArray(banks.code, bankList.map((b) => b.code)), isNull(banks.logoKey)));
+  for (const { code } of missing) {
+    const file = bankList.find((b) => b.code === code)!.logo;
+    const put = await putImage(new Uint8Array(readFileSync(join(import.meta.dir, "data/bank-logos", file))), "logos");
+    if (!put.ok) throw new Error(`Logo ${code}: ${put.message}`);
+    await db.update(banks).set({ logoKey: put.key }).where(and(eq(banks.code, code), isNull(banks.logoKey)));
   }
-  return `Thêm ${added.length} ngân hàng, điền logo cho ${filled} ngân hàng đã có.`;
+  return `Thêm ${added.length} ngân hàng, tải logo cho ${missing.length} ngân hàng.`;
 }
 
 async function main() {

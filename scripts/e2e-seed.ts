@@ -15,15 +15,17 @@ async function seedStudentWeb(adminId: string): Promise<Record<string, string>> 
   if (!sample.ok) throw new Error(sample.message);
   await db.insert(schools).values({ id: E2E_STUDENT_SCHOOL_ID, name: E2E_STUDENT_SCHOOL, wardCode: "25585", contactName: "E2E", contactPhone: "0903111222", createdBy: adminId });
   const list = [
-    { key: "MB", slots: ["Ảnh màn hình chính"], openUrl: null, logo: "/banks/mb.webp" },
-    { key: "VPBank", slots: ["Ảnh màn hình chính", "Ảnh chuyển khoản"], openUrl: "https://example.com/mo-tai-khoan", logo: "/banks/vpb.webp" },
-    { key: "TPBank", slots: ["Ảnh màn hình chính"], openUrl: null, logo: "/banks/tpb.webp" },
+    { key: "MB", slots: ["Ảnh màn hình chính"], openUrl: null, logo: "mb.webp" },
+    { key: "VPBank", slots: ["Ảnh màn hình chính", "Ảnh chuyển khoản"], openUrl: "https://example.com/mo-tai-khoan", logo: "vpb.webp" },
+    { key: "TPBank", slots: ["Ảnh màn hình chính"], openUrl: null, logo: "tpb.webp" },
   ];
   const ids: Record<string, string> = {};
   for (const [i, b] of list.entries()) {
+    const logo = await putImage(new Uint8Array(readFileSync(join(import.meta.dir, "data/bank-logos", b.logo))), "logos");
+    if (!logo.ok) throw new Error(logo.message);
     const [bank] = await db
       .insert(banks)
-      .values({ code: `ZZE2EH${i + 1}`, name: `${E2E_NAME}HS ${b.key}`, logo: b.logo, sortOrder: 90 + i, guide: [`Tải app ${b.key}.`, "Chọn Mở tài khoản, chụp CCCD và khuôn mặt.", "Nhập mã giới thiệu bên dưới."] })
+      .values({ code: `ZZE2EH${i + 1}`, name: `${E2E_NAME}HS ${b.key}`, logoKey: logo.key, sortOrder: 90 + i, guide: [`Tải app ${b.key}.`, "Chọn Mở tài khoản, chụp CCCD và khuôn mặt.", "Nhập mã giới thiệu bên dưới."] })
       .returning({ id: banks.id });
     await db.insert(bankPhotoSlots).values(b.slots.map((name, n) => ({ bankId: bank.id, name, sortOrder: n, checkName: n === 0, checkCode: n === 0, sampleKey: n === 0 ? sample.key : null })));
     const [code] = await db

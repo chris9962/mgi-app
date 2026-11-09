@@ -71,7 +71,7 @@ export function InfoForm({ school, onCreated }: { school: StudentSchool; onCreat
           <div className="grid grid-cols-3 gap-2">
             {school.banks.map((b) => (
               <label key={b.id} className="flex min-w-0 cursor-pointer flex-col gap-1.5 rounded-xl border border-field-border bg-card p-1.5 has-[:checked]:border-accent has-[:checked]:bg-accent-soft/40">
-                <BankLogo src={b.logo} />
+                <BankLogo src={b.logoUrl} />
                 <span className="flex items-center gap-1.5 text-[13px] leading-tight">
                   <input
                     type="checkbox"

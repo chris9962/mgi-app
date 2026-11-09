@@ -20,7 +20,7 @@ const fail = (message: string, status: Fail["status"], field?: string): Fail => 
 
 type Executor = Pick<typeof db, "select">;
 
-type Candidate = { id: string; bankId: string; bankName: string; bankLogo: string | null; bankSort: number; code: string | null; priority: number; createdAt: Date; quota: number; used: number };
+type Candidate = { id: string; bankId: string; bankName: string; bankLogoKey: string | null; bankSort: number; code: string | null; priority: number; createdAt: Date; quota: number; used: number };
 
 // Mã ứng viên của trường: mã đang dùng của ngân hàng đang mở, gắn cho trường. Giữ chỗ thì khoá các dòng mã trước khi đếm lượt.
 async function loadCandidates(ex: Executor, schoolId: string, month: string, lock = false): Promise<Candidate[]> {
@@ -29,7 +29,7 @@ async function loadCandidates(ex: Executor, schoolId: string, month: string, loc
       id: referralCodes.id,
       bankId: referralCodes.bankId,
       bankName: banks.name,
-      bankLogo: banks.logo,
+      bankLogoKey: banks.logoKey,
       bankSort: banks.sortOrder,
       code: referralCodes.code,
       priority: referralCodes.priority,
@@ -58,13 +58,17 @@ async function loadCandidates(ex: Executor, schoolId: string, month: string, loc
   return codes.map(({ monthlyQuota, ...c }) => ({ ...c, quota: quotaOf.get(c.id) ?? monthlyQuota, used: usedOf.get(c.id) ?? 0 }));
 }
 
-function banksOf(candidates: Candidate[]): { id: string; name: string; logo: string | null }[] {
+type ProgramBank = { id: string; name: string; logoKey: string | null };
+
+function banksOf(candidates: Candidate[]): ProgramBank[] {
   const unique = new Map<string, Candidate>();
   for (const c of candidates) unique.set(c.bankId, c);
-  return [...unique.values()].sort((a, b) => a.bankSort - b.bankSort || a.bankName.localeCompare(b.bankName, "vi")).map((c) => ({ id: c.bankId, name: c.bankName, logo: c.bankLogo }));
+  return [...unique.values()].sort((a, b) => a.bankSort - b.bankSort || a.bankName.localeCompare(b.bankName, "vi")).map((c) => ({ id: c.bankId, name: c.bankName, logoKey: c.bankLogoKey }));
 }
 
 const openBanksOf = (candidates: Candidate[], exclude: Set<string>) => banksOf(candidates.filter((c) => c.used < c.quota && !exclude.has(c.bankId)));
+
+const withLogoUrls = (list: ProgramBank[], store: PhotoStore) => Promise.all(list.map(async ({ logoKey, ...b }) => ({ ...b, logoUrl: logoKey ? await store.signGet(logoKey) : null })));
 
 // no_bank là điểm dừng: chỉ khi ngân hàng đã có phủ hết ngân hàng của chương trình ở trường (bỏ qua lượt). Hết lượt chỉ là tạm.
 function hasAllBanks(candidates: Candidate[], existing: Set<string>): boolean {
@@ -75,7 +79,7 @@ function hasAllBanks(candidates: Candidate[], existing: Set<string>): boolean {
 export const openBanksAtSchool = async (schoolId: string, month = currentYearMonth()) => openBanksOf(await loadCandidates(db, schoolId, month), new Set());
 
 // Ô tick ngân hàng đã có ở B1 dùng cùng tập với hasAllBanks: ngân hàng đang hết lượt vẫn phải tick được, không thì học sinh đủ ngân hàng kẹt ở màn hết lượt.
-export const programBanksAtSchool = async (schoolId: string, month = currentYearMonth()) => banksOf(await loadCandidates(db, schoolId, month));
+export const programBanksAtSchool = async (schoolId: string, month = currentYearMonth(), store: PhotoStore = s3PhotoStore) => withLogoUrls(banksOf(await loadCandidates(db, schoolId, month)), store);
 
 // Học sinh không có tài khoản: token trên điện thoại là thứ duy nhất chứng minh hồ sơ là của mình.
 export function newCustomerToken(): { token: string; tokenHash: string } {
@@ -275,7 +279,7 @@ export async function studentState(customer: Customer, month = currentYearMonth(
   let eligibleBanks: StudentState["eligibleBanks"] = [];
   if (status === "new") {
     const candidates = await loadCandidates(db, customer.schoolId, month);
-    eligibleBanks = openBanksOf(candidates, existing);
+    eligibleBanks = await withLogoUrls(openBanksOf(candidates, existing), store);
     if (!eligibleBanks.length && hasAllBanks(candidates, existing)) {
       await db.update(customers).set({ status: "no_bank" }).where(and(eq(customers.id, customer.id), eq(customers.status, "new")));
       status = "no_bank";

@@ -121,7 +121,7 @@ export const banks = pgTable("banks", {
   guide: jsonb("guide").notNull().default([]),
   sortOrder: smallint("sort_order").notNull().default(0),
   active: boolean("active").notNull().default(true),
-  logo: text("logo"),
+  logoKey: text("logo_key"),
 });
 
 export const userManagedBanks = pgTable(

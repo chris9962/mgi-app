@@ -110,7 +110,12 @@ test.describe("C. B2 chọn ngân hàng", () => {
     await expect(page.getByText("Đã chọn 2/2.")).toBeVisible();
     await expectNoSideScroll(page);
     await expectInsideScreen(page, buttons);
-    await expectInsideBox(buttons, ":scope > span");
+    await expectInsideBox(buttons, ":scope > span[aria-hidden], :scope > img");
+    // Dấu tích của lưới 2 cột đè lên góc ô theo thiết kế: chỉ đòi nằm trong màn hình và không bị bóp.
+    const marks = buttons.locator(":scope > span:not([aria-hidden])");
+    await expect(marks).toHaveCount(2);
+    await expectInsideScreen(page, marks);
+    await expectBoxSize(marks, 24, 24);
   });
 
   test("C7 bấm đúp Tiếp tục: giữ chỗ một lần, vào B3, không có câu lỗi", async ({ page, request }) => {

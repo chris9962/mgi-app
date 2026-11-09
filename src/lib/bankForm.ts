@@ -12,6 +12,8 @@ export const BankForm = z.object({
   name: z.string().trim().min(1, "Nhập tên ngân hàng").refine(noControlChar, CONTROL_CHAR_MESSAGE),
   sortOrder: blankAsNaN(z.coerce.number({ error: "Độ ưu tiên là số" }).int("Độ ưu tiên là số nguyên").min(0, "Độ ưu tiên từ 0 tới 999").max(999, "Độ ưu tiên từ 0 tới 999")),
   managerIds: z.array(z.uuid()).max(50),
+  // Gọi API không kèm logo thì giữ logo đang có; null là bỏ logo.
+  logoKey: z.string().refine((k) => isImageKey(k, "logos"), "Logo không hợp lệ").nullable().optional(),
 });
 export type BankFormValues = z.output<typeof BankForm>;
 

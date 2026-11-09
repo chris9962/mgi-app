@@ -24,11 +24,14 @@ test("Học sinh quét link trường, khai thông tin, chọn 2 ngân hàng, n�
   await expect(page.getByText("SĐT phụ huynh phải khác SĐT học sinh.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Tiếp tục" })).toBeDisabled();
   await page.getByLabel("SĐT phụ huynh").fill("0987654321");
+  // Logo đọc từ S3 qua link đã ký: ảnh tải được thì có chiều rộng thật.
+  await expect.poll(() => page.locator("label", { hasText: "ZZE2E HS MB" }).locator("img").evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
   await page.getByRole("checkbox", { name: "ZZE2E HS MB" }).check();
   await page.getByRole("button", { name: "Tiếp tục" }).click();
 
   await expect(page.getByRole("heading", { name: "Chọn 2 ngân hàng" })).toBeVisible();
   await expect(page.getByRole("button", { name: /ZZE2E HS MB/ })).toHaveCount(0);
+  await expect.poll(() => page.getByRole("button", { name: /ZZE2E HS VPBank/ }).locator("img").evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
   await page.getByRole("button", { name: /ZZE2E HS TPBank/ }).click();
   await page.getByRole("button", { name: /ZZE2E HS VPBank/ }).click();
   await expect(page.getByRole("button", { name: /ZZE2E HS TPBank/ })).toHaveAttribute("aria-pressed", "true");

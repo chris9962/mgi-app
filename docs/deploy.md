@@ -176,6 +176,7 @@ bun run db:create-admin -- --username <tên đăng nhập> --full-name "<Họ t�
 
 - `db:migrate` in `Database: 127.0.0.1:5436/mgibank` và `Migrate xong: N migration mới, tổng N.`
 - `db:seed` nạp 34 tỉnh, 3.321 xã. Bảng tỉnh đã có dữ liệu thì script bỏ qua.
+- `db:seed` thêm 12 ngân hàng còn thiếu và tải logo có sẵn lên bucket ảnh cho ngân hàng chưa có logo. Logo do Quản trị tải lên thì giữ nguyên. Script cần biến S3 ở mục 3b.
 - `db:create-admin` in mật khẩu một lần. Chủ dự án lưu ngay, rồi đổi mật khẩu ở trang Cá nhân sau lần đăng nhập đầu.
 
 Migration `0000` chạy `CREATE EXTENSION pg_trgm`, migration `0003` chạy `CREATE EXTENSION unaccent`. User do container Postgres tạo là superuser nên hai lệnh chạy được. Nếu sau này chuyển sang Postgres có role thường, role đó phải sở hữu database: Postgres 16 coi `unaccent` và `pg_trgm` là extension tin cậy, chủ database tạo được. Không thì superuser chạy hai lệnh `CREATE EXTENSION` đó trước khi migrate.

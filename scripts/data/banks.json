@@ -1,14 +1,14 @@
 [
-  {"code": "MB", "name": "MB Bank", "sortOrder": 1, "active": true, "logo": "/banks/mb.webp"},
-  {"code": "TPB", "name": "TPBank", "sortOrder": 2, "active": true, "logo": "/banks/tpb.webp"},
-  {"code": "BIDV", "name": "BIDV", "sortOrder": 10, "active": false, "logo": "/banks/bidv.webp"},
-  {"code": "LPB", "name": "LPBank", "sortOrder": 10, "active": true, "logo": "/banks/lpb.webp"},
-  {"code": "MBV", "name": "MBV", "sortOrder": 10, "active": true, "logo": "/banks/mbv.webp"},
-  {"code": "MSBA", "name": "MSB (a)", "sortOrder": 10, "active": false, "logo": "/banks/msb.webp"},
-  {"code": "MSBB", "name": "MSB (b)", "sortOrder": 10, "active": true, "logo": "/banks/msb.webp"},
-  {"code": "SHB", "name": "SHB", "sortOrder": 10, "active": true, "logo": "/banks/shb.webp"},
-  {"code": "TCB", "name": "Techcombank", "sortOrder": 10, "active": false, "logo": "/banks/tcb.webp"},
-  {"code": "VIB", "name": "VIB", "sortOrder": 10, "active": false, "logo": "/banks/vib.webp"},
-  {"code": "VPA", "name": "VPBank", "sortOrder": 10, "active": true, "logo": "/banks/vpb.webp"},
-  {"code": "VPB", "name": "VPBank NEO", "sortOrder": 10, "active": true, "logo": "/banks/vpb.webp"}
+  {"code": "MB", "name": "MB Bank", "sortOrder": 1, "active": true, "logo": "mb.webp"},
+  {"code": "TPB", "name": "TPBank", "sortOrder": 2, "active": true, "logo": "tpb.webp"},
+  {"code": "BIDV", "name": "BIDV", "sortOrder": 10, "active": false, "logo": "bidv.webp"},
+  {"code": "LPB", "name": "LPBank", "sortOrder": 10, "active": true, "logo": "lpb.webp"},
+  {"code": "MBV", "name": "MBV", "sortOrder": 10, "active": true, "logo": "mbv.webp"},
+  {"code": "MSBA", "name": "MSB (a)", "sortOrder": 10, "active": false, "logo": "msb.webp"},
+  {"code": "MSBB", "name": "MSB (b)", "sortOrder": 10, "active": true, "logo": "msb.webp"},
+  {"code": "SHB", "name": "SHB", "sortOrder": 10, "active": true, "logo": "shb.webp"},
+  {"code": "TCB", "name": "Techcombank", "sortOrder": 10, "active": false, "logo": "tcb.webp"},
+  {"code": "VIB", "name": "VIB", "sortOrder": 10, "active": false, "logo": "vib.webp"},
+  {"code": "VPA", "name": "VPBank", "sortOrder": 10, "active": true, "logo": "vpb.webp"},
+  {"code": "VPB", "name": "VPBank NEO", "sortOrder": 10, "active": true, "logo": "vpb.webp"}
 ]

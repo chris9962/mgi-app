@@ -50,13 +50,13 @@ export function ChooseBanks({ state, notice, onDone }: { state: StudentState; no
             <li key={b.id}>
               {need === 1 ? (
                 <div className={box}>
-                  <BankLogo src={b.logo} />
+                  <BankLogo src={b.logoUrl} />
                   {b.name}
                   {pickedMark}
                 </div>
               ) : (
                 <button type="button" aria-pressed={slot > 0} disabled={!slot && chosen.length >= 2} onClick={() => toggle(b.id)} className={clsx(box, "text-text disabled:opacity-50")}>
-                  <BankLogo src={b.logo} />
+                  <BankLogo src={b.logoUrl} />
                   {b.name}
                   {slot > 0 && pickedMark}
                 </button>

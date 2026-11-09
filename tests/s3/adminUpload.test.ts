@@ -66,8 +66,8 @@ describe("ảnh tải ở trang quản lý đổi WebP lúc nhận", () => {
     expect([done.passed, done.total]).toEqual([1, 1]);
   }, 60_000);
 
-  test("ảnh mẫu và ảnh QR HEIC ghi thành WebP", async () => {
-    for (const folder of ["samples", "qr"]) {
+  test("ảnh mẫu, ảnh QR và logo ngân hàng HEIC ghi thành WebP", async () => {
+    for (const folder of ["samples", "qr", "logos"]) {
       const form = new FormData();
       form.append("file", new File([new Uint8Array(heic)], "IMG_0004.HEIC"));
       const res = await uploadRoute(post(`/api/admin/uploads?folder=${folder}`, managerCookie, form));

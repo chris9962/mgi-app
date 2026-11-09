@@ -35,7 +35,17 @@ export default async function BanksPage() {
                 {rows.map((b) => (
                   <tr key={b.id} className="border-b border-line last:border-0">
                     <td className="px-4 py-3 font-semibold">{b.code}</td>
-                    <td className="px-4 py-3">{b.name}</td>
+                    <td className="px-4 py-3">
+                      <span className="flex items-center gap-2.5">
+                        {b.logoKey ? (
+                          // eslint-disable-next-line @next/next/no-img-element
+                          <img src={`/api/admin/images?key=${encodeURIComponent(b.logoKey)}`} alt="" className="h-8 w-20 max-w-none flex-none rounded-md bg-white object-contain ring-1 ring-line" />
+                        ) : (
+                          <span aria-hidden className="h-8 w-20 flex-none rounded-md border border-dashed border-line" />
+                        )}
+                        {b.name}
+                      </span>
+                    </td>
                     <td className="px-4 py-3 tabular-nums">{b.sortOrder}</td>
                     <td className="px-4 py-3">{b.slotCount ? `${b.slotCount} ảnh` : <span className="text-text-3">Chưa cài</span>}</td>
                     <td className="px-4 py-3 tabular-nums">{b.openCodeCount}</td>
@@ -45,7 +55,7 @@ export default async function BanksPage() {
                       <BankActions
                         active={b.active}
                         canAssign={canAssign}
-                        bank={{ id: b.id, code: b.code, name: b.name, sortOrder: b.sortOrder, managers: b.managers.map((m) => ({ id: m.id, label: m.fullName })) }}
+                        bank={{ id: b.id, code: b.code, name: b.name, sortOrder: b.sortOrder, logoKey: b.logoKey, managers: b.managers.map((m) => ({ id: m.id, label: m.fullName })) }}
                       />
                     </td>
                   </tr>

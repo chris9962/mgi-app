@@ -61,10 +61,11 @@ export async function cleanE2e() {
             .where(or(customers.length ? inArray(s.customerBanks.customerId, customers) : undefined, codes.length ? inArray(s.customerBanks.referralCodeId, codes) : undefined))
         ).map((r) => r.id)
       : [];
-  // Ảnh học sinh và ảnh mẫu do e2e tải lên nằm trên bucket dev: đọc khoá trước khi xoá dòng.
+  // Ảnh học sinh, ảnh mẫu và logo do e2e tải lên nằm trên bucket dev: đọc khoá trước khi xoá dòng.
   const keys = [
     ...(customerBanks.length ? await db.select({ key: s.proofPhotos.s3Key }).from(s.proofPhotos).where(inArray(s.proofPhotos.customerBankId, customerBanks)) : []),
     ...(banks.length ? await db.select({ key: s.bankPhotoSlots.sampleKey }).from(s.bankPhotoSlots).where(inArray(s.bankPhotoSlots.bankId, banks)).then((rows) => rows.filter((r) => r.key)) : []),
+    ...(banks.length ? await db.select({ key: s.banks.logoKey }).from(s.banks).where(inArray(s.banks.id, banks)).then((rows) => rows.filter((r) => r.key)) : []),
   ].map((r) => r.key!);
   if (customers.length) {
     await db.delete(s.customerExistingBanks).where(inArray(s.customerExistingBanks.customerId, customers));

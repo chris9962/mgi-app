@@ -1,6 +1,6 @@
 import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { and, eq } from "drizzle-orm";
-import { TEST_NAME, cleanTestUsers, makeActor } from "./helpers";
+import { TEST_NAME, cleanTestUsers, fakeStore, makeActor } from "./helpers";
 import { db } from "../../src/server/db/client";
 import { banks, customerBanks, customers, referralCodeMonths } from "../../src/server/db/schema";
 import { createBank, setBankActive } from "../../src/server/banks";
@@ -82,10 +82,11 @@ describe("B2 danh sách đủ điều kiện", () => {
     expect((await studentState(c, MONTH)).eligibleBanks.map((b) => b.id)).toEqual([bank.B, bank.C]);
   });
 
-  test("mỗi ngân hàng kèm logo lưu ở bảng banks, chưa có logo thì null", async () => {
-    await db.update(banks).set({ logo: "/banks/mb.webp" }).where(eq(banks.id, bank.B));
+  test("mỗi ngân hàng kèm link logo ký từ khoá logo ở bảng banks, chưa có logo thì null", async () => {
+    const key = "logos/2026-11-09/3f2b9c1e-8a4d-4f6b-9c2e-1a2b3c4d5e6f.webp";
+    await db.update(banks).set({ logoKey: key }).where(eq(banks.id, bank.B));
     const c = await student("S", ["A"]);
-    expect((await studentState(c, MONTH)).eligibleBanks.map((b) => b.logo)).toEqual(["/banks/mb.webp", null]);
+    expect((await studentState(c, MONTH, fakeStore().store)).eligibleBanks.map((b) => b.logoUrl)).toEqual([`https://s3.test/${key}?get`, null]);
   });
 
   test("đã có mọi ngân hàng của chương trình ở trường thì hồ sơ là no_bank ngay từ B1; còn ngân hàng chỉ hết lượt thì vẫn là new", async () => {

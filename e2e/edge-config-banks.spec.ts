@@ -1,3 +1,4 @@
+import { readFileSync } from "node:fs";
 import { expect, test, type Locator, type Page } from "@playwright/test";
 import { api, apiLogin, asUser, createBank, createUser, expectDialogFits, LONG_WORD, open, pageScroll, PHONE } from "./edge-config-support";
 
@@ -401,4 +402,33 @@ test("Thêm ngân hàng, Hướng dẫn: đang lưu thì Huỷ bị khoá, khôn
     await expect(page.getByRole("dialog"), c.button).toHaveCount(0);
     await page.unroute(c.url);
   }
+});
+
+test("Logo ngân hàng: file 23 MB báo lỗi ở ô logo, không gửi lên máy chủ; chọn logo rồi tạo thì bảng hiện logo; mở Sửa thấy logo đang dùng", async ({ page }) => {
+  await apiLogin(page, "zz_e2e_admin");
+  await open(page, "/banks");
+  await page.getByRole("button", { name: "Thêm ngân hàng" }).click();
+  const d = page.getByRole("dialog", { name: "Thêm ngân hàng" });
+  await d.getByLabel("Mã ngân hàng").fill("ZZLOGO");
+  await d.getByLabel("Tên ngân hàng").fill("ZZE2E Logo");
+  const uploads = uploadsOf(page);
+  const pick = d.getByRole("button", { name: "Chọn logo" });
+  await pickFile(page, pick, { name: "to.png", mimeType: "image/png", buffer: Buffer.alloc(23 * 1024 * 1024) });
+  await expect(pick).toHaveAccessibleDescription(TOO_LARGE);
+  expect(uploads).toEqual([]);
+
+  await pickFile(page, pick, { name: "mb.webp", mimeType: "image/webp", buffer: readFileSync("scripts/data/bank-logos/mb.webp") });
+  const change = d.getByRole("button", { name: "Đổi logo" });
+  await expect(change.locator("img")).toHaveAttribute("src", /^\/api\/admin\/images\?key=logos%2F/);
+  await expect(change).not.toHaveAccessibleDescription(TOO_LARGE);
+  await d.getByRole("button", { name: "Tạo ngân hàng" }).click();
+  await expect(d).toHaveCount(0);
+
+  const logo = rowOf(page, "ZZE2E Logo").locator("img");
+  await expect.poll(() => logo.evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
+  const src = await logo.getAttribute("src");
+  await page.getByRole("button", { name: "Sửa ngân hàng ZZE2E Logo" }).click();
+  const edit = page.getByRole("dialog", { name: "Sửa ngân hàng" });
+  await expect(edit.getByRole("button", { name: "Đổi logo" }).locator("img")).toHaveAttribute("src", src!);
+  await edit.getByRole("button", { name: "Huỷ" }).click();
 });

@@ -10,8 +10,9 @@ export function BankLogo({ src }: { src: string | null }) {
         <Landmark size={26} />
       </span>
     );
+  // Logo tải lên hay có nền trong suốt: nền trắng như ảnh QR để chữ tối của logo đọc được ở giao diện tối.
   // eslint-disable-next-line @next/next/no-img-element
-  return <img src={src} alt="" className="aspect-[8/3] w-full rounded-lg object-contain ring-1 ring-line" />;
+  return <img src={src} alt="" className="aspect-[8/3] w-full rounded-lg bg-white object-contain ring-1 ring-line" />;
 }
 
 export function AppHead({ school, title }: { school: string; title: string }) {
