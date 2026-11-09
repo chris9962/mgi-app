@@ -1,18 +1,31 @@
 "use client";
 
 import { clsx } from "clsx";
-import { Check } from "lucide-react";
+import { Check, Landmark } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { bankLogo } from "@/lib/bankLogos";
 import { studentApi } from "@/lib/studentApi";
 import type { StudentState } from "@/lib/studentState";
 import { AppHead, Bottom, EndBlock, Steps, ZaloBox } from "./parts";
 
 const pickedMark = (
-  <span className="grid size-6 shrink-0 place-items-center rounded-full bg-accent text-on-accent">
+  <span className="absolute -top-2 -right-2 grid size-6 place-items-center rounded-full bg-accent text-on-accent ring-2 ring-bg">
     <Check size={15} strokeWidth={3} aria-hidden />
   </span>
 );
+
+function BankLogo({ code }: { code: string }) {
+  const src = bankLogo(code);
+  if (!src)
+    return (
+      <span aria-hidden className="grid aspect-[8/3] w-full place-items-center rounded-lg bg-surface text-text-3">
+        <Landmark size={26} />
+      </span>
+    );
+  // eslint-disable-next-line @next/next/no-img-element
+  return <img src={src} alt="" className="aspect-[8/3] w-full rounded-lg object-contain ring-1 ring-line" />;
+}
 
 export function ChooseBanks({ state, notice, onDone }: { state: StudentState; notice?: string; onDone: (notice?: string) => void }) {
   const banks = state.eligibleBanks;
@@ -42,19 +55,21 @@ export function ChooseBanks({ state, notice, onDone }: { state: StudentState; no
       <p className="text-sm text-text-2" aria-live="polite">
         {need === 2 ? `Chọn đúng 2 ngân hàng. Đã chọn ${chosen.length}/2.` : "Chỉ còn 1 ngân hàng chưa có tài khoản."}
       </p>
-      <ul className="mt-3 flex flex-col gap-2">
+      <ul className="mt-3 grid grid-cols-2 gap-3">
         {banks.map((b) => {
           const slot = chosen.indexOf(b.id) + 1;
-          const box = clsx("flex min-h-12 w-full items-center justify-between gap-3 rounded-xl border px-4 py-2.5 text-left text-[15px] font-semibold", slot ? "border-accent bg-accent-soft/40" : "border-field-border bg-card");
+          const box = clsx("relative flex h-full w-full flex-col items-center gap-2 rounded-2xl border p-2.5 pb-3 text-center text-[15px] leading-tight font-semibold", slot ? "border-accent bg-accent-soft/40 ring-1 ring-accent" : "border-field-border bg-card");
           return (
             <li key={b.id}>
               {need === 1 ? (
                 <div className={box}>
+                  <BankLogo code={b.code} />
                   {b.name}
                   {pickedMark}
                 </div>
               ) : (
                 <button type="button" aria-pressed={slot > 0} disabled={!slot && chosen.length >= 2} onClick={() => toggle(b.id)} className={clsx(box, "text-text disabled:opacity-50")}>
+                  <BankLogo code={b.code} />
                   {b.name}
                   {slot > 0 && pickedMark}
                 </button>

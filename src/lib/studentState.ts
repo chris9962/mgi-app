@@ -26,7 +26,7 @@ export type StudentState = {
   reviewedAt: string | null;
   parentPhone: string;
   voucher: { smsSentAt: string | null } | null;
-  eligibleBanks: { id: string; name: string }[];
+  eligibleBanks: { id: string; name: string; code: string }[];
   existingBanks: string[];
   banks: StudentBank[];
   zaloUrl: string;

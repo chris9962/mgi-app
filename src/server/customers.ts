@@ -20,7 +20,7 @@ const fail = (message: string, status: Fail["status"], field?: string): Fail => 
 
 type Executor = Pick<typeof db, "select">;
 
-type Candidate = { id: string; bankId: string; bankName: string; bankSort: number; code: string | null; priority: number; createdAt: Date; quota: number; used: number };
+type Candidate = { id: string; bankId: string; bankName: string; bankCode: string; bankSort: number; code: string | null; priority: number; createdAt: Date; quota: number; used: number };
 
 // Mã ứng viên của trường: mã đang dùng của ngân hàng đang mở, gắn cho trường. Giữ chỗ thì khoá các dòng mã trước khi đếm lượt.
 async function loadCandidates(ex: Executor, schoolId: string, month: string, lock = false): Promise<Candidate[]> {
@@ -29,6 +29,7 @@ async function loadCandidates(ex: Executor, schoolId: string, month: string, loc
       id: referralCodes.id,
       bankId: referralCodes.bankId,
       bankName: banks.name,
+      bankCode: banks.code,
       bankSort: banks.sortOrder,
       code: referralCodes.code,
       priority: referralCodes.priority,
@@ -57,10 +58,10 @@ async function loadCandidates(ex: Executor, schoolId: string, month: string, loc
   return codes.map(({ monthlyQuota, ...c }) => ({ ...c, quota: quotaOf.get(c.id) ?? monthlyQuota, used: usedOf.get(c.id) ?? 0 }));
 }
 
-function banksOf(candidates: Candidate[]): { id: string; name: string }[] {
+function banksOf(candidates: Candidate[]): { id: string; name: string; code: string }[] {
   const unique = new Map<string, Candidate>();
   for (const c of candidates) unique.set(c.bankId, c);
-  return [...unique.values()].sort((a, b) => a.bankSort - b.bankSort || a.bankName.localeCompare(b.bankName, "vi")).map((c) => ({ id: c.bankId, name: c.bankName }));
+  return [...unique.values()].sort((a, b) => a.bankSort - b.bankSort || a.bankName.localeCompare(b.bankName, "vi")).map((c) => ({ id: c.bankId, name: c.bankName, code: c.bankCode }));
 }
 
 const openBanksOf = (candidates: Candidate[], exclude: Set<string>) => banksOf(candidates.filter((c) => c.used < c.quota && !exclude.has(c.bankId)));

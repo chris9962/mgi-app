@@ -13,5 +13,5 @@ export function proxy(request: NextRequest) {
 // Chỉ file có thật trong public (logo, wasm của bộ đọc QR) đi thẳng; rewrite sang /admin thì trình duyệt nhận 404.
 // Liệt kê đích danh: bỏ qua theo đuôi ảnh thì /admin/...x.png đi vòng qua bước kiểm tên miền. Thêm file vào public thì thêm vào đây.
 export const config = {
-  matcher: ["/((?!_next/|brand/|zxing_reader\\.wasm$).*)"],
+  matcher: ["/((?!_next/|brand/|banks/|zxing_reader\\.wasm$).*)"],
 };
