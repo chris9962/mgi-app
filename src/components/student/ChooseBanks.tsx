@@ -1,29 +1,18 @@
 "use client";
 
 import { clsx } from "clsx";
-import { Check, Landmark } from "lucide-react";
+import { Check } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { studentApi } from "@/lib/studentApi";
 import type { StudentState } from "@/lib/studentState";
-import { AppHead, Bottom, EndBlock, Steps, ZaloBox } from "./parts";
+import { AppHead, BankLogo, Bottom, EndBlock, Steps, ZaloBox } from "./parts";
 
 const pickedMark = (
   <span className="absolute -top-2 -right-2 grid size-6 place-items-center rounded-full bg-accent text-on-accent ring-2 ring-bg">
     <Check size={15} strokeWidth={3} aria-hidden />
   </span>
 );
-
-function BankLogo({ src }: { src: string | null }) {
-  if (!src)
-    return (
-      <span aria-hidden className="grid aspect-[8/3] w-full place-items-center rounded-lg bg-surface text-text-3">
-        <Landmark size={26} />
-      </span>
-    );
-  // eslint-disable-next-line @next/next/no-img-element
-  return <img src={src} alt="" className="aspect-[8/3] w-full rounded-lg object-contain ring-1 ring-line" />;
-}
 
 export function ChooseBanks({ state, notice, onDone }: { state: StudentState; notice?: string; onDone: (notice?: string) => void }) {
   const banks = state.eligibleBanks;

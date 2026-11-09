@@ -2,13 +2,12 @@
 
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
-import { Checkbox } from "@/components/ui/Checkbox";
 import { TextField } from "@/components/ui/TextField";
 import { CustomerForm } from "@/lib/customerForm";
 import { studentApi } from "@/lib/studentApi";
 import { saveProfile } from "@/lib/studentDevice";
 import type { StudentSchool } from "@/lib/studentState";
-import { Bottom } from "./parts";
+import { BankLogo, Bottom } from "./parts";
 
 const EMPTY = { fullName: "", className: "", phone: "", parentName: "", parentPhone: "" };
 type Key = keyof typeof EMPTY;
@@ -69,14 +68,20 @@ export function InfoForm({ school, onCreated }: { school: StudentSchool; onCreat
       {school.banks.length > 0 && (
         <fieldset className="flex flex-col gap-1.5">
           <legend className="mb-1.5 text-[13px] text-text-2">Ngân hàng đã có tài khoản</legend>
-          <div className="grid grid-cols-2 gap-x-3">
+          <div className="grid grid-cols-3 gap-2">
             {school.banks.map((b) => (
-              <Checkbox
-                key={b.id}
-                label={b.name}
-                checked={existing.includes(b.id)}
-                onChange={(e) => setExisting((list) => (e.target.checked ? [...list, b.id] : list.filter((id) => id !== b.id)))}
-              />
+              <label key={b.id} className="flex min-w-0 cursor-pointer flex-col gap-1.5 rounded-xl border border-field-border bg-card p-1.5 has-[:checked]:border-accent has-[:checked]:bg-accent-soft/40">
+                <BankLogo src={b.logo} />
+                <span className="flex items-center gap-1.5 text-[13px] leading-tight">
+                  <input
+                    type="checkbox"
+                    className="size-[18px] shrink-0 accent-[var(--accent)]"
+                    checked={existing.includes(b.id)}
+                    onChange={(e) => setExisting((list) => (e.target.checked ? [...list, b.id] : list.filter((id) => id !== b.id)))}
+                  />
+                  <span className="min-w-0 wrap-anywhere">{b.name}</span>
+                </span>
+              </label>
             ))}
           </div>
           <span className="text-[13px] text-text-3">Chưa có thì bỏ trống</span>
