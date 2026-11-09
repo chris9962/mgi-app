@@ -2,7 +2,7 @@ import { afterAll, beforeAll, describe, expect, test } from "bun:test";
 import { and, eq } from "drizzle-orm";
 import { TEST_NAME, cleanTestUsers, makeActor } from "./helpers";
 import { db } from "../../src/server/db/client";
-import { customerBanks, customers, referralCodeMonths } from "../../src/server/db/schema";
+import { banks, customerBanks, customers, referralCodeMonths } from "../../src/server/db/schema";
 import { createBank, setBankActive } from "../../src/server/banks";
 import { createSchool } from "../../src/server/schools";
 import { createCode } from "../../src/server/referralCodes";
@@ -80,6 +80,12 @@ describe("B2 danh sách đủ điều kiện", () => {
   test("loại ngân hàng đã có và ngân hàng mã hết lượt", async () => {
     const c = await student("S", ["A"]);
     expect((await studentState(c, MONTH)).eligibleBanks.map((b) => b.id)).toEqual([bank.B, bank.C]);
+  });
+
+  test("mỗi ngân hàng kèm logo lưu ở bảng banks, chưa có logo thì null", async () => {
+    await db.update(banks).set({ logo: "/banks/mb.webp" }).where(eq(banks.id, bank.B));
+    const c = await student("S", ["A"]);
+    expect((await studentState(c, MONTH)).eligibleBanks.map((b) => b.logo)).toEqual(["/banks/mb.webp", null]);
   });
 
   test("đã có mọi ngân hàng của chương trình ở trường thì hồ sơ là no_bank ngay từ B1; còn ngân hàng chỉ hết lượt thì vẫn là new", async () => {

@@ -1,6 +1,7 @@
-import { count } from "drizzle-orm";
+import { and, count, eq, isNull } from "drizzle-orm";
 import { db, pool } from "../src/server/db/client";
-import { provinces, wards } from "../src/server/db/schema";
+import { banks, provinces, wards } from "../src/server/db/schema";
+import bankList from "./data/banks.json";
 import vnAddress from "./data/vnAddress.json";
 
 // Danh mục 34 tỉnh, 3.321 xã sau sáp nhập 2025, chép từ mgst-app. Chỉ nạp khi bảng tỉnh còn rỗng.
@@ -22,8 +23,20 @@ async function seedAddress(): Promise<string> {
   return `Nạp ${vnAddress.provinces.length} tỉnh, ${vnAddress.wards.length} xã.`;
 }
 
+// 12 ngân hàng chép từ mgst-app 2026-11-05, logo từ bộ logo VietQR. Ngân hàng đã có thì chỉ điền logo còn trống, không đè tên, thứ tự, trạng thái Quản trị đã sửa.
+async function seedBanks(): Promise<string> {
+  const added = await db.insert(banks).values(bankList).onConflictDoNothing({ target: banks.code }).returning({ code: banks.code });
+  let filled = 0;
+  for (const b of bankList) {
+    const rows = await db.update(banks).set({ logo: b.logo }).where(and(eq(banks.code, b.code), isNull(banks.logo))).returning({ id: banks.id });
+    filled += rows.length;
+  }
+  return `Thêm ${added.length} ngân hàng, điền logo cho ${filled} ngân hàng đã có.`;
+}
+
 async function main() {
   console.log(await seedAddress());
+  console.log(await seedBanks());
   await pool.end();
 }
 

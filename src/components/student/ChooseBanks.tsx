@@ -4,7 +4,6 @@ import { clsx } from "clsx";
 import { Check, Landmark } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { bankLogo } from "@/lib/bankLogos";
 import { studentApi } from "@/lib/studentApi";
 import type { StudentState } from "@/lib/studentState";
 import { AppHead, Bottom, EndBlock, Steps, ZaloBox } from "./parts";
@@ -15,8 +14,7 @@ const pickedMark = (
   </span>
 );
 
-function BankLogo({ code }: { code: string }) {
-  const src = bankLogo(code);
+function BankLogo({ src }: { src: string | null }) {
   if (!src)
     return (
       <span aria-hidden className="grid aspect-[8/3] w-full place-items-center rounded-lg bg-surface text-text-3">
@@ -63,13 +61,13 @@ export function ChooseBanks({ state, notice, onDone }: { state: StudentState; no
             <li key={b.id}>
               {need === 1 ? (
                 <div className={box}>
-                  <BankLogo code={b.code} />
+                  <BankLogo src={b.logo} />
                   {b.name}
                   {pickedMark}
                 </div>
               ) : (
                 <button type="button" aria-pressed={slot > 0} disabled={!slot && chosen.length >= 2} onClick={() => toggle(b.id)} className={clsx(box, "text-text disabled:opacity-50")}>
-                  <BankLogo code={b.code} />
+                  <BankLogo src={b.logo} />
                   {b.name}
                   {slot > 0 && pickedMark}
                 </button>
