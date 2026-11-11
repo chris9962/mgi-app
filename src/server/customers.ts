@@ -10,7 +10,7 @@ import { publicSchool } from "./schools";
 import { getSettings } from "./settings";
 import { currentYearMonth, isYearMonth } from "@/lib/month";
 import { maskPhone, plain } from "@/lib/text";
-import type { CustomerFormValues } from "@/lib/customerForm";
+import type { CustomerFormValues, CustomerSelfEditInput, CustomerSelfEditValues } from "@/lib/customerForm";
 import type { StudentBank, StudentState } from "@/lib/studentState";
 
 export type Customer = typeof customers.$inferSelect;
@@ -139,6 +139,43 @@ export async function createCustomer(values: CustomerFormValues, ip: string | nu
 async function existingBankIds(ex: Executor, customerId: string): Promise<Set<string>> {
   const rows = await ex.select({ id: customerExistingBanks.bankId }).from(customerExistingBanks).where(eq(customerExistingBanks.customerId, customerId));
   return new Set(rows.map((r) => r.id));
+}
+
+// Thông tin đầy đủ chỉ trả trước khi gửi kiểm tra; gửi rồi thì web chỉ còn thấy SĐT đã che.
+export async function ownCustomerInfo(customer: Customer): Promise<{ ok: true; info: CustomerSelfEditInput } | Fail> {
+  if (customer.status === "pending_review" || customer.status === "reviewed") return fail("Hồ sơ đã gửi kiểm tra.", 409);
+  const existing = await existingBankIds(db, customer.id);
+  return {
+    ok: true,
+    info: { fullName: customer.fullName, className: customer.className, phone: customer.phone, parentName: customer.parentName, parentPhone: customer.parentPhone, existingBankIds: [...existing] },
+  };
+}
+
+// Sửa B1 chỉ khi hồ sơ chưa giữ chỗ: web xoá ngân hàng đang giữ (cancelBanks) xong mới gọi tới đây.
+export async function updateOwnCustomer(customer: Customer, values: CustomerSelfEditValues, month = currentYearMonth()): Promise<{ ok: true } | Fail> {
+  const existing = [...new Set(values.existingBankIds)];
+  if (existing.length && (await db.select({ id: banks.id }).from(banks).where(inArray(banks.id, existing))).length !== existing.length) {
+    return fail("Ngân hàng không có trong danh sách.", 400, "existingBankIds");
+  }
+  return db.transaction(async (tx) => {
+    const [current] = await tx
+      .select({ status: customers.status, schoolId: customers.schoolId, schoolActive: schools.active })
+      .from(customers)
+      .innerJoin(schools, eq(schools.id, customers.schoolId))
+      .where(eq(customers.id, customer.id))
+      .for("update", { of: customers });
+    if (current?.status === "banks_selected") return fail("Hồ sơ đã chọn ngân hàng.", 409);
+    if (current?.status !== "new" && current?.status !== "no_bank") return fail("Hồ sơ đã gửi kiểm tra.", 409);
+    if (!current.schoolActive) return fail("Trường đã đóng.", 409);
+    const noBank = hasAllBanks(await loadCandidates(tx, current.schoolId, month), new Set(existing));
+    await tx
+      .update(customers)
+      .set({ fullName: values.fullName, nameSearch: plain(values.fullName), className: values.className, phone: values.phone, parentName: values.parentName, parentPhone: values.parentPhone, status: noBank ? "no_bank" : "new" })
+      .where(eq(customers.id, customer.id));
+    await tx.delete(customerExistingBanks).where(eq(customerExistingBanks.customerId, customer.id));
+    if (existing.length) await tx.insert(customerExistingBanks).values(existing.map((bankId) => ({ customerId: customer.id, bankId })));
+    return { ok: true as const };
+  });
 }
 
 // Mã có priority cao nhất còn lượt; cùng priority thì mã tạo trước.

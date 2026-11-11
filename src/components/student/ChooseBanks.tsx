@@ -9,17 +9,44 @@ import type { StudentState } from "@/lib/studentState";
 import { AppHead, BankLogo, Bottom, EndBlock, Steps, ZaloBox } from "./parts";
 
 const pickedMark = (
-  <span className="absolute -top-2 -right-2 grid size-6 place-items-center rounded-full bg-accent text-on-accent ring-2 ring-bg">
+  <span className="anim-pop absolute -top-2 -right-2 grid size-6 place-items-center rounded-full bg-accent text-on-accent ring-2 ring-bg">
     <Check size={15} strokeWidth={3} aria-hidden />
   </span>
 );
 
-export function ChooseBanks({ state, notice, onDone }: { state: StudentState; notice?: string; onDone: (notice?: string) => void }) {
+type Edit = () => Promise<string | null>;
+
+// Thanh bước của các màn dừng ở bước 2: bấm bước 1 thì chờ tải thông tin đã khai rồi mới chuyển màn.
+function EditSteps({ onEdit }: { onEdit: Edit }) {
+  const [pending, setPending] = useState(false);
+  const [error, setError] = useState("");
+  return (
+    <>
+      <Steps
+        current={2}
+        pendingStep={pending ? 1 : null}
+        onBack={async () => {
+          setPending(true);
+          setError((await onEdit()) ?? "");
+          setPending(false);
+        }}
+      />
+      {error && (
+        <p role="alert" className="text-sm text-danger">
+          {error}
+        </p>
+      )}
+    </>
+  );
+}
+
+export function ChooseBanks({ state, notice, onDone, onEdit }: { state: StudentState; notice?: string; onDone: (notice?: string) => void; onEdit: Edit }) {
   const banks = state.eligibleBanks;
   const need = Math.min(2, banks.length);
   const [picked, setPicked] = useState<string[]>([]);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
+  const [editing, setEditing] = useState(false);
   const chosen = need === 1 ? [banks[0].id] : picked;
 
   const toggle = (id: string) => setPicked((list) => (list.includes(id) ? list.filter((x) => x !== id) : list.length < 2 ? [...list, id] : list));
@@ -38,14 +65,22 @@ export function ChooseBanks({ state, notice, onDone }: { state: StudentState; no
   return (
     <>
       <AppHead school={state.school.name} title={need === 2 ? "Chọn 2 ngân hàng" : "Chọn ngân hàng"} />
-      <Steps current={2} />
+      <Steps
+        current={2}
+        pendingStep={editing ? 1 : null}
+        onBack={async () => {
+          setEditing(true);
+          setError((await onEdit()) ?? "");
+          setEditing(false);
+        }}
+      />
       <p className="text-sm text-text-2" aria-live="polite">
         {need === 2 ? `Chọn đúng 2 ngân hàng. Đã chọn ${chosen.length}/2.` : "Chỉ còn 1 ngân hàng chưa có tài khoản."}
       </p>
-      <ul className="mt-3 grid grid-cols-2 gap-3">
+      <ul className="anim-stagger mt-3 grid grid-cols-2 gap-3">
         {banks.map((b) => {
           const slot = chosen.indexOf(b.id) + 1;
-          const box = clsx("relative flex h-full w-full flex-col items-center gap-2 rounded-2xl border p-2.5 pb-3 text-center text-[15px] leading-tight font-semibold", slot ? "border-accent bg-accent-soft/40 ring-1 ring-accent" : "border-field-border bg-card");
+          const box = clsx("relative flex h-full w-full flex-col items-center gap-2 rounded-2xl border p-2.5 pb-3 text-center text-[15px] leading-tight font-semibold", slot ? "border-accent bg-accent-soft/40 shadow-md ring-1 ring-accent" : "border-field-border bg-card shadow-sm");
           return (
             <li key={b.id}>
               {need === 1 ? (
@@ -72,7 +107,7 @@ export function ChooseBanks({ state, notice, onDone }: { state: StudentState; no
         </p>
       )}
       <Bottom>
-        <Button large block disabled={chosen.length !== need || pending} onClick={submit}>
+        <Button large block disabled={chosen.length !== need || pending || editing} onClick={submit}>
           Tiếp tục
         </Button>
       </Bottom>
@@ -80,11 +115,11 @@ export function ChooseBanks({ state, notice, onDone }: { state: StudentState; no
   );
 }
 
-export function NoBank({ state }: { state: StudentState }) {
+export function NoBank({ state, onEdit }: { state: StudentState; onEdit: Edit }) {
   return (
     <>
       <AppHead school={state.school.name} title="Chọn ngân hàng" />
-      <Steps current={2} />
+      <EditSteps onEdit={onEdit} />
       <EndBlock mark title="Không có ngân hàng nào phù hợp" hint="Đã có tài khoản ở tất cả ngân hàng trong chương trình." />
       <Bottom>
         <ZaloBox url={state.zaloUrl} text="Khai nhầm ngân hàng đã có: kết bạn Zalo để nhân viên sửa." />
@@ -93,11 +128,11 @@ export function NoBank({ state }: { state: StudentState }) {
   );
 }
 
-export function BanksFull({ state }: { state: StudentState }) {
+export function BanksFull({ state, onEdit }: { state: StudentState; onEdit: Edit }) {
   return (
     <>
       <AppHead school={state.school.name} title="Chọn ngân hàng" />
-      <Steps current={2} />
+      <EditSteps onEdit={onEdit} />
       <EndBlock mark title="Ngân hàng đã hết lượt trong tháng này" />
       <Bottom>
         <ZaloBox url={state.zaloUrl} text="Cần hỏi: kết bạn Zalo với nhân viên." />

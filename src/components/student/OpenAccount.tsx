@@ -23,7 +23,7 @@ function CodeBox({ bank }: { bank: StudentBank }) {
   }, [copy]);
   if (!bank.referralCode && !bank.qrUrl && !bank.openUrl) return null;
   return (
-    <div className="flex gap-3 rounded-2xl border border-line bg-card p-3">
+    <div className="flex gap-3 rounded-2xl border border-line bg-card p-3 shadow-sm">
       {bank.qrUrl && (
         // eslint-disable-next-line @next/next/no-img-element
         <img src={bank.qrUrl} alt={`QR mã giới thiệu ${bank.name}`} width={96} height={96} className="size-24 flex-none rounded-lg border border-line bg-white object-contain" />
@@ -48,12 +48,12 @@ function CodeBox({ bank }: { bank: StudentBank }) {
                   }
                 }}
               >
-                {copy === "copied" ? <Check size={14} aria-hidden /> : <Copy size={14} aria-hidden />}
+                {copy === "copied" ? <Check size={14} aria-hidden className="anim-pop text-ok-ink" /> : <Copy size={14} aria-hidden />}
                 Sao chép
               </Button>
               <span aria-live="polite" className={clsx("text-[13px]", copy === "failed" ? "text-danger" : "text-text-2")}>
-                {copy === "copied" && "Đã sao chép"}
-                {copy === "failed" && "Không sao chép được"}
+                {copy === "copied" && <span className="anim-fade inline-block">Đã sao chép</span>}
+                {copy === "failed" && <span className="anim-fade inline-block">Không sao chép được</span>}
               </span>
             </div>
           </>
@@ -113,13 +113,13 @@ function BankPanel({ bank, onSaved, onBusy }: { bank: StudentBank; onSaved: () =
   );
 }
 
-export function OpenAccount({ state, onChange }: { state: StudentState; onChange: () => Promise<void> }) {
+export function OpenAccount({ state, onChange, onEdit }: { state: StudentState; onChange: () => Promise<void>; onEdit: () => Promise<string | null> }) {
   const banks = state.banks;
   const [active, setActive] = useState(banks[0]?.id ?? "");
-  const [confirmBack, setConfirmBack] = useState(false);
+  const [confirmBack, setConfirmBack] = useState<1 | 2 | null>(null);
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
-  const [leaving, setLeaving] = useState(false);
+  const [leaving, setLeaving] = useState<1 | 2 | null>(null);
   const [busySlots, setBusySlots] = useState<string[]>([]);
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
   const focusError = useRef(false);
@@ -145,12 +145,13 @@ export function OpenAccount({ state, onChange }: { state: StudentState; onChange
     setError(r.message);
   }
 
-  async function back(): Promise<string | null> {
-    setLeaving(true);
+  async function back(target: 1 | 2): Promise<string | null> {
+    setLeaving(target);
     setError("");
     const r = await studentApi("DELETE", "/api/customers/me/banks");
     if (r.ok) {
-      await onChange();
+      // Máy chủ xoá xong mới chuyển màn. Không mở được màn sửa thông tin thì về bước chọn ngân hàng.
+      if (target === 2 || (await onEdit())) await onChange();
       return null;
     }
     // Hồ sơ đã đổi ở máy chủ (trường vừa đóng, tab khác đã gửi kiểm tra): tải lại để màn khớp máy chủ, báo lỗi ở màn chứ không ở hộp hỏi.
@@ -158,13 +159,19 @@ export function OpenAccount({ state, onChange }: { state: StudentState; onChange
       await onChange();
       // Nút Quay lại vừa bấm đã ẩn sau khi tải lại: không chuyển tiêu điểm thì nó rơi về đầu trang.
       focusError.current = true;
-      setConfirmBack(false);
+      setConfirmBack(null);
       setError(r.message);
-      setLeaving(false);
+      setLeaving(null);
       return null;
     }
-    setLeaving(false);
+    setLeaving(null);
     return r.message;
+  }
+
+  async function askBack(target: 1 | 2) {
+    if (hasPhoto) return setConfirmBack(target);
+    const message = await back(target);
+    if (message) setError(message);
   }
 
   // Bàn phím trong tablist: mũi tên trái phải chuyển tab theo mẫu tab của WAI-ARIA.
@@ -180,7 +187,7 @@ export function OpenAccount({ state, onChange }: { state: StudentState; onChange
   return (
     <>
       <AppHead school={state.school.name} title="Mở tài khoản" />
-      <Steps current={3} />
+      <Steps current={3} pendingStep={leaving} onBack={state.school.active ? askBack : undefined} />
       {/* Grid chia chỗ đều tới khi tab ngắn đủ chỗ, phần còn lại cho tab dài; flex bóp hai tab theo độ dài nên tên ngắn vỡ từng chữ. */}
       <div role="tablist" aria-label="Ngân hàng đã chọn" className="sticky top-0 z-10 -mx-4 mb-4 grid grid-flow-col justify-start gap-2 border-b border-line bg-bg px-4">
         {banks.map((b, i) => (
@@ -199,7 +206,7 @@ export function OpenAccount({ state, onChange }: { state: StudentState; onChange
             onKeyDown={(e) => onTabKey(e, i)}
             className={clsx("-mb-px flex items-center gap-2 border-b-2 px-3 py-2.5 text-[15px] font-semibold", b.id === current.id ? "border-accent text-text" : "border-transparent text-text-2")}
           >
-            <span aria-hidden className={clsx("grid size-4 flex-none place-items-center rounded-full text-[10px] leading-none", complete(b) ? "border border-ok bg-ok-soft text-ok-ink" : "border border-field-border")}>
+            <span aria-hidden className={clsx("grid size-4 flex-none place-items-center rounded-full text-[10px] leading-none transition-colors duration-300", complete(b) ? "border border-ok bg-ok-soft text-ok-ink" : "border border-field-border")}>
               {complete(b) ? "✓" : ""}
             </span>
             {b.name}
@@ -208,7 +215,7 @@ export function OpenAccount({ state, onChange }: { state: StudentState; onChange
         ))}
       </div>
       {banks.map((b) => (
-        <div key={b.id} role="tabpanel" id={`panel-${b.id}`} aria-labelledby={`tab-${b.id}`} hidden={b.id !== current.id}>
+        <div key={b.id} role="tabpanel" id={`panel-${b.id}`} aria-labelledby={`tab-${b.id}`} hidden={b.id !== current.id} className="anim-rise">
           <BankPanel bank={b} onSaved={photoSaved} onBusy={markBusy} />
         </div>
       ))}
@@ -228,21 +235,11 @@ export function OpenAccount({ state, onChange }: { state: StudentState; onChange
       )}
       <Bottom>
         {state.school.active && (
-          <Button
-            variant="secondary"
-            large
-            block
-            disabled={leaving}
-            onClick={async () => {
-              if (hasPhoto) return setConfirmBack(true);
-              const message = await back();
-              if (message) setError(message);
-            }}
-          >
+          <Button variant="secondary" large block disabled={leaving !== null} onClick={() => askBack(2)}>
             Quay lại chọn ngân hàng
           </Button>
         )}
-        <Button large block disabled={!ready || sending} onClick={submit}>
+        <Button large block disabled={!ready || sending || leaving !== null} onClick={submit}>
           Gửi kiểm tra
         </Button>
       </Bottom>
@@ -250,12 +247,12 @@ export function OpenAccount({ state, onChange }: { state: StudentState; onChange
       {confirmBack && (
         <ConfirmDialog
           open
-          title="Quay lại chọn ngân hàng"
-          text="Xoá ảnh đã nộp và quay lại chọn ngân hàng?"
+          title={confirmBack === 1 ? "Quay lại thông tin" : "Quay lại chọn ngân hàng"}
+          text={confirmBack === 1 ? "Xoá ảnh đã nộp và quay lại sửa thông tin?" : "Xoá ảnh đã nộp và quay lại chọn ngân hàng?"}
           confirmLabel="Quay lại"
           danger
-          onConfirm={back}
-          onClose={() => setConfirmBack(false)}
+          onConfirm={() => back(confirmBack)}
+          onClose={() => setConfirmBack(null)}
         />
       )}
     </>

@@ -3,7 +3,7 @@
 import { useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { TextField } from "@/components/ui/TextField";
-import { CustomerForm } from "@/lib/customerForm";
+import { CustomerForm, type CustomerSelfEditInput } from "@/lib/customerForm";
 import { studentApi } from "@/lib/studentApi";
 import { saveProfile } from "@/lib/studentDevice";
 import type { StudentSchool } from "@/lib/studentState";
@@ -12,9 +12,10 @@ import { BankLogo, Bottom } from "./parts";
 const EMPTY = { fullName: "", className: "", phone: "", parentName: "", parentPhone: "" };
 type Key = keyof typeof EMPTY;
 
-export function InfoForm({ school, onCreated }: { school: StudentSchool; onCreated: () => void }) {
-  const [values, setValues] = useState(EMPTY);
-  const [existing, setExisting] = useState<string[]>([]);
+// initial: học sinh quay lại sửa hồ sơ đã có; không có thì tạo hồ sơ mới.
+export function InfoForm({ school, initial, onSaved }: { school: StudentSchool; initial?: CustomerSelfEditInput; onSaved: () => void }) {
+  const [values, setValues] = useState(() => (initial ? { fullName: initial.fullName, className: initial.className, phone: initial.phone, parentName: initial.parentName, parentPhone: initial.parentPhone } : EMPTY));
+  const [existing, setExisting] = useState<string[]>(initial?.existingBankIds ?? []);
   const [touched, setTouched] = useState<Set<Key>>(new Set());
   const [serverError, setServerError] = useState<{ field?: string; message: string } | null>(null);
   const [pending, setPending] = useState(false);
@@ -40,13 +41,20 @@ export function InfoForm({ school, onCreated }: { school: StudentSchool; onCreat
     event.preventDefault();
     if (!parsed.success || pending) return;
     setPending(true);
+    if (initial) {
+      const saved = await studentApi("PATCH", "/api/customers/me", { ...values, existingBankIds: existing });
+      // 409: hồ sơ đã đổi ở máy chủ (tab khác đã chọn ngân hàng, trường vừa đóng): tải lại để màn khớp máy chủ.
+      if (saved.ok || saved.status === 409) return onSaved();
+      setPending(false);
+      return setServerError({ field: saved.field, message: saved.message });
+    }
     const r = await studentApi<{ id: string; token: string }>("POST", "/api/customers", raw);
     if (!r.ok) {
       setPending(false);
       return setServerError({ field: r.field, message: r.message });
     }
     saveProfile(localStorage, r.data.id, r.data.token);
-    onCreated();
+    onSaved();
   }
 
   const formError = serverError && !(serverError.field && serverError.field in EMPTY) ? serverError.message : "";
@@ -70,7 +78,7 @@ export function InfoForm({ school, onCreated }: { school: StudentSchool; onCreat
           <legend className="mb-1.5 text-[13px] text-text-2">Ngân hàng đã có tài khoản</legend>
           <div className="grid grid-cols-3 gap-2">
             {school.banks.map((b) => (
-              <label key={b.id} className="flex min-w-0 cursor-pointer flex-col gap-1.5 rounded-xl border border-field-border bg-card p-1.5 has-[:checked]:border-accent has-[:checked]:bg-accent-soft/40">
+              <label key={b.id} className="flex min-w-0 cursor-pointer flex-col gap-1.5 rounded-xl border border-field-border bg-card p-1.5 transition-colors duration-200 has-[:checked]:border-accent has-[:checked]:bg-accent-soft/40">
                 <BankLogo src={b.logoUrl} />
                 <span className="flex items-center gap-1.5 text-[13px] leading-tight">
                   <input

@@ -53,6 +53,13 @@ export const CustomerForm = z
 export const CustomerEditForm = z.object(info, { error: BAD }).refine(phonesDiffer, PHONES_DIFFER);
 export type CustomerEditValues = z.output<typeof CustomerEditForm>;
 
+// Học sinh tự sửa B1 trước khi gửi kiểm tra: đổi được cả ngân hàng đã có, trường thì không.
+export const CustomerSelfEditForm = z
+  .object({ ...info, existingBankIds: z.array(uuid(), { error: BAD }).max(50, BAD) }, { error: BAD })
+  .refine(phonesDiffer, PHONES_DIFFER);
+export type CustomerSelfEditValues = z.output<typeof CustomerSelfEditForm>;
+export type CustomerSelfEditInput = z.input<typeof CustomerSelfEditForm>;
+
 export type CustomerFormInput = z.input<typeof CustomerForm>;
 export type CustomerFormValues = z.output<typeof CustomerForm>;
 

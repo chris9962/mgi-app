@@ -3,7 +3,7 @@ import { readDevice } from "./studentDevice";
 export type StudentResult<T> = { ok: true; data: T } | { ok: false; status: number; message: string; field?: string };
 
 // Học sinh không có cookie: token trên máy đi trong header Authorization.
-export async function studentApi<T = null>(method: "GET" | "POST" | "DELETE", url: string, body?: unknown): Promise<StudentResult<T>> {
+export async function studentApi<T = null>(method: "GET" | "POST" | "PATCH" | "DELETE", url: string, body?: unknown): Promise<StudentResult<T>> {
   const { token } = readDevice(localStorage);
   const headers: Record<string, string> = {};
   if (token) headers.Authorization = `Bearer ${token}`;

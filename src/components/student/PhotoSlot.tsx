@@ -81,7 +81,7 @@ export function PhotoSlot({
         )}
         <label
           className={clsx(
-            "relative flex h-40 cursor-pointer flex-col items-center justify-center gap-1 overflow-hidden rounded-xl border-2 text-center text-sm focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent",
+            "relative flex h-40 cursor-pointer flex-col items-center justify-center gap-1 overflow-hidden rounded-xl border-2 text-center text-sm transition-colors duration-300 focus-within:outline focus-within:outline-2 focus-within:outline-offset-2 focus-within:outline-accent",
             slot.photo ? "border-ok bg-card" : "border-dashed border-field-border bg-card text-text-2",
           )}
         >
@@ -89,7 +89,7 @@ export function PhotoSlot({
           {slot.photo ? (
             <>
               {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img src={slot.photo.url} alt="" className="absolute inset-0 size-full object-cover" />
+              <img src={slot.photo.url} alt="" className="anim-fade absolute inset-0 size-full object-cover" />
               <span className="absolute inset-x-0 bottom-0 flex flex-col bg-card/90 py-1 text-xs font-semibold text-text">
                 <span className="text-ok-ink">
                   <span aria-hidden>✓ </span>Đã gửi
@@ -106,7 +106,8 @@ export function PhotoSlot({
             </>
           )}
           {busy && (
-            <span role="status" className="absolute inset-0 grid place-items-center bg-card/90 text-sm font-semibold text-text">
+            <span role="status" className="anim-fade absolute inset-0 flex flex-col items-center justify-center gap-2 bg-card/90 text-sm font-semibold text-text">
+              <span aria-hidden className="size-6 animate-spin rounded-full border-[3px] border-line border-t-accent" />
               Đang tải ảnh
             </span>
           )}

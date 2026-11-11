@@ -141,3 +141,119 @@ body {
   outline: 2px solid var(--accent);
   outline-offset: 2px;
 }
+
+/* Chuyển động của web học sinh. Không giữ transform sau khi chạy xong: transform còn lại làm lệch phần tử fixed bên trong. */
+:root {
+  --ease-out: cubic-bezier(0.22, 1, 0.36, 1);
+}
+
+@keyframes step-in {
+  from {
+    opacity: 0;
+    transform: translate3d(var(--step-shift, 28px), 0, 0);
+  }
+}
+@keyframes rise-in {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 10px, 0);
+  }
+}
+@keyframes fade-in {
+  from {
+    opacity: 0;
+  }
+}
+@keyframes pop-in {
+  from {
+    opacity: 0;
+    transform: scale(0.5);
+  }
+}
+@keyframes line-fill {
+  from {
+    transform: scaleX(0);
+  }
+}
+@keyframes ring-pulse {
+  from {
+    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 50%, transparent);
+  }
+  to {
+    box-shadow: 0 0 0 12px transparent;
+  }
+}
+
+@utility anim-step {
+  animation: step-in 380ms var(--ease-out);
+  &[data-dir="back"] {
+    --step-shift: -28px;
+  }
+}
+@utility anim-rise {
+  animation: rise-in 360ms var(--ease-out) backwards;
+}
+@utility anim-fade {
+  animation: fade-in 260ms ease-out backwards;
+}
+@utility anim-pop {
+  animation: pop-in 320ms var(--ease-out) backwards;
+}
+@utility anim-line {
+  transform-origin: left;
+  animation: line-fill 420ms var(--ease-out) backwards;
+}
+@utility anim-pulse {
+  animation:
+    pop-in 320ms var(--ease-out) 260ms backwards,
+    ring-pulse 700ms ease-out 480ms;
+}
+/* Các phần tử con hiện lần lượt, cách nhau 60 ms; từ phần tử thứ 7 hiện cùng lúc để danh sách dài không chờ lâu. */
+@utility anim-stagger {
+  & > * {
+    animation: rise-in 360ms var(--ease-out) 360ms backwards;
+  }
+  & > :nth-child(1) {
+    animation-delay: 60ms;
+  }
+  & > :nth-child(2) {
+    animation-delay: 120ms;
+  }
+  & > :nth-child(3) {
+    animation-delay: 180ms;
+  }
+  & > :nth-child(4) {
+    animation-delay: 240ms;
+  }
+  & > :nth-child(5) {
+    animation-delay: 300ms;
+  }
+}
+
+/* Nút trong hộp thoại (xem ảnh, quét QR) có vùng bấm lớn, không co lại khi bấm. */
+[data-student] :is(button:not(:disabled), a[href]):not(dialog *) {
+  transition:
+    color 150ms,
+    background-color 150ms,
+    border-color 150ms,
+    opacity 150ms,
+    box-shadow 150ms,
+    transform 150ms var(--ease-out);
+}
+[data-student] :is(button:not(:disabled), a[href]):not(dialog *):active {
+  transform: scale(0.97);
+}
+[data-student] [role="alert"] {
+  animation: rise-in 260ms var(--ease-out);
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-student] *,
+  [data-student] *::before,
+  [data-student] *::after {
+    animation-duration: 0.01ms !important;
+    animation-delay: 0s !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
