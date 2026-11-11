@@ -170,19 +170,6 @@ body {
     transform: scale(0.5);
   }
 }
-@keyframes line-fill {
-  from {
-    transform: scaleX(0);
-  }
-}
-@keyframes ring-pulse {
-  from {
-    box-shadow: 0 0 0 0 color-mix(in srgb, var(--accent) 50%, transparent);
-  }
-  to {
-    box-shadow: 0 0 0 12px transparent;
-  }
-}
 
 @utility anim-step {
   animation: step-in 380ms var(--ease-out);
@@ -198,15 +185,6 @@ body {
 }
 @utility anim-pop {
   animation: pop-in 320ms var(--ease-out) backwards;
-}
-@utility anim-line {
-  transform-origin: left;
-  animation: line-fill 420ms var(--ease-out) backwards;
-}
-@utility anim-pulse {
-  animation:
-    pop-in 320ms var(--ease-out) 260ms backwards,
-    ring-pulse 700ms ease-out 480ms;
 }
 /* Các phần tử con hiện lần lượt, cách nhau 60 ms; từ phần tử thứ 7 hiện cùng lúc để danh sách dài không chờ lâu. */
 @utility anim-stagger {

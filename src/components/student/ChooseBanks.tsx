@@ -6,7 +6,7 @@ import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { studentApi } from "@/lib/studentApi";
 import type { StudentState } from "@/lib/studentState";
-import { AppHead, BankLogo, Bottom, EndBlock, Steps, ZaloBox } from "./parts";
+import { AppHead, BankLogo, Bottom, EndBlock, useStepBack, useStepNav, ZaloBox } from "./parts";
 
 const pickedMark = (
   <span className="anim-pop absolute -top-2 -right-2 grid size-6 place-items-center rounded-full bg-accent text-on-accent ring-2 ring-bg">
@@ -16,21 +16,18 @@ const pickedMark = (
 
 type Edit = () => Promise<string | null>;
 
-// Thanh bước của các màn dừng ở bước 2: bấm bước 1 thì chờ tải thông tin đã khai rồi mới chuyển màn.
-function EditSteps({ onEdit }: { onEdit: Edit }) {
-  const [pending, setPending] = useState(false);
+// Đầu trang của các màn dừng ở bước 2: bấm bước 1 thì chờ tải thông tin đã khai rồi mới chuyển màn.
+function EditHead({ onEdit }: { onEdit: Edit }) {
+  const nav = useStepNav();
   const [error, setError] = useState("");
+  useStepBack(nav, async () => {
+    nav.setPending(1);
+    setError((await onEdit()) ?? "");
+    nav.setPending(null);
+  });
   return (
     <>
-      <Steps
-        current={2}
-        pendingStep={pending ? 1 : null}
-        onBack={async () => {
-          setPending(true);
-          setError((await onEdit()) ?? "");
-          setPending(false);
-        }}
-      />
+      <AppHead title="Chọn ngân hàng" />
       {error && (
         <p role="alert" className="text-sm text-danger">
           {error}
@@ -46,7 +43,13 @@ export function ChooseBanks({ state, notice, onDone, onEdit }: { state: StudentS
   const [picked, setPicked] = useState<string[]>([]);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
-  const [editing, setEditing] = useState(false);
+  const nav = useStepNav();
+  const editing = nav.pending === 1;
+  useStepBack(nav, async () => {
+    nav.setPending(1);
+    setError((await onEdit()) ?? "");
+    nav.setPending(null);
+  });
   const chosen = need === 1 ? [banks[0].id] : picked;
 
   const toggle = (id: string) => setPicked((list) => (list.includes(id) ? list.filter((x) => x !== id) : list.length < 2 ? [...list, id] : list));
@@ -64,16 +67,7 @@ export function ChooseBanks({ state, notice, onDone, onEdit }: { state: StudentS
   const message = error || notice;
   return (
     <>
-      <AppHead school={state.school.name} title={need === 2 ? "Chọn 2 ngân hàng" : "Chọn ngân hàng"} />
-      <Steps
-        current={2}
-        pendingStep={editing ? 1 : null}
-        onBack={async () => {
-          setEditing(true);
-          setError((await onEdit()) ?? "");
-          setEditing(false);
-        }}
-      />
+      <AppHead title={need === 2 ? "Chọn 2 ngân hàng" : "Chọn ngân hàng"} />
       <p className="text-sm text-text-2" aria-live="polite">
         {need === 2 ? `Chọn đúng 2 ngân hàng. Đã chọn ${chosen.length}/2.` : "Chỉ còn 1 ngân hàng chưa có tài khoản."}
       </p>
@@ -106,7 +100,7 @@ export function ChooseBanks({ state, notice, onDone, onEdit }: { state: StudentS
           {message}
         </p>
       )}
-      <Bottom>
+      <Bottom sticky>
         <Button large block disabled={chosen.length !== need || pending || editing} onClick={submit}>
           Tiếp tục
         </Button>
@@ -118,8 +112,7 @@ export function ChooseBanks({ state, notice, onDone, onEdit }: { state: StudentS
 export function NoBank({ state, onEdit }: { state: StudentState; onEdit: Edit }) {
   return (
     <>
-      <AppHead school={state.school.name} title="Chọn ngân hàng" />
-      <EditSteps onEdit={onEdit} />
+      <EditHead onEdit={onEdit} />
       <EndBlock mark title="Không có ngân hàng nào phù hợp" hint="Đã có tài khoản ở tất cả ngân hàng trong chương trình." />
       <Bottom>
         <ZaloBox url={state.zaloUrl} text="Khai nhầm ngân hàng đã có: kết bạn Zalo để nhân viên sửa." />
@@ -131,8 +124,7 @@ export function NoBank({ state, onEdit }: { state: StudentState; onEdit: Edit })
 export function BanksFull({ state, onEdit }: { state: StudentState; onEdit: Edit }) {
   return (
     <>
-      <AppHead school={state.school.name} title="Chọn ngân hàng" />
-      <EditSteps onEdit={onEdit} />
+      <EditHead onEdit={onEdit} />
       <EndBlock mark title="Ngân hàng đã hết lượt trong tháng này" />
       <Bottom>
         <ZaloBox url={state.zaloUrl} text="Cần hỏi: kết bạn Zalo với nhân viên." />

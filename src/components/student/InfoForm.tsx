@@ -100,7 +100,7 @@ export function InfoForm({ school, initial, onSaved }: { school: StudentSchool; 
           {formError}
         </p>
       )}
-      <Bottom>
+      <Bottom sticky>
         <Button type="submit" large block disabled={!parsed.success || pending}>
           Tiếp tục
         </Button>

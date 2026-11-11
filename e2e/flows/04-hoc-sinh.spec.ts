@@ -1,4 +1,4 @@
-import { E2E_STUDENT_SCHOOL, E2E_STUDENT_SCHOOL_ID } from "../../scripts/e2e-data";
+import { E2E_STUDENT_SCHOOL_ID } from "../../scripts/e2e-data";
 import { flowVideo } from "./video";
 import { PHONE, PHOTO, STUDENT, expect, test } from "./support";
 
@@ -33,7 +33,7 @@ test("Flow 4: học sinh mở link QR, chọn 2 ngân hàng, nộp ảnh, gửi 
 
   await test.step("Mở link QR của trường", async () => {
     await page.goto(`/t/${E2E_STUDENT_SCHOOL_ID}`);
-    await expect(page.getByText(E2E_STUDENT_SCHOOL)).toBeVisible();
+    await expect(page.getByRole("heading", { level: 1, name: "Thông tin" })).toBeVisible();
     await expect(page).toHaveURL(`${STUDENT}/`);
   });
 

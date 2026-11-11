@@ -35,7 +35,7 @@ function PviQr({ state }: { state: StudentState }) {
 export function Result({ state }: { state: StudentState }) {
   return (
     <>
-      <AppHead school={state.school.name} title={`${state.customer.fullName} - ${state.customer.className}`} />
+      <AppHead title={`${state.customer.fullName} - ${state.customer.className}`} />
       <p className="flex items-center gap-2 text-sm text-text-2">
         {(state.reviewedAt || state.submittedAt) && (
           <span aria-hidden className="anim-pop grid size-9 flex-none place-items-center rounded-full bg-accent-soft text-accent-ink">

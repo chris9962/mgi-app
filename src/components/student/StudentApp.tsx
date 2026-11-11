@@ -3,12 +3,14 @@
 import { QrCode, TriangleAlert } from "lucide-react";
 import { useEffect, useEffectEvent, useRef, useState } from "react";
 import { clsx } from "clsx";
+import Image from "next/image";
 import { Button } from "@/components/ui/Button";
+import { BRAND_SHORT } from "@/lib/brand";
 import type { CustomerSelfEditInput } from "@/lib/customerForm";
 import { clearProfile, decideLink, isSchoolId, readDevice, saveSchool } from "@/lib/studentDevice";
 import { studentApi } from "@/lib/studentApi";
 import type { StudentSchool, StudentState } from "@/lib/studentState";
-import { AppHead, Bottom, EndBlock, Steps } from "./parts";
+import { AppHead, Bottom, EndBlock, HeadSlotContext, StepNavContext, Steps } from "./parts";
 import { BanksFull, ChooseBanks, NoBank } from "./ChooseBanks";
 import { InfoForm } from "./InfoForm";
 import { OpenAccount } from "./OpenAccount";
@@ -84,6 +86,9 @@ export function StudentApp({ linkId }: { linkId?: string }) {
   // Lùi bước (Quay lại chọn ngân hàng) thì màn mới trượt vào từ bên trái.
   const [back, setBack] = useState(false);
   const lastStep = useRef(0);
+  const [headSlot, setHeadSlot] = useState<HTMLElement | null>(null);
+  const [pendingStep, setPendingStep] = useState<1 | 2 | null>(null);
+  const backHandle = useRef<((step: 1 | 2) => void) | null>(null);
 
   // Đồng bộ với localStorage và máy chủ lúc mở web: máy giữ trường và token, máy chủ giữ hồ sơ.
   useEffect(() => {
@@ -105,6 +110,7 @@ export function StudentApp({ linkId }: { linkId?: string }) {
     if (load !== loads.current) return;
     setBack(stepOf(next) < lastStep.current);
     lastStep.current = stepOf(next);
+    setPendingStep(null);
     setScreen(next.kind === "profile" ? { ...next, notice } : next);
   };
 
@@ -122,6 +128,7 @@ export function StudentApp({ linkId }: { linkId?: string }) {
     if (!school || "failed" in school) return school?.failed === 0 ? NETWORK : LATER;
     setBack(true);
     lastStep.current = 1;
+    setPendingStep(null);
     setScreen({ kind: "edit", school, info: info.data });
     return null;
   };
@@ -137,11 +144,27 @@ export function StudentApp({ linkId }: { linkId?: string }) {
     return () => document.removeEventListener("visibilitychange", refresh);
   }, [onProfile]);
 
-  // Khoá theo bước: tải lại hồ sơ trong cùng bước (nộp ảnh, quay lại web) không chạy lại chuyển động và không mất state của màn.
+  const hasHead = screen.kind === "closed" || screen.kind === "form" || screen.kind === "edit" || screen.kind === "profile";
+  const step = stepOf(screen);
+  const profile = screen.kind === "profile" ? screen.state : null;
+  // Trường đóng lúc chưa chọn ngân hàng thì màn chỉ có tiêu đề "Trường đã đóng", không có thanh bước.
+  const showSteps = step >= 1 && step <= 3 && (!profile || profile.school.active || step === 3);
+  const canBack = profile !== null && profile.school.active;
   return (
-    <div key={`${screen.kind}:${stepOf(screen)}`} data-dir={back ? "back" : undefined} className={clsx("flex flex-1 flex-col", screen.kind !== "loading" && "anim-step")}>
-      {body()}
-    </div>
+    <HeadSlotContext value={headSlot}>
+      <StepNavContext value={{ pending: pendingStep, setPending: setPendingStep, handle: backHandle }}>
+        <header className="mb-4 flex items-center gap-2.5 py-3">
+          <Image src="/brand/logo.png" alt="" width={36} height={36} priority className="flex-none rounded-full shadow-sm" />
+          {!hasHead && <span className="text-[13px] font-semibold tracking-wide text-text-2">{BRAND_SHORT}</span>}
+          <div ref={setHeadSlot} className={clsx("min-w-0 flex-1 flex-col", hasHead ? "flex" : "hidden")} />
+          {showSteps && <Steps current={step as 1 | 2 | 3} pendingStep={pendingStep} onBack={canBack ? (target) => backHandle.current?.(target) : undefined} />}
+        </header>
+        {/* Khoá theo bước: tải lại hồ sơ trong cùng bước (nộp ảnh, quay lại web) không chạy lại chuyển động và không mất state của màn. */}
+        <div key={`${screen.kind}:${step}`} data-dir={back ? "back" : undefined} className={clsx("flex flex-1 flex-col", screen.kind !== "loading" && "anim-step")}>
+          {body()}
+        </div>
+      </StepNavContext>
+    </HeadSlotContext>
   );
 
   function body() {
@@ -198,22 +221,20 @@ export function StudentApp({ linkId }: { linkId?: string }) {
           </>
         );
       case "closed":
-        return <AppHead school={screen.school.name} title="Trường đã đóng" />;
+        return <AppHead title="Trường đã đóng" />;
       case "ask":
         return <SwitchSchool current={screen.current} next={screen.next} onSwitch={() => go()} onKeep={() => go()} />;
       case "form":
         return (
           <>
-            <AppHead school={screen.school.name} title="Thông tin" />
-            <Steps current={1} />
+            <AppHead title="Thông tin" />
             <InfoForm school={screen.school} onSaved={() => go()} />
           </>
         );
       case "edit":
         return (
           <>
-            <AppHead school={screen.school.name} title="Thông tin" />
-            <Steps current={1} />
+            <AppHead title="Thông tin" />
             <InfoForm school={screen.school} initial={screen.info} onSaved={() => go()} />
           </>
         );
@@ -227,7 +248,7 @@ type ProfileProps = { state: StudentState; notice?: string; onChange: (notice?: 
 
 function Profile({ state, notice, onChange, onEdit }: ProfileProps) {
   const { status } = state.customer;
-  if (!state.school.active && (status === "new" || status === "no_bank")) return <AppHead school={state.school.name} title="Trường đã đóng" />;
+  if (!state.school.active && (status === "new" || status === "no_bank")) return <AppHead title="Trường đã đóng" />;
   switch (status) {
     case "new":
       if (!state.eligibleBanks.length) return <BanksFull state={state} onEdit={onEdit} />;

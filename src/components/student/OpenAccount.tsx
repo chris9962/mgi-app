@@ -8,7 +8,7 @@ import { ImageLightbox } from "@/components/ui/ImageLightbox";
 import { ConfirmDialog } from "@/components/users/ConfirmDialog";
 import { studentApi } from "@/lib/studentApi";
 import type { StudentBank, StudentState } from "@/lib/studentState";
-import { AppHead, Bottom, Steps } from "./parts";
+import { AppHead, Bottom, useStepBack, useStepNav } from "./parts";
 import { PhotoSlot } from "./PhotoSlot";
 
 const complete = (b: StudentBank) => b.slots.every((s) => s.photo);
@@ -119,7 +119,9 @@ export function OpenAccount({ state, onChange, onEdit }: { state: StudentState; 
   const [confirmBack, setConfirmBack] = useState<1 | 2 | null>(null);
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
-  const [leaving, setLeaving] = useState<1 | 2 | null>(null);
+  const nav = useStepNav();
+  const leaving = nav.pending;
+  const setLeaving = nav.setPending;
   const [busySlots, setBusySlots] = useState<string[]>([]);
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
   const focusError = useRef(false);
@@ -168,6 +170,7 @@ export function OpenAccount({ state, onChange, onEdit }: { state: StudentState; 
     return r.message;
   }
 
+  useStepBack(nav, askBack);
   async function askBack(target: 1 | 2) {
     if (hasPhoto) return setConfirmBack(target);
     const message = await back(target);
@@ -186,8 +189,7 @@ export function OpenAccount({ state, onChange, onEdit }: { state: StudentState; 
 
   return (
     <>
-      <AppHead school={state.school.name} title="Mở tài khoản" />
-      <Steps current={3} pendingStep={leaving} onBack={state.school.active ? askBack : undefined} />
+      <AppHead title="Mở tài khoản" />
       {/* Grid chia chỗ đều tới khi tab ngắn đủ chỗ, phần còn lại cho tab dài; flex bóp hai tab theo độ dài nên tên ngắn vỡ từng chữ. */}
       <div role="tablist" aria-label="Ngân hàng đã chọn" className="sticky top-0 z-10 -mx-4 mb-4 grid grid-flow-col justify-start gap-2 border-b border-line bg-bg px-4">
         {banks.map((b, i) => (
