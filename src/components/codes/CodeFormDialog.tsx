@@ -101,7 +101,6 @@ export function CodeFormDialog({ banks, initial, onClose }: { banks: { id: strin
       title={start.id ? "Sửa mã giới thiệu" : "Thêm mã giới thiệu"}
       onClose={onClose}
       dismissible={!pending}
-      width={600}
       footer={
         <>
           <Button variant="secondary" disabled={pending} onClick={onClose}>
@@ -113,10 +112,10 @@ export function CodeFormDialog({ banks, initial, onClose }: { banks: { id: strin
         </>
       }
     >
-      <form id="code-form" onSubmit={submit} noValidate className="flex flex-col gap-4">
+      <form id="code-form" onSubmit={submit} noValidate className="flex flex-col gap-3.5 pb-1">
         <Select name="bankId" label="Ngân hàng" defaultValue={start.bankId} disabled={Boolean(start.id)} options={banks.map((b) => ({ value: b.id, label: b.name }))} error={errors.bankId} />
         <TextField name="displayName" label="Tên hiển thị" defaultValue={start.displayName} error={errors.displayName} data-autofocus />
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-2 items-start gap-3 narrow:grid-cols-1">
           <div className="flex flex-col gap-1.5">
             <span className="text-[13px] text-text-2">Ảnh QR</span>
             <input
@@ -150,7 +149,7 @@ export function CodeFormDialog({ banks, initial, onClose }: { banks: { id: strin
               )}
             </button>
             {qrError && (
-              <span id={qrErrorId} role="alert" className="text-[13px] text-danger">
+              <span id={qrErrorId} role="alert" className="text-[12.5px] text-danger">
                 {qrError}
               </span>
             )}
@@ -158,13 +157,13 @@ export function CodeFormDialog({ banks, initial, onClose }: { banks: { id: strin
           <TextField name="code" label="Mã text (Mã giới thiệu)" defaultValue={start.code} error={errors.code} />
         </div>
         <TextField name="openUrl" label="Link mở tài khoản trong QR" value={openUrl} onChange={(e) => setOpenUrl(e.target.value)} error={errors.openUrl} hint={qrNote || undefined} />
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-2 items-start gap-3 narrow:grid-cols-1">
           <TextField name="monthlyQuota" label="Số lượt mỗi tháng" inputMode="numeric" defaultValue={String(start.monthlyQuota)} error={errors.monthlyQuota} />
           <TextField name="priority" label="Độ ưu tiên" inputMode="numeric" defaultValue={String(start.priority)} error={errors.priority} />
         </div>
         <MultiSelect label="Trường dùng mã này" value={schools} onChange={setSchools} search={searchSchools} placeholder="Gõ để tìm trường…" error={errors.schoolIds} />
         {formError && (
-          <p role="alert" className="text-sm text-danger">
+          <p role="alert" className="text-[12.5px] text-danger">
             {formError}
           </p>
         )}

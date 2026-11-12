@@ -59,15 +59,15 @@ export function LoginForm() {
 
   return (
     <>
-      <form onSubmit={submit} noValidate className="flex flex-col gap-4">
+      <form onSubmit={submit} noValidate className="flex flex-col gap-[13.2px]">
         <TextField name="username" label="Tài khoản" placeholder="Tên đăng nhập công ty cấp" autoComplete="username" autoCapitalize="none" spellCheck={false} />
         <PasswordField name="password" label="Mật khẩu" placeholder="Mật khẩu công ty cấp" autoComplete="current-password" />
         {error && (
-          <p role="alert" className="rounded-[10px] border border-danger bg-danger-soft px-3.5 py-2.5 text-sm text-danger-ink">
+          <p role="alert" className="rounded-[10px] border border-danger bg-danger-soft px-4 py-3 text-[13px] leading-[1.5] text-danger-ink">
             {error}
           </p>
         )}
-        <Button type="submit" large block disabled={pending}>
+        <Button type="submit" large block disabled={pending} className="mt-[8.8px]">
           {pending ? "Đang kiểm tra…" : "Đăng nhập"}
         </Button>
       </form>

@@ -1,6 +1,7 @@
 import { School } from "lucide-react";
 import { TopBar } from "@/components/shell/TopBar";
 import { Card } from "@/components/ui/Card";
+import { DataTable, EmptyRow, TableHead } from "@/components/ui/DataTable";
 import { ExportButton } from "@/components/ui/ExportButton";
 import { Pager } from "@/components/ui/Pager";
 import { SearchBox } from "@/components/ui/SearchBox";
@@ -36,52 +37,40 @@ export default async function SchoolsPage({ searchParams }: { searchParams: Prom
         }
       />
       <main className="p-6">
-        <Card title="Trường" icon={<School size={17} aria-hidden />} meta={`${total} trường`} pad={false}>
-          <div className="table-scroll">
-            <table className="w-full text-left text-sm">
-              <thead className="text-xs font-semibold tracking-wide text-text-2 uppercase">
-                <tr className="border-b border-line">
-                  {["Trường", "Địa chỉ", "Người liên hệ", "Hồ sơ", "Đạt ≥ 1", "Trạng thái", "Thao tác"].map((h) => (
-                    <th key={h} scope="col" className="px-4 py-3 font-semibold whitespace-nowrap">
-                      {h}
-                    </th>
-                  ))}
+        <Card title="Trường" icon={<School size={17} aria-hidden />} meta={`${total} trường`}>
+          <DataTable caption="Trường, địa chỉ, người liên hệ, số hồ sơ và trạng thái">
+            <TableHead columns={["Trường", "Địa chỉ", "Người liên hệ", "Hồ sơ", "Đạt ≥ 1", "Trạng thái", "Thao tác"]} />
+            <tbody>
+              {rows.map((s) => (
+                <tr key={s.id}>
+                  <td>{s.name}</td>
+                  <td>
+                    {s.wardName}, {shortProvince(s.provinceName)}
+                  </td>
+                  <td>
+                    {s.contactName}
+                    <span className="block text-xs text-text-3">{s.contactPhone}</span>
+                  </td>
+                  <td className="tabular-nums">{s.customerCount}</td>
+                  <td className="tabular-nums">{s.passedCount}</td>
+                  <td>{s.active ? <StatusTag tone="ok">Đang mở</StatusTag> : <StatusTag tone="neutral">Đã đóng</StatusTag>}</td>
+                  <td>
+                    <SchoolActions
+                      link={studentLink(s.id)}
+                      active={s.active}
+                      provinces={provinces}
+                      school={{ id: s.id, name: s.name, provinceCode: s.provinceCode, wardCode: s.wardCode, contactName: s.contactName, contactPhone: s.contactPhone }}
+                    />
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {rows.map((s) => (
-                  <tr key={s.id} className="border-b border-line last:border-0">
-                    <td className="px-4 py-3 font-semibold">{s.name}</td>
-                    <td className="px-4 py-3">
-                      {s.wardName}, {shortProvince(s.provinceName)}
-                    </td>
-                    <td className="px-4 py-3">
-                      {s.contactName}
-                      <span className="block text-xs text-text-3">{s.contactPhone}</span>
-                    </td>
-                    <td className="px-4 py-3 tabular-nums">{s.customerCount}</td>
-                    <td className="px-4 py-3 tabular-nums">{s.passedCount}</td>
-                    <td className="px-4 py-3">{s.active ? <StatusTag tone="ok">Đang mở</StatusTag> : <StatusTag tone="neutral">Đã đóng</StatusTag>}</td>
-                    <td className="px-4 py-3">
-                      <SchoolActions
-                        link={studentLink(s.id)}
-                        active={s.active}
-                        provinces={provinces}
-                        school={{ id: s.id, name: s.name, provinceCode: s.provinceCode, wardCode: s.wardCode, contactName: s.contactName, contactPhone: s.contactPhone }}
-                      />
-                    </td>
-                  </tr>
-                ))}
-                {!rows.length && (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-10 text-center text-text-3 mobile:text-left">
-                      {q ? "Không có trường khớp từ khoá." : "Chưa có trường nào."}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+              ))}
+              {!rows.length && (
+                <EmptyRow colSpan={7}>
+                  {q ? "Không có trường khớp từ khoá." : "Chưa có trường nào."}
+                </EmptyRow>
+              )}
+            </tbody>
+          </DataTable>
           <Pager page={current} total={total} pageSize={PAGE_SIZE} href={href} />
         </Card>
       </main>

@@ -1,10 +1,11 @@
 "use client";
 
 import { clsx } from "clsx";
-import { Search, X } from "lucide-react";
+import { Check, Search, X } from "lucide-react";
 import { useEffect, useId, useRef, useState, type KeyboardEvent } from "react";
 import { SEARCH_MAX_LENGTH } from "@/lib/search";
 import { inputClass } from "./Field";
+import { useFloatingList } from "./useFloatingList";
 
 export type Option = { id: string; label: string };
 
@@ -21,6 +22,7 @@ export function MultiSelect({ label, value, onChange, search, placeholder = "Gõ
   const listId = `${id}-list`;
   const [query, setQuery] = useState("");
   const [options, setOptions] = useState<Option[] | null>(null);
+  const [anchorRef, listRef] = useFloatingList<HTMLDivElement, HTMLUListElement>(options !== null, 300);
   const [active, setActive] = useState(0);
   const timer = useRef<ReturnType<typeof setTimeout>>(undefined);
   const latest = useRef("");
@@ -71,16 +73,16 @@ export function MultiSelect({ label, value, onChange, search, placeholder = "Gõ
       {value.length > 0 && (
         <ul className="flex flex-wrap gap-1.5" aria-label={`${label} đã chọn`}>
           {value.map((v) => (
-            <li key={v.id} className="inline-flex items-center gap-1 rounded-full border border-line bg-surface py-0.5 pr-1 pl-2.5 text-[13px]">
+            <li key={v.id} className="inline-flex items-center gap-1 rounded-full bg-accent-soft py-0.5 pr-1 pl-[9px] text-xs leading-[1.6] text-accent-ink">
               {v.label}
-              <button type="button" aria-label={`Bỏ ${v.label}`} onClick={() => toggle(v)} className="grid size-6 place-items-center rounded-full text-text-2 hover:bg-card">
+              <button type="button" aria-label={`Bỏ ${v.label}`} onClick={() => toggle(v)} className="grid size-6 place-items-center rounded-full text-accent-ink hover:bg-card">
                 <X size={13} aria-hidden />
               </button>
             </li>
           ))}
         </ul>
       )}
-      <div className="relative">
+      <div ref={anchorRef} className="relative">
         <Search size={15} aria-hidden className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-text-3" />
         <input
           id={id}
@@ -111,7 +113,7 @@ export function MultiSelect({ label, value, onChange, search, placeholder = "Gõ
           className={clsx(inputClass, "pl-9")}
         />
         {options && (
-          <ul id={listId} role="listbox" aria-multiselectable className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-[10px] border border-line bg-card p-1 shadow-lg">
+          <ul ref={listRef} id={listId} role="listbox" aria-multiselectable className="fixed z-20 overflow-y-auto rounded-[10px] border border-line bg-card p-1.5 shadow-(--elev-sm)">
             {options.map((o, i) => {
               const on = value.some((v) => v.id === o.id);
               return (
@@ -125,21 +127,21 @@ export function MultiSelect({ label, value, onChange, search, placeholder = "Gõ
                     toggle(o);
                   }}
                   onMouseEnter={() => setActive(i)}
-                  className={clsx("flex cursor-pointer items-center gap-2.5 rounded-md px-2 py-2 text-sm", i === active && "bg-surface")}
+                  className={clsx("flex min-h-11 cursor-pointer items-center gap-2.5 rounded-md px-2.5 text-[13px]", i === active && "bg-panel")}
                 >
-                  <span aria-hidden className={clsx("grid size-[18px] flex-none place-items-center rounded border text-[11px] font-bold", on ? "border-accent bg-accent text-on-accent" : "border-field-border")}>
-                    {on ? "✓" : ""}
+                  <span aria-hidden className={clsx("grid size-[18px] flex-none place-items-center rounded-md border-[1.5px]", on ? "border-accent bg-accent text-on-accent" : "border-field-border bg-card")}>
+                    {on && <Check size={12} strokeWidth={2.5} />}
                   </span>
                   {o.label}
                 </li>
               );
             })}
-            {!options.length && <li className="px-3 py-2 text-sm text-text-3">Không có kết quả</li>}
+            {!options.length && <li className="px-3 py-5 text-center text-[13px] text-text-3">Không tìm thấy</li>}
           </ul>
         )}
       </div>
       {error && (
-        <span id={`${id}-error`} className="text-[13px] text-danger">
+        <span id={`${id}-error`} className="text-[12.5px] text-danger">
           {error}
         </span>
       )}

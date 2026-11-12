@@ -1,5 +1,6 @@
 import { expect, test, type Page } from "@playwright/test";
 import { api, apiLogin, asUser, createUser, expectDialogFits, formAlert, newPage, open, PHONE } from "./edge-config-support";
+import { openSidebarGroups } from "./sidebar-groups";
 
 const fillLogin = async (page: Page, username: string, password: string) => {
   await page.getByLabel("Tài khoản").fill(username);
@@ -138,6 +139,7 @@ test("hai tab cùng phiên: đăng xuất ở tab 1 thì tab 2 bấm chuyển tr
   await one.locator('button[aria-controls="account-menu"]').click();
   await one.getByRole("button", { name: "Đăng xuất" }).click();
   await expect(one).toHaveURL(/\/login$/);
+  await openSidebarGroups(two);
   await two.getByRole("navigation", { name: "Điều hướng chính" }).getByRole("link", { name: "Tài khoản" }).click();
   await expect(two).toHaveURL(/\/login$/);
   expect((await api(two, "PATCH", "/api/admin/profile", { fullName: "x", phone: "" })).status).toBe(401);

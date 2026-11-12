@@ -52,7 +52,7 @@ export function Result({ state }: { state: StudentState }) {
         {state.banks.map((b) => (
           <li key={b.id} className="flex items-center justify-between gap-3 px-4 py-3">
             <strong className="text-[15px]">{b.name}</strong>
-            <StatusTag tone={STATUS[b.status].tone}>{STATUS[b.status].label}</StatusTag>
+            <StatusTag size="md" tone={STATUS[b.status].tone}>{STATUS[b.status].label}</StatusTag>
           </li>
         ))}
       </ul>

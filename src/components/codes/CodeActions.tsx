@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/users/ConfirmDialog";
+import { rowActions, rowIconButton } from "@/components/ui/DataTable";
 import { apiSend } from "@/lib/api";
 import { CodeFormDialog, type CodeDefaults } from "./CodeFormDialog";
 
@@ -27,17 +28,17 @@ export function CodeActions({ code, active, banks }: { code: Required<CodeDefaul
   const router = useRouter();
   const [dialog, setDialog] = useState<"edit" | "toggle" | null>(null);
   return (
-    <span className="flex items-center gap-1.5">
+    <span className={rowActions}>
       <button
         type="button"
-        className="grid size-9 place-items-center rounded-lg border border-line bg-card text-text-2 hover:bg-surface hover:text-text"
+        className={rowIconButton}
         aria-label={`Sửa mã ${code.displayName}`}
         title="Sửa mã"
         onClick={() => setDialog("edit")}
       >
         <Pencil size={16} aria-hidden />
       </button>
-      <button type="button" className="h-9 rounded-lg px-2.5 text-sm font-semibold whitespace-nowrap text-accent-ink hover:bg-surface" onClick={() => setDialog("toggle")}>
+      <button type="button" className="h-9 rounded-[10px] px-2.5 text-sm font-semibold whitespace-nowrap text-accent-ink hover:bg-surface" onClick={() => setDialog("toggle")}>
         {active ? "Ngừng" : "Dùng lại"}
       </button>
       {dialog === "edit" && <CodeFormDialog banks={banks} initial={code} onClose={() => setDialog(null)} />}

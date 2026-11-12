@@ -68,13 +68,13 @@ function ReplaceDialog({ bank, onClose }: { bank: Bank; onClose: () => void }) {
         </>
       }
     >
-      <form id="replace-photo" onSubmit={submit} noValidate className="flex flex-col gap-4">
+      <form id="replace-photo" onSubmit={submit} noValidate className="flex flex-col gap-3.5 pb-1">
         <Select label="Khung ảnh" name="slotId" options={bank.slots.map((s) => ({ value: s.id, label: s.name }))} error={errors.slotId} data-autofocus />
         <Field id={fileId} label="Ảnh" error={errors.file}>
           <input id={fileId} name="file" type="file" accept="image/jpeg,image/png,image/webp,image/heic" aria-invalid={errors.file ? true : undefined} aria-describedby={errors.file ? `${fileId}-error` : undefined} className={inputClass} />
         </Field>
         {errors.form && (
-          <p role="alert" className="text-sm text-danger">
+          <p role="alert" className="text-[12.5px] text-danger">
             {errors.form}
           </p>
         )}
@@ -117,12 +117,12 @@ function NoteDialog({ bank, onClose }: { bank: Bank; onClose: () => void }) {
         </>
       }
     >
-      <form id="review-note" onSubmit={submit} noValidate className="flex flex-col gap-3">
+      <form id="review-note" onSubmit={submit} noValidate className="flex flex-col gap-3.5 pb-1">
         <Field id={id} label={`Ghi chú cho ${bank.name}`} error={errors.note}>
           <textarea id={id} name="note" rows={5} maxLength={1000} defaultValue={bank.note} data-autofocus aria-invalid={errors.note ? true : undefined} aria-describedby={errors.note ? `${id}-error` : undefined} className={inputClass} />
         </Field>
         {errors.form && (
-          <p role="alert" className="text-sm text-danger">
+          <p role="alert" className="text-[12.5px] text-danger">
             {errors.form}
           </p>
         )}

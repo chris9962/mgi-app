@@ -5,6 +5,7 @@ import { CustomerEditButton } from "@/components/customers/CustomerEditButton";
 import { NoteButton, ReviewActions } from "@/components/customers/ReviewActions";
 import { bankTag, customerTag } from "@/components/customers/customerView";
 import { TopBar } from "@/components/shell/TopBar";
+import { BackLink } from "@/components/ui/BackLink";
 import { Card } from "@/components/ui/Card";
 import { StatusTag } from "@/components/ui/StatusTag";
 import { formatDateTime } from "@/lib/dates";
@@ -68,7 +69,7 @@ function BankCard({ bank, customer }: { bank: DetailBank; customer: CustomerDeta
   const actionBank = { id: bank.id, name: bank.name, status: bank.status, note: bank.note, slots: bank.slots.filter((s) => !s.removed).map((s) => ({ id: s.id, name: s.name })), photos: bank.photos.map((ph) => ph.id) };
   const meta = [`Ngân hàng ${bank.slot}`, bank.referralCode && `Mã giới thiệu ${bank.referralCode}`, bank.managers.length && `Người quản ${bank.managers.join(", ")}`].filter(Boolean).join(" - ");
   return (
-    <Card title={bank.name} icon={<Landmark size={17} aria-hidden />} meta={meta} action={bankTag(bank.status, true)} pad={bank.managed}>
+    <Card title={bank.name} icon={<Landmark size={17} aria-hidden />} meta={meta} action={bankTag(bank.status, true)}>
       {bank.managed && (
         <div className="flex flex-col gap-5">
           <ul className="grid gap-3 sm:grid-cols-[repeat(auto-fill,minmax(180px,1fr))]">
@@ -154,9 +155,10 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
 
   return (
     <>
-      <TopBar title={c.fullName} back={{ href: "/customers", label: "Hồ sơ học sinh" }} />
+      <TopBar title={c.fullName} />
       {/* Họ tên, phụ huynh, ghi chú không dấu cách vẫn xuống dòng, không đẩy trang cuộn ngang. */}
       <main className="flex flex-col gap-4 p-6 wrap-anywhere">
+        <BackLink href="/customers">Hồ sơ học sinh</BackLink>
         <Card title="Thông tin" icon={<UserRound size={17} aria-hidden />} action={customerTag(c.status)}>
           <InfoList items={info} />
           {c.canEdit && (
@@ -168,7 +170,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
         {c.banks.map((b) => (
           <BankCard key={b.id} bank={b} customer={c} />
         ))}
-        <Card title="SMS cho phụ huynh" icon={<MessageSquareText size={17} aria-hidden />} action={c.sms ? SMS_TAG[c.sms.status] : <StatusTag tone="neutral">Chưa gửi</StatusTag>} pad={Boolean(c.voucher || c.sms)}>
+        <Card title="SMS cho phụ huynh" icon={<MessageSquareText size={17} aria-hidden />} action={c.sms ? SMS_TAG[c.sms.status] : <StatusTag tone="neutral">Chưa gửi</StatusTag>}>
           {(c.voucher || c.sms) && (
             <InfoList
               items={[

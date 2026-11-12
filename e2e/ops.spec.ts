@@ -1,5 +1,6 @@
 import { execFileSync } from "node:child_process";
 import { expect, test, type Page } from "@playwright/test";
+import { openSidebarGroups } from "./sidebar-groups";
 
 const PASSWORD = "e2e23test";
 
@@ -16,6 +17,7 @@ test("Quản trị mở Vận hành hệ thống từ menu Hệ thống: khối 
   // Một vòng đo thật của máy đang chạy test; bỏ S3 để không duyệt cả bucket dev.
   execFileSync("bun", ["--env-file=.env.local", "scripts/ops-watch.ts", "--mot-vong"], { env: { ...process.env, S3_ENDPOINT: "" }, stdio: "ignore" });
   await loginAs(page, "zz_e2e_admin");
+  await openSidebarGroups(page);
   await page.getByRole("navigation").getByRole("link", { name: "Vận hành hệ thống" }).click();
   await expect(page.getByRole("heading", { name: "Vận hành hệ thống", level: 1 })).toBeVisible();
 
@@ -35,6 +37,7 @@ test("Quản trị mở Vận hành hệ thống từ menu Hệ thống: khối 
 
 test("Nhân viên không thấy mục Vận hành hệ thống và mở thẳng thì nhận 404", async ({ page }) => {
   await loginAs(page, "zz_e2e_staff");
+  await openSidebarGroups(page);
   await expect(page.getByRole("link", { name: "Vận hành hệ thống" })).toHaveCount(0);
   const res = await page.goto("/ops");
   expect(res?.status()).toBe(404);

@@ -1,10 +1,10 @@
 "use client";
 
 import { clsx } from "clsx";
-import { ChevronDown } from "lucide-react";
 import { useId, useState, type KeyboardEvent } from "react";
 import { plain } from "@/lib/text";
 import { Field, inputClass } from "./Field";
+import { useFloatingList } from "./useFloatingList";
 
 type Option = { value: string; label: string };
 
@@ -25,6 +25,7 @@ export function Combobox({ label, name, options, value, onChange, placeholder, e
   const [query, setQuery] = useState<string | null>(null);
   const [active, setActive] = useState(0);
   const open = query !== null;
+  const [anchorRef, listRef] = useFloatingList<HTMLDivElement, HTMLUListElement>(open, 240);
   const shown = open ? options.filter((o) => plain(o.label).includes(plain(query))).slice(0, 50) : [];
 
   function choose(o: Option) {
@@ -51,7 +52,7 @@ export function Combobox({ label, name, options, value, onChange, placeholder, e
 
   return (
     <Field id={id} label={label} error={error}>
-      <div className="relative">
+      <div ref={anchorRef} className="relative">
         <input type="hidden" name={name} value={value} />
         <input
           id={id}
@@ -72,11 +73,10 @@ export function Combobox({ label, name, options, value, onChange, placeholder, e
           }}
           onBlur={() => setQuery(null)}
           onKeyDown={onKey}
-          className={clsx(inputClass, "pr-9 disabled:bg-surface")}
+          className={inputClass}
         />
-        <ChevronDown size={16} aria-hidden className="pointer-events-none absolute top-1/2 right-3 -translate-y-1/2 text-text-3" />
         {open && (
-          <ul id={listId} role="listbox" className="absolute z-20 mt-1 max-h-64 w-full overflow-auto rounded-[10px] border border-line bg-card p-1 shadow-lg">
+          <ul ref={listRef} id={listId} role="listbox" className="fixed z-20 overflow-y-auto rounded-[10px] border border-line-strong bg-surface p-1.5 shadow-(--elev-lg)">
             {shown.map((o, i) => (
               <li
                 key={o.value}
@@ -88,12 +88,12 @@ export function Combobox({ label, name, options, value, onChange, placeholder, e
                   choose(o);
                 }}
                 onMouseEnter={() => setActive(i)}
-                className={clsx("cursor-pointer rounded-md px-3 py-2 text-sm", i === active && "bg-surface", o.value === value && "font-semibold")}
+                className={clsx("cursor-pointer rounded-md px-2.5 py-2 text-[13.5px]", i === active && "bg-accent-soft")}
               >
                 {o.label}
               </li>
             ))}
-            {!shown.length && <li className="px-3 py-2 text-sm text-text-3">Không có kết quả</li>}
+            {!shown.length && <li className="px-2.5 py-2 text-[13px] text-text-2">Không tìm thấy</li>}
           </ul>
         )}
       </div>

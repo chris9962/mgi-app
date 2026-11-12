@@ -53,7 +53,7 @@ export function CodeFilters({ month, banks, ...initial }: Filters & { month: str
   return (
     <form
       role="search"
-      className="flex flex-wrap items-end gap-3 border-b border-line p-4"
+      className="flex flex-wrap items-end gap-3"
       onSubmit={(e) => {
         e.preventDefault();
         go(current);
@@ -102,7 +102,7 @@ export function CodeFilters({ month, banks, ...initial }: Filters & { month: str
           ))}
         </select>
       </div>
-      <label className="inline-flex h-9 items-center gap-2 text-sm">
+      <label className="ml-auto inline-flex h-9 items-center gap-2 text-sm narrow:ml-0">
         <input
           type="checkbox"
           checked={hideStopped}

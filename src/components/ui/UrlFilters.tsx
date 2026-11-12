@@ -1,9 +1,11 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useId, useOptimistic, useState, useTransition } from "react";
+import { format } from "date-fns";
+import { Check } from "lucide-react";
+import { useId, useOptimistic, useState, useTransition, type ComponentProps } from "react";
+import { DateRangePicker } from "./DateRangePicker";
 import { FilterButton } from "./FilterButton";
-import { inputClass } from "./Field";
 import { MultiSelect, type Option } from "./MultiSelect";
 
 export type FilterDef =
@@ -16,20 +18,29 @@ export type FilterDef =
 
 const listOf = (v: string) => (v ? v.split(",") : []);
 
+// Dòng chọn chép FilterChoices.module.css của mgst-app; giữ ô radio, checkbox thật để bàn phím và trình đọc màn hình dùng được, viền ô giữ --field-border để đạt 3:1.
+const LIST = "-mx-[18px] -my-4 flex flex-col p-1.5";
+const ROW =
+  "flex min-h-11 cursor-pointer items-center gap-2.5 rounded-md px-2.5 text-[13px] text-text hover:bg-panel has-[:checked]:bg-accent-soft has-[:checked]:text-accent-ink has-[:focus-visible]:outline-2 has-[:focus-visible]:outline-offset-1 has-[:focus-visible]:outline-accent";
+
+function ChoiceBox(props: ComponentProps<"input">) {
+  return (
+    <span className="relative grid size-[18px] flex-none place-items-center">
+      <input {...props} className="peer absolute inset-0 m-0 cursor-pointer appearance-none rounded-md border-[1.5px] border-field-border bg-card checked:border-accent checked:bg-accent focus-visible:outline-none" />
+      <Check size={12} strokeWidth={2.5} aria-hidden className="pointer-events-none relative hidden text-on-accent peer-checked:block" />
+    </span>
+  );
+}
+
 function MultiChoices({ def, value, onPick }: { def: Extract<FilterDef, { kind: "choice" }>; value: string; onPick: (v: string) => void }) {
   const picked = listOf(value);
   return (
-    <fieldset className="flex flex-col gap-1">
+    <fieldset className={LIST}>
       <legend className="sr-only">{def.label}</legend>
       {def.options.map((o) => (
-        <label key={o.value} className="flex min-h-10 cursor-pointer items-center gap-2.5 rounded-lg px-2 text-sm hover:bg-surface has-[:checked]:font-semibold">
-          <input
-            type="checkbox"
-            checked={picked.includes(o.value)}
-            onChange={(e) => onPick((e.target.checked ? [...picked, o.value] : picked.filter((v) => v !== o.value)).join(","))}
-            className="size-4 accent-[var(--accent)]"
-          />
-          {o.label}
+        <label key={o.value} className={ROW}>
+          <ChoiceBox type="checkbox" checked={picked.includes(o.value)} onChange={(e) => onPick((e.target.checked ? [...picked, o.value] : picked.filter((v) => v !== o.value)).join(","))} />
+          <span className="min-w-0 truncate">{o.label}</span>
         </label>
       ))}
     </fieldset>
@@ -60,35 +71,36 @@ function SearchChoices({ def, value, onPick }: { def: Extract<FilterDef, { kind:
 function Choices({ def, value, onPick }: { def: Extract<FilterDef, { kind: "choice" }>; value: string; onPick: (v: string) => void }) {
   const name = useId();
   return (
-    <fieldset className="flex flex-col gap-1">
+    <fieldset className={LIST}>
       <legend className="sr-only">{def.label}</legend>
       {def.options.map((o) => (
-        <label key={o.value} className="flex min-h-10 cursor-pointer items-center gap-2.5 rounded-lg px-2 text-sm hover:bg-surface has-[:checked]:font-semibold">
-          <input type="radio" name={name} checked={value === o.value} onChange={() => onPick(o.value)} className="size-4 accent-[var(--accent)]" />
-          {o.label}
+        <label key={o.value} className={ROW}>
+          <ChoiceBox type="radio" name={name} checked={value === o.value} onChange={() => onPick(o.value)} />
+          <span className="min-w-0 truncate">{o.label}</span>
         </label>
       ))}
     </fieldset>
   );
 }
 
-function Dates({ from, to, onChange }: { from: string; to: string; onChange: (from: string, to: string) => void }) {
-  const id = useId();
+// Chuỗi ngày trên URL có thể sai (abc, 2026-02-30): ngày không có thật thì coi như chưa chọn.
+function toDate(v: string): Date | undefined {
+  const m = /^(\d{4})-(\d{2})-(\d{2})$/.exec(v);
+  if (!m) return undefined;
+  const d = new Date(Number(m[1]), Number(m[2]) - 1, Number(m[3]));
+  return format(d, "yyyy-MM-dd") === v ? d : undefined;
+}
+
+function Dates({ label, from, to, onChange }: { label: string; from: string; to: string; onChange: (from: string, to: string) => void }) {
+  const start = toDate(from);
+  const end = toDate(to);
   return (
-    <div className="flex flex-col gap-3">
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor={`${id}-from`} className="text-[13px] text-text-2">
-          Từ ngày
-        </label>
-        <input id={`${id}-from`} type="date" value={from} max={to || undefined} onChange={(e) => onChange(e.target.value, to)} className={inputClass} />
-      </div>
-      <div className="flex flex-col gap-1.5">
-        <label htmlFor={`${id}-to`} className="text-[13px] text-text-2">
-          Đến ngày
-        </label>
-        <input id={`${id}-to`} type="date" value={to} min={from || undefined} onChange={(e) => onChange(from, e.target.value)} className={inputClass} />
-      </div>
-    </div>
+    <DateRangePicker
+      label={label}
+      hideLabel
+      value={start || end ? { from: start ?? end, to: end } : undefined}
+      onChange={(r) => onChange(r?.from ? format(r.from, "yyyy-MM-dd") : "", r?.to ? format(r.to, "yyyy-MM-dd") : "")}
+    />
   );
 }
 
@@ -124,7 +136,7 @@ export function UrlFilters({ path, params: committed, defs }: { path: string; pa
               id: d.id,
               label: d.label,
               count: params[d.fromKey] || params[d.toKey] ? 1 : 0,
-              content: <Dates from={params[d.fromKey] ?? ""} to={params[d.toKey] ?? ""} onChange={(f, t) => go({ [d.fromKey]: f, [d.toKey]: t })} />,
+              content: <Dates label={d.label} from={params[d.fromKey] ?? ""} to={params[d.toKey] ?? ""} onChange={(f, t) => go({ [d.fromKey]: f, [d.toKey]: t })} />,
             },
       )}
     />

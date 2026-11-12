@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { openSidebarGroups } from "./sidebar-groups";
 
 const PASSWORD = "e2e23test";
 
@@ -76,6 +77,7 @@ test("menu tài khoản đóng bằng Esc và trả focus về nút mở", async
 test("Nhân viên không mở được trang Tài khoản", async ({ page }) => {
   await login(page, "zz_e2e_staff");
   await expect(page).toHaveURL(/\/profile$/);
+  await openSidebarGroups(page);
   await expect(page.getByRole("link", { name: "Tài khoản" })).toHaveCount(0);
   const res = await page.goto("/users");
   expect(res?.status()).toBe(404);

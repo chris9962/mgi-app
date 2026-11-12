@@ -1,6 +1,7 @@
 import { Landmark } from "lucide-react";
 import { TopBar } from "@/components/shell/TopBar";
 import { Card } from "@/components/ui/Card";
+import { DataTable, EmptyRow, TableHead } from "@/components/ui/DataTable";
 import { StatusTag } from "@/components/ui/StatusTag";
 import { AddBankButton, BankActions } from "@/components/banks/BankActions";
 import { BankTabs } from "@/components/banks/BankTabs";
@@ -19,57 +20,45 @@ export default async function BanksPage() {
       <TopBar title="Ngân hàng & mã giới thiệu" actions={canAssign ? <AddBankButton /> : undefined} />
       <main className="p-6">
         <BankTabs current="banks" />
-        <Card title="Kho ngân hàng" icon={<Landmark size={17} aria-hidden />} meta={`${rows.length} ngân hàng`} pad={false}>
-          <div className="table-scroll">
-            <table className="w-full text-left text-sm">
-              <thead className="text-xs font-semibold tracking-wide text-text-2 uppercase">
-                <tr className="border-b border-line">
-                  {["Mã ngân hàng", "Tên ngân hàng", "Ưu tiên", "Ảnh cần nộp", "Mã còn chỗ", "Người quản", "Trạng thái", "Thao tác"].map((h) => (
-                    <th key={h} scope="col" className="px-4 py-3 font-semibold whitespace-nowrap">
-                      {h}
-                    </th>
-                  ))}
+        <Card title="Kho ngân hàng" icon={<Landmark size={17} aria-hidden />} meta={`${rows.length} ngân hàng`}>
+          <DataTable caption="Ngân hàng, ảnh cần nộp, mã còn chỗ, người quản và trạng thái">
+            <TableHead columns={["Mã ngân hàng", "Tên ngân hàng", "Ưu tiên", "Ảnh cần nộp", "Mã còn chỗ", "Người quản", "Trạng thái", "Thao tác"]} />
+            <tbody>
+              {rows.map((b) => (
+                <tr key={b.id}>
+                  <td>{b.code}</td>
+                  <td>
+                    <span className="flex items-center gap-2.5">
+                      {b.logoKey ? (
+                        // eslint-disable-next-line @next/next/no-img-element
+                        <img src={`/api/admin/images?key=${encodeURIComponent(b.logoKey)}`} alt="" className="h-8 w-20 max-w-none flex-none rounded-md bg-white object-contain ring-1 ring-line" />
+                      ) : (
+                        <span aria-hidden className="h-8 w-20 flex-none rounded-md border border-dashed border-line" />
+                      )}
+                      {b.name}
+                    </span>
+                  </td>
+                  <td className="tabular-nums">{b.sortOrder}</td>
+                  <td>{b.slotCount ? `${b.slotCount} ảnh` : <span className="text-text-3">Chưa cài</span>}</td>
+                  <td className="tabular-nums">{b.openCodeCount}</td>
+                  <td>{b.managers.length ? b.managers.map((m) => m.fullName).join(", ") : <span className="text-text-3">Chưa giao</span>}</td>
+                  <td>{b.active ? <StatusTag tone="ok">Đang triển khai</StatusTag> : <StatusTag tone="neutral">Đã tắt</StatusTag>}</td>
+                  <td>
+                    <BankActions
+                      active={b.active}
+                      canAssign={canAssign}
+                      bank={{ id: b.id, code: b.code, name: b.name, sortOrder: b.sortOrder, logoKey: b.logoKey, managers: b.managers.map((m) => ({ id: m.id, label: m.fullName })) }}
+                    />
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {rows.map((b) => (
-                  <tr key={b.id} className="border-b border-line last:border-0">
-                    <td className="px-4 py-3 font-semibold">{b.code}</td>
-                    <td className="px-4 py-3">
-                      <span className="flex items-center gap-2.5">
-                        {b.logoKey ? (
-                          // eslint-disable-next-line @next/next/no-img-element
-                          <img src={`/api/admin/images?key=${encodeURIComponent(b.logoKey)}`} alt="" className="h-8 w-20 max-w-none flex-none rounded-md bg-white object-contain ring-1 ring-line" />
-                        ) : (
-                          <span aria-hidden className="h-8 w-20 flex-none rounded-md border border-dashed border-line" />
-                        )}
-                        {b.name}
-                      </span>
-                    </td>
-                    <td className="px-4 py-3 tabular-nums">{b.sortOrder}</td>
-                    <td className="px-4 py-3">{b.slotCount ? `${b.slotCount} ảnh` : <span className="text-text-3">Chưa cài</span>}</td>
-                    <td className="px-4 py-3 tabular-nums">{b.openCodeCount}</td>
-                    <td className="px-4 py-3">{b.managers.length ? b.managers.map((m) => m.fullName).join(", ") : <span className="text-text-3">Chưa giao</span>}</td>
-                    <td className="px-4 py-3">{b.active ? <StatusTag tone="ok">Đang triển khai</StatusTag> : <StatusTag tone="neutral">Đã tắt</StatusTag>}</td>
-                    <td className="px-4 py-3">
-                      <BankActions
-                        active={b.active}
-                        canAssign={canAssign}
-                        bank={{ id: b.id, code: b.code, name: b.name, sortOrder: b.sortOrder, logoKey: b.logoKey, managers: b.managers.map((m) => ({ id: m.id, label: m.fullName })) }}
-                      />
-                    </td>
-                  </tr>
-                ))}
-                {!rows.length && (
-                  <tr>
-                    <td colSpan={8} className="px-4 py-10 text-center text-text-3 mobile:text-left">
-                      Chưa có ngân hàng nào.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+              ))}
+              {!rows.length && (
+                <EmptyRow colSpan={8}>
+                  Chưa có ngân hàng nào.
+                </EmptyRow>
+              )}
+            </tbody>
+          </DataTable>
         </Card>
       </main>
     </>

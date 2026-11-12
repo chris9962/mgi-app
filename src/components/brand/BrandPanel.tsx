@@ -4,7 +4,7 @@ import { BRAND_NAME, BRAND_SLOGAN } from "@/lib/brand";
 // Chép bố cục khối nhận diện của mgst-app. Màu cam #e8763a là màu bộ nhận diện, không phải màu nhấn của giao diện.
 export function BrandPanel() {
   return (
-    <div aria-hidden className="relative hidden flex-[6] overflow-hidden bg-white md:block">
+    <div aria-hidden className="relative flex-[6] overflow-hidden bg-white mobile:hidden">
       <div className="absolute inset-0 bg-[#e8763a] [clip-path:polygon(0_0,40%_0,72%_100%,0_100%)]" />
       <div className="absolute top-11 right-[46px] flex items-center gap-[13px]">
         <Image src="/brand/logo.png" alt="" width={50} height={50} className="rounded-full" />

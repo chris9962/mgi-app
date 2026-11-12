@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { openSidebarGroups } from "./sidebar-groups";
 
 const PASSWORD = "e2e23test";
 
@@ -81,6 +82,7 @@ test("Nhân viên được giao một ngân hàng chỉ thấy ngân hàng đó"
   await expect(page.getByRole("cell", { name: "ZZE2E Ngân hàng giao", exact: true })).toBeVisible();
   await expect(page.getByRole("cell", { name: "ZZE2E Ngân hàng khác", exact: true })).toHaveCount(0);
   await expect(page.getByRole("button", { name: "Thêm ngân hàng" })).toHaveCount(0);
+  await openSidebarGroups(page);
   await expect(page.getByRole("link", { name: "Trường" })).toHaveCount(0);
 });
 

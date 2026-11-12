@@ -2,6 +2,7 @@ import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { test as base, expect, type Page } from "@playwright/test";
 import { E2E_STUDENT_SCHOOL_ID } from "../../scripts/e2e-data";
+import { openSidebarGroups } from "../sidebar-groups";
 
 export { expect };
 export const ADMIN = "http://admin.localhost:3100";
@@ -55,6 +56,7 @@ export async function logout(page: Page) {
 export const sidebar = (page: Page) => page.getByRole("navigation", { name: "Điều hướng chính" });
 
 export async function openMenu(page: Page, label: string, group?: string) {
+  await openSidebarGroups(page);
   const nav = sidebar(page);
   const scope = group ? nav.getByRole("listitem").filter({ has: page.getByRole("button", { name: group }) }) : nav;
   // Mục Tin SMS lỗi kèm số tin lỗi sau tên, nên khớp phần đầu tên mục.

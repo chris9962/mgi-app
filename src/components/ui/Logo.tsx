@@ -8,7 +8,7 @@ export function Logo({ size = 32, withAppName = false, priority = false }: { siz
     <span className="inline-flex items-center gap-3">
       {mark}
       <span className="flex flex-col leading-[1.15]">
-        <strong className="text-xl font-semibold">{BRAND_NAME}</strong>
+        <strong className="text-xl font-bold">{BRAND_NAME}</strong>
         <span className="text-[13px] text-text-2">{BRAND_SLOGAN}</span>
       </span>
     </span>

@@ -1,6 +1,7 @@
 import type { Locator, Page } from "@playwright/test";
 import { flowVideo } from "./video";
 import { PHONE, expect, loginAs, sidebar, test } from "./support";
+import { openSidebarGroups } from "../sidebar-groups";
 
 test.use({ ...PHONE, video: flowVideo(390, 844), permissions: ["clipboard-read", "clipboard-write"] });
 
@@ -19,6 +20,7 @@ test("Flow 11: trang quản lý trên điện thoại: thanh đáy, sidebar trư
   await test.step("Nút Thêm mở sidebar trượt, chọn Cài đặt thì sidebar đóng và chuyển trang", async () => {
     await bottomNav(page).getByRole("button", { name: "Thêm" }).click();
     await expect(sidebar(page)).toBeVisible();
+    await openSidebarGroups(page);
     await sidebar(page).getByRole("link", { name: "Cài đặt" }).click();
     await expect(page).toHaveURL(/\/settings$/);
     await expect(page.getByRole("heading", { level: 1, name: "Cài đặt" })).toBeVisible();
@@ -61,6 +63,7 @@ test("Flow 11: trang quản lý trên điện thoại: thanh đáy, sidebar trư
 
   await test.step("Trang Trường: nút Chép link chép link web học sinh", async () => {
     await bottomNav(page).getByRole("button", { name: "Thêm" }).click();
+    await openSidebarGroups(page);
     await sidebar(page).getByRole("link", { name: "Trường", exact: true }).click();
     await expect(page.getByRole("heading", { level: 1, name: "Trường" })).toBeVisible();
     await page.waitForLoadState("networkidle");

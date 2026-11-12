@@ -3,6 +3,7 @@ import Link from "next/link";
 import { bankTag } from "@/components/customers/customerView";
 import { TopBar } from "@/components/shell/TopBar";
 import { Card } from "@/components/ui/Card";
+import { DataTable, EmptyRow } from "@/components/ui/DataTable";
 import { ExportButton } from "@/components/ui/ExportButton";
 import { FilterChips } from "@/components/ui/FilterChips";
 import { Pager } from "@/components/ui/Pager";
@@ -79,58 +80,54 @@ export default async function CustomerBanksPage({ searchParams }: { searchParams
       />
       <main className="p-6">
         <FilterChips chips={chipsOf(f, new Map(banks.map((b) => [b.id, b.name])), schools)} />
-        <Card title="Ngân hàng" icon={<Landmark size={17} aria-hidden />} meta={`${total} dòng`} pad={false}>
-          <div className="table-scroll">
-            <table className="w-full text-left text-sm">
-              <thead className="text-xs font-semibold tracking-wide text-text-2 uppercase">
-                <tr className="border-b border-line">
-                  <th scope="col" aria-sort={f.dir === "desc" ? "descending" : "ascending"} className="px-4 py-3 font-semibold whitespace-nowrap">
-                    <Link href={`${PATH}?${customerBankFilterQuery({ ...f, dir: nextDir })}`} className="inline-flex items-center gap-1 uppercase hover:text-text">
-                      Ngày
-                      <span aria-hidden>{f.dir === "desc" ? "↓" : "↑"}</span>
-                    </Link>
+        <Card title="Ngân hàng" icon={<Landmark size={17} aria-hidden />} meta={`${total} dòng`}>
+          <DataTable caption="Ngân hàng học sinh chọn, mã giới thiệu, trạng thái và kết quả xác thực ảnh">
+            <thead>
+              <tr>
+                <th scope="col" aria-sort={f.dir === "desc" ? "descending" : "ascending"}>
+                  <Link href={`${PATH}?${customerBankFilterQuery({ ...f, dir: nextDir })}`} className="inline-flex items-center gap-1 hover:text-accent pointer-coarse:min-h-11">
+                    Ngày
+                    <span aria-hidden className="min-w-2 text-[10px]">{f.dir === "desc" ? "↓" : "↑"}</span>
+                  </Link>
+                </th>
+                {["Ngân hàng", "Học sinh", "Mã giới thiệu", "Trường", "Trạng thái", "Xác thực ảnh", "Người kiểm"].map((h) => (
+                  <th key={h} scope="col">
+                    {h}
                   </th>
-                  {["Ngân hàng", "Học sinh", "Mã giới thiệu", "Trường", "Trạng thái", "Xác thực ảnh", "Người kiểm"].map((h) => (
-                    <th key={h} scope="col" className="px-4 py-3 font-semibold whitespace-nowrap">
-                      {h}
-                    </th>
-                  ))}
-                </tr>
-              </thead>
-              <tbody>
-                {rows.map((r) => (
-                  <tr key={r.id} className="border-b border-line align-top last:border-0">
-                    <td className="px-4 py-3 whitespace-nowrap tabular-nums">{formatShortDateTime(r.createdAt)}</td>
-                    <td className="px-4 py-3 font-semibold whitespace-nowrap">
-                      <Link href={`/customers/${r.customerId}`} className="text-link hover:underline">
-                        {r.bankName}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3">
-                      <Link href={`/customers/${r.customerId}`} className="font-semibold text-link hover:underline">
-                        {r.fullName}
-                      </Link>
-                      <span className="block text-xs text-text-3">{r.className}</span>
-                    </td>
-                    <td className="px-4 py-3 font-mono whitespace-nowrap">{r.referralCode}</td>
-                    <td className="px-4 py-3">{r.schoolName}</td>
-                    <td className="px-4 py-3">{bankTag(r.status, true)}</td>
-                    <td className="px-4 py-3">
-                      <CheckCell check={r.check} />
-                    </td>
-                    <td className="px-4 py-3">{r.reviewer ?? <span className="text-text-3">Chưa kiểm</span>}</td>
-                  </tr>
                 ))}
-                {!rows.length && (
-                  <tr>
-                    <td colSpan={8} className="px-4 py-10 text-center text-text-3 mobile:text-left">
-                      {filtering ? "Không có dòng nào khớp bộ lọc." : "Chưa có học sinh chọn ngân hàng."}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+              </tr>
+            </thead>
+            <tbody>
+              {rows.map((r) => (
+                <tr key={r.id} className="align-top">
+                  <td className="tabular-nums">{formatShortDateTime(r.createdAt)}</td>
+                  <td>
+                    <Link href={`/customers/${r.customerId}`} className="text-link hover:underline">
+                      {r.bankName}
+                    </Link>
+                  </td>
+                  <td>
+                    <Link href={`/customers/${r.customerId}`} className="text-link hover:underline">
+                      {r.fullName}
+                    </Link>
+                    <span className="block text-xs text-text-3">{r.className}</span>
+                  </td>
+                  <td className="font-mono">{r.referralCode}</td>
+                  <td>{r.schoolName}</td>
+                  <td>{bankTag(r.status, true)}</td>
+                  <td>
+                    <CheckCell check={r.check} />
+                  </td>
+                  <td>{r.reviewer ?? <span className="text-text-3">Chưa kiểm</span>}</td>
+                </tr>
+              ))}
+              {!rows.length && (
+                <EmptyRow colSpan={8}>
+                  {filtering ? "Không có dòng nào khớp bộ lọc." : "Chưa có học sinh chọn ngân hàng."}
+                </EmptyRow>
+              )}
+            </tbody>
+          </DataTable>
           <Pager page={page} total={total} pageSize={PAGE_SIZE} href={(p) => `${PATH}?${customerBankFilterQuery(f, { page: String(p) })}`} />
         </Card>
       </main>

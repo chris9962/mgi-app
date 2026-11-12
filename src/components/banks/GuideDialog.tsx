@@ -86,7 +86,6 @@ export function GuideDialog({ bankId, bankName, onClose }: { bankId: string; ban
       title={`Hướng dẫn mở tài khoản - ${bankName}`}
       onClose={onClose}
       dismissible={!pending}
-      width={600}
       footer={
         <>
           <Button variant="secondary" disabled={pending} onClick={onClose}>
@@ -146,7 +145,7 @@ export function GuideDialog({ bankId, bankName, onClose }: { bankId: string; ban
                 <Checkbox label="Mã giới thiệu" checked={s.checkCode} onChange={(e) => patch(s.key, { checkCode: e.target.checked })} />
               </div>
               {photoError?.key === s.key && (
-                <span id={photoErrorId(s.key)} role="alert" className="text-[13px] text-danger">
+                <span id={photoErrorId(s.key)} role="alert" className="text-[12.5px] text-danger">
                   {photoError.message}
                 </span>
               )}
@@ -169,7 +168,7 @@ export function GuideDialog({ bankId, bankName, onClose }: { bankId: string; ban
       </>
       )}
       {error && (
-        <p role="alert" className="text-sm text-danger">
+        <p role="alert" className="text-[12.5px] text-danger">
           {error}
         </p>
       )}

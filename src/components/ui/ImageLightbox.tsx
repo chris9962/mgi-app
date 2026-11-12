@@ -11,9 +11,9 @@ export type LightboxPhoto = { src: string; alt: string; caption?: ReactNode };
 
 const clamp = (value: number, last: number) => Math.min(Math.max(value, 0), Math.max(last, 0));
 
-const tool = "grid size-11 place-items-center rounded-full bg-card text-text shadow-sm hover:text-accent-ink";
+const tool = "grid size-11 place-items-center rounded-full bg-card text-text shadow-(--elev-sm) hover:text-accent-hover";
 const zone =
-  "absolute inset-y-0 flex w-[10%] min-w-11 items-center border-0 bg-transparent text-on-accent touch-pinch-zoom disabled:cursor-default [&:disabled_svg]:opacity-35 [&_svg]:box-content [&_svg]:rounded-full [&_svg]:bg-black/55 [&_svg]:p-1.5 focus-visible:outline-none [&:focus-visible_svg]:outline-2 [&:focus-visible_svg]:outline-offset-2 [&:focus-visible_svg]:outline-accent";
+  "absolute inset-y-0 flex w-[10%] min-w-11 items-center border-0 bg-transparent text-on-accent touch-pinch-zoom disabled:cursor-default [&:disabled_svg]:opacity-35 [&_svg]:box-content [&_svg]:rounded-full [&_svg]:bg-black/55 [&_svg]:p-1.5 [&:hover:not(:disabled)_svg]:bg-black/80 focus-visible:outline-none [&:focus-visible_svg]:outline-2 [&:focus-visible_svg]:outline-offset-2 [&:focus-visible_svg]:outline-accent";
 
 export function ImageLightbox({ photos, startIndex = 0, onClose }: { photos: readonly LightboxPhoto[]; startIndex?: number; onClose: () => void }) {
   const ref = useRef<HTMLDialogElement>(null);
@@ -67,9 +67,9 @@ export function ImageLightbox({ photos, startIndex = 0, onClose }: { photos: rea
       onClose={onClose}
       className="fixed inset-0 m-0 h-dvh max-h-none w-screen max-w-none overflow-hidden border-0 bg-transparent p-[env(safe-area-inset-top)_env(safe-area-inset-right)_env(safe-area-inset-bottom)_env(safe-area-inset-left)] text-text backdrop:bg-black/70 open:flex open:flex-col"
     >
-      <div className="relative z-10 flex flex-none items-center justify-between gap-2 px-4 py-3">
+      <div className="relative z-10 flex flex-none items-center justify-between gap-[8.8px] px-[17.6px] py-[13.2px]">
         {many ? (
-          <span aria-live="polite" className="rounded-full bg-card px-3.5 py-2 text-[13px] font-semibold tabular-nums shadow-sm">
+          <span aria-live="polite" className="rounded-full bg-card px-3.5 py-2 text-[13px] font-semibold tabular-nums shadow-(--elev-sm)">
             {at + 1} / {photos.length}
           </span>
         ) : (
@@ -79,20 +79,20 @@ export function ImageLightbox({ photos, startIndex = 0, onClose }: { photos: rea
           <X size={18} aria-hidden />
         </button>
       </div>
-      <div className="relative flex min-h-0 flex-1 items-center justify-center px-3">
+      <div className="relative flex min-h-0 flex-1 items-center justify-center px-[13.2px]">
         <ZoomableImage key={current.src} src={current.src} alt={current.alt} onZoomedChange={setZoomed} />
         {many && !zoomed && (
           <>
-            <button type="button" className={clsx(zone, "left-0 justify-start pl-3")} onClick={() => go(-1)} disabled={at === 0} aria-label="Ảnh trước">
+            <button type="button" className={clsx(zone, "left-0 justify-start pl-[13.2px]")} onClick={() => go(-1)} disabled={at === 0} aria-label="Ảnh trước">
               <ChevronLeft size={22} aria-hidden />
             </button>
-            <button type="button" className={clsx(zone, "right-0 justify-end pr-3")} onClick={() => go(1)} disabled={at === last} aria-label="Ảnh sau">
+            <button type="button" className={clsx(zone, "right-0 justify-end pr-[13.2px]")} onClick={() => go(1)} disabled={at === last} aria-label="Ảnh sau">
               <ChevronRight size={22} aria-hidden />
             </button>
           </>
         )}
       </div>
-      {current.caption && <div className="relative z-10 mx-3 mb-3 flex-none self-center rounded-xl bg-card px-4 py-2 text-center text-sm font-semibold">{current.caption}</div>}
+      {current.caption && <div className="relative z-10 mx-[13.2px] mb-[13.2px] flex-none self-center rounded-[10px] bg-card px-4 py-2 text-center text-sm font-semibold">{current.caption}</div>}
     </dialog>
   );
 }

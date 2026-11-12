@@ -1,22 +1,17 @@
-import { ArrowLeft } from "lucide-react";
-import Link from "next/link";
 import type { ReactNode } from "react";
 
-export function TopBar({ title, back, actions }: { title: string; back?: { href: string; label: string }; actions?: ReactNode }) {
-  // relative: ở màn hẹp bảng Bộ lọc và lời báo lỗi xuất Excel neo vào thanh tiêu đề để rộng hết màn hình, không neo vào nút.
+// Số đo chép TopBar.module.scss của mgst-app. Riêng tiêu đề vẫn cho xuống dòng ở máy tính: tên học sinh 100 ký tự liền không được đẩy trang cuộn ngang.
+export function TopBar({ title, actions }: { title: string; actions?: ReactNode }) {
+  // sticky cũng là gốc neo: ở màn hẹp bảng Bộ lọc và lời báo lỗi xuất Excel neo vào thanh tiêu đề để rộng hết màn hình, không neo vào nút.
   return (
-    <header className="relative flex min-h-[68px] flex-wrap items-center gap-3 border-b border-line bg-bg px-6 py-3 mobile:px-4">
-      {back && (
-        <>
-          <Link href={back.href} className="inline-flex items-center gap-1.5 text-sm text-text-2 hover:text-text">
-            <ArrowLeft size={16} aria-hidden />
-            {back.label}
-          </Link>
-          <span aria-hidden className="h-5 w-px bg-line" />
-        </>
+    <header className="sticky top-0 z-[5] flex min-h-[66px] flex-none flex-wrap items-center gap-3 border-b border-line bg-bg px-7 py-2.5 mobile:px-4">
+      <h1 className="min-w-0 text-[20px] leading-[1.12] font-semibold tracking-[-0.015em] wrap-anywhere mobile:truncate">{title}</h1>
+      {/* Phần tử cuối là hành động chính của trang: cách thêm 6 px để tách khỏi nhóm tìm, lọc. Bỏ qua thẻ dialog: hộp thoại của nút nằm cuối khối này, dính margin trái 6 px thì mất m-auto và lệch sang trái. Ô tìm giãn hết hàng ở điện thoại. */}
+      {actions && (
+        <div className="flex min-w-0 flex-auto flex-wrap items-center justify-end gap-2.5 *:flex-none [&>:nth-last-child(1_of_:not(dialog))]:ml-1.5 mobile:[&>[role=search]]:flex-1">
+          {actions}
+        </div>
       )}
-      <h1 className="min-w-0 text-xl font-semibold wrap-anywhere mobile:truncate">{title}</h1>
-      {actions && <div className="ml-auto flex flex-wrap items-center gap-2 narrow:ml-0 narrow:w-full">{actions}</div>}
     </header>
   );
 }

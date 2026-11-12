@@ -83,7 +83,7 @@ test.describe("trang Ngân hàng nhóm Nghiệp vụ", () => {
     }
   });
 
-  test("lọc Chờ kiểm tra còn 1 dòng ở trang 2, mở hồ sơ đó bấm Đạt rồi bấm Quay lại của trình duyệt thì trang ghi 1 / 1, không có trang rỗng, không còn dòng cũ", async ({ browser }) => {
+  test("lọc Chờ kiểm tra còn 1 dòng ở trang 2, mở hồ sơ đó bấm Đạt rồi bấm Quay lại của trình duyệt thì còn một trang nên không có thanh phân trang, không có trang rỗng, không còn dòng cũ", async ({ browser }) => {
     const page = await loginAs(browser, "zz_e2e_admin");
     const name = B.bWaitName(B.B_WAIT_COUNT - 1);
     await open(page, `/customer-banks?${q("bien cho kiem")}&status=pending&bank=${B.B_BANK1_ID}&page=2`);
@@ -101,7 +101,7 @@ test.describe("trang Ngân hàng nhóm Nghiệp vụ", () => {
     await page.waitForURL(/page=2/);
     await page.waitForLoadState("networkidle");
     await expect(meta(page, NH, "dòng")).toHaveText("15 dòng");
-    await expect(pager(page)).toContainText("1 / 1");
+    await expect(pager(page)).toHaveCount(0);
     await expect(rows(page, NH)).toHaveCount(15);
     await expect(card(page, NH).getByRole("link", { name, exact: true })).toHaveCount(0);
   });
@@ -268,7 +268,7 @@ test.describe("Tin SMS lỗi", () => {
     await expect(resendDialog(page)).toHaveCount(0);
     await expect(meta(page, SMS, "tin")).toHaveText("15 tin");
     await expect(rows(page, SMS)).toHaveCount(15);
-    await expect(pager(page)).toContainText("1 / 1");
+    await expect(pager(page)).toHaveCount(0);
 
     const phone = await loginAs(browser, "zz_e2e_admin", PHONE);
     await open(phone, `/sms?${q("bien")}`);

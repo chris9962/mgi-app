@@ -1,5 +1,6 @@
 import { expect, test, type Browser, type Locator, type Page } from "@playwright/test";
 import { E2E_MOBILE_CUSTOMER } from "../scripts/e2e-data";
+import { openSidebarGroups } from "./sidebar-groups";
 
 const PASSWORD = "e2e23test";
 const PHONE = { viewport: { width: 390, height: 844 }, isMobile: true, hasTouch: true };
@@ -29,6 +30,7 @@ test("điện thoại: thanh đáy có 3 trang nghiệp vụ và nút Thêm, Th�
   await more.click();
   await expect(sidebar(page)).toBeVisible();
   await expect(page.getByRole("button", { name: "Đóng menu điều hướng" })).toBeFocused();
+  await openSidebarGroups(page);
   await sidebar(page).getByRole("link", { name: "Cài đặt" }).click();
   await expect(page).toHaveURL(/\/settings$/);
   await expect(page.getByRole("heading", { level: 1, name: "Cài đặt" })).toBeVisible();
@@ -204,6 +206,7 @@ test("điện thoại: đóng ngăn bằng Esc hay lớp phủ thì trang cuộn
 test("điện thoại: không trang quản lý nào cuộn ngang cả trang", async ({ browser }) => {
   test.setTimeout(120_000);
   const page = await loginAs(browser, "zz_e2e_admin", PHONE);
+  await openSidebarGroups(page);
   const menu = await page.locator("#main-nav a").evaluateAll((links) => links.map((a) => a.getAttribute("href")!));
   await page.goto("/users?q=zz_e2e_staff");
   const user = await page.getByRole("link", { name: "E2E Nhân viên" }).getAttribute("href");

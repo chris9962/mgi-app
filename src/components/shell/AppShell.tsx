@@ -37,12 +37,17 @@ export function AppShell({ groups, fullName, title, children }: { groups: MenuGr
   }, []);
 
   // svh chứ không dvh: dvh đổi theo thanh địa chỉ lúc cuộn, khung co giãn lệch nhịp với thanh đáy cố định.
-  // Lề nội dung 16 px như mgst-app và như thanh tiêu đề, đặt một chỗ thay cho p-6 của từng trang.
+  // Lề nội dung chép .body của mgst-app (22, 28, 40 px; điện thoại 16, 16, 32 px), đặt một chỗ và thắng p-6 của từng trang.
   // Ngăn mở thì nội dung và thanh đáy inert: Tab không rơi vào chỗ bị ngăn che, trình đọc màn hình chỉ đọc ngăn.
   return (
-    <div className="flex min-h-dvh mobile:min-h-[100svh] mobile:flex-col">
+    // Chép khung của mgst-app: ở máy tính sidebar và vùng nội dung cuộn độc lập, thanh tiêu đề dính đầu vùng nội dung; điện thoại thì cả trang cuộn. Chữ nền 15 px, dòng 1,55 như body của mgst-app; web học sinh giữ 16 px. Viền ô nhập dùng --line như mgst-app (chủ dự án chốt 2026-11-12); web học sinh giữ viền đậm.
+    <div className="flex h-dvh overflow-hidden [--field-border:var(--line)] text-[15px] leading-[1.55] mobile:h-auto mobile:min-h-[100svh] mobile:flex-col mobile:overflow-visible">
       <Sidebar groups={groups} fullName={fullName} title={title} mobileOpen={menuOpen} onMobileClose={closeMenu} />
-      <div className="flex min-w-0 flex-1 flex-col mobile:pb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom,0px))] mobile:[&>main]:p-4" inert={menuOpen}>
+      {/* relative: phần tử absolute như sr-only neo vào vùng cuộn này, không neo vào tài liệu rồi kéo tài liệu dài ra. */}
+      <div
+        className="relative flex min-w-0 flex-1 flex-col overflow-y-auto min-[900.02px]:has-[dialog[open]]:overflow-hidden mobile:overflow-visible mobile:pb-[calc(var(--bottom-nav-h)+env(safe-area-inset-bottom,0px))] [&>main]:px-7 [&>main]:pt-[22px] [&>main]:pb-10 mobile:[&>main]:px-4 mobile:[&>main]:pt-4 mobile:[&>main]:pb-8"
+        inert={menuOpen}
+      >
         {children}
       </div>
       <BottomNav items={bottomNavItems(groups)} menuOpen={menuOpen} onOpenMenu={() => setOpenedAt(location)} moreRef={more} />

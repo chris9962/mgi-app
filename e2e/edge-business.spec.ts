@@ -139,7 +139,7 @@ test("Trang 3 phân trang: 16 hồ sơ ra 15 và 1 dòng, đổi từ khoá về
   await page.getByRole("button", { name: "Xong" }).click();
   await expect(meta(page)).toHaveText("15 hồ sơ");
   await expect(bodyRows(page)).toHaveCount(15);
-  await expect(pager(page)).toContainText("1 / 1");
+  await expect(pager(page)).toHaveCount(0);
   await expect(pager(page).getByRole("link", { name: "Sau" })).toHaveCount(0);
 });
 
@@ -227,8 +227,7 @@ test("Trang 3 ngày giờ Việt Nam: 23:30 ngày 31/10 và 00:30 ngày 01/11 hi
   await expect(page.getByText("Ngày: 01/11/2026 – 31/10/2026")).toBeVisible();
   await page.getByRole("button", { name: /^Bộ lọc/ }).click();
   await page.getByRole("navigation", { name: "Mục lọc" }).getByRole("button", { name: "Ngày" }).click();
-  await expect(page.getByLabel("Từ ngày")).toHaveAttribute("max", "2026-10-31");
-  await expect(page.getByLabel("Đến ngày")).toHaveAttribute("min", "2026-11-01");
+  await expect(page.getByRole("region", { name: "Ngày" }).getByRole("button")).toHaveText("01/11/2026 → 31/10/2026");
 });
 
 test("Trang 3 phân quyền: Nhân viên chỉ thấy hồ sơ có ngân hàng mình quản ở trang và API, không có quyền Xuất Excel thì không có nút và route trả 403", async ({ browser }) => {
@@ -312,7 +311,7 @@ test("Trang 3 xuất Excel lọc trọn ngày giờ Việt Nam: ngày 31/10 ch�
   }
 });
 
-test("Trang 3: lọc Chờ kiểm tra còn 1 dòng ở trang 2, mở hồ sơ đó bấm Đạt rồi bấm Quay lại của trình duyệt thì trang ghi 1 / 1, không có trang rỗng, không còn dòng cũ", async ({ browser }) => {
+test("Trang 3: lọc Chờ kiểm tra còn 1 dòng ở trang 2, mở hồ sơ đó bấm Đạt rồi bấm Quay lại của trình duyệt thì còn một trang nên không có thanh phân trang, không có trang rỗng, không còn dòng cũ", async ({ browser }) => {
   const page = await loginAs(browser, "zz_e2e_admin");
   const name = B.bWaitName(0);
   await open(page, `/customers?${q("bien cho kiem")}&status=pending_review&from=2026-10-15&to=2026-10-15&page=2`);
@@ -330,7 +329,7 @@ test("Trang 3: lọc Chờ kiểm tra còn 1 dòng ở trang 2, mở hồ sơ đ
   await page.waitForURL(/page=2/);
   await page.waitForLoadState("networkidle");
   await expect(meta(page)).toHaveText("15 hồ sơ");
-  await expect(pager(page)).toContainText("1 / 1");
+  await expect(pager(page)).toHaveCount(0);
   await expect(bodyRows(page)).toHaveCount(15);
   await expect(table(page).getByRole("link", { name, exact: true })).toHaveCount(0);
 });

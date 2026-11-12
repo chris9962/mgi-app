@@ -5,11 +5,11 @@ import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { ConfirmDialog } from "@/components/users/ConfirmDialog";
+import { rowActions, rowIconButton } from "@/components/ui/DataTable";
 import { apiSend } from "@/lib/api";
 import { SchoolFormDialog, type SchoolDefaults } from "./SchoolFormDialog";
 
 type Provinces = { code: string; name: string }[];
-const iconButton = "grid size-9 place-items-center rounded-lg border border-line bg-card text-text-2 hover:bg-surface hover:text-text";
 
 export function AddSchoolButton({ provinces }: { provinces: Provinces }) {
   const [open, setOpen] = useState(false);
@@ -39,7 +39,7 @@ function CopyLinkButton({ link, name }: { link: string; name: string }) {
   const Icon = copy === "done" ? Check : copy === "failed" ? X : Link2;
   return (
     <>
-      <button type="button" className={iconButton} aria-label={`Chép link của ${name}`} title={copy === "done" ? "Đã chép" : copy === "failed" ? "Không chép được" : "Chép link"} onClick={copyLink}>
+      <button type="button" className={rowIconButton} aria-label={`Chép link của ${name}`} title={copy === "done" ? "Đã chép" : copy === "failed" ? "Không chép được" : "Chép link"} onClick={copyLink}>
         <Icon size={16} aria-hidden />
       </button>
       <span role="status" className="sr-only">
@@ -53,15 +53,15 @@ export function SchoolActions({ school, link, active, provinces }: { school: Req
   const router = useRouter();
   const [dialog, setDialog] = useState<"edit" | "toggle" | null>(null);
   return (
-    <span className="flex items-center gap-1.5">
+    <span className={rowActions}>
       <CopyLinkButton link={link} name={school.name} />
-      <a href={`/api/admin/schools/${school.id}/qr`} className={iconButton} aria-label={`Tải ảnh QR của ${school.name}`} title="Tải ảnh QR">
+      <a href={`/api/admin/schools/${school.id}/qr`} className={rowIconButton} aria-label={`Tải ảnh QR của ${school.name}`} title="Tải ảnh QR">
         <QrCode size={16} aria-hidden />
       </a>
-      <button type="button" className={iconButton} aria-label={`Sửa trường ${school.name}`} title="Sửa trường" onClick={() => setDialog("edit")}>
+      <button type="button" className={rowIconButton} aria-label={`Sửa trường ${school.name}`} title="Sửa trường" onClick={() => setDialog("edit")}>
         <Pencil size={16} aria-hidden />
       </button>
-      <button type="button" className="h-9 rounded-lg px-2.5 text-sm font-semibold text-accent-ink hover:bg-surface" onClick={() => setDialog("toggle")}>
+      <button type="button" className="h-9 rounded-[10px] px-2.5 text-sm font-semibold text-accent-ink hover:bg-surface" onClick={() => setDialog("toggle")}>
         {active ? "Đóng" : "Mở lại"}
       </button>
       {dialog === "edit" && <SchoolFormDialog provinces={provinces} initial={school} onClose={() => setDialog(null)} />}

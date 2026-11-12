@@ -80,7 +80,6 @@ export function UserFormDialog({ open, onClose, initial, canGrantAdmin }: { open
       onClose={onClose}
       // Đóng lúc máy chủ đang tạo tài khoản là mất mật khẩu mới vừa sinh.
       dismissible={!pending}
-      width={560}
       footer={
         <>
           <Button variant="secondary" disabled={pending} onClick={onClose}>
@@ -92,14 +91,14 @@ export function UserFormDialog({ open, onClose, initial, canGrantAdmin }: { open
         </>
       }
     >
-      <form id="user-form" onSubmit={submit} noValidate className="flex flex-col gap-4">
+      <form id="user-form" onSubmit={submit} noValidate className="flex flex-col gap-3.5 pb-1">
         <TextField name="fullName" label="Họ tên" defaultValue={start.fullName} error={errors.fullName} data-autofocus />
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-2 items-start gap-3 narrow:grid-cols-1">
           <TextField name="staffCode" label="Mã tài khoản" placeholder="Không bắt buộc" defaultValue={start.staffCode} error={errors.staffCode} />
           <TextField name="phone" label="Số điện thoại" inputMode="numeric" defaultValue={start.phone} error={errors.phone} />
         </div>
         <TextField name="username" label="Tên đăng nhập" autoCapitalize="none" spellCheck={false} defaultValue={start.username} error={errors.username} />
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-2 items-start gap-3 narrow:grid-cols-1">
           <Select
             name="role"
             label="Vai"
@@ -111,15 +110,17 @@ export function UserFormDialog({ open, onClose, initial, canGrantAdmin }: { open
           <TextField name="title" label="Chức danh hiển thị" defaultValue={start.title} error={errors.title} />
         </div>
         {role === "staff" && (
-          <fieldset className="flex flex-col gap-1">
-            <legend className="mb-1 text-[13px] text-text-2">Quyền</legend>
-            {PERMISSIONS.map((p) => (
-              <Checkbox key={p} name="permissions" value={p} label={PERMISSION_LABEL[p]} defaultChecked={start.permissions.includes(p)} />
-            ))}
+          <fieldset className="rounded-[10px] border border-line px-3.5 py-3">
+            <legend className="px-1.5 text-[12.5px] text-text-2">Quyền</legend>
+            <div className="grid grid-cols-2 gap-x-3 gap-y-0.5 narrow:grid-cols-1">
+              {PERMISSIONS.map((p) => (
+                <Checkbox key={p} name="permissions" value={p} label={PERMISSION_LABEL[p]} defaultChecked={start.permissions.includes(p)} />
+              ))}
+            </div>
           </fieldset>
         )}
         {formError && (
-          <p role="alert" className="text-sm text-danger">
+          <p role="alert" className="text-[12.5px] text-danger">
             {formError}
           </p>
         )}

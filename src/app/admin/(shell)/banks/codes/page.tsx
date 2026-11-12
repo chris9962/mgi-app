@@ -4,6 +4,7 @@ import { AddCodeButton, CodeActions } from "@/components/codes/CodeActions";
 import { CodeFilters } from "@/components/codes/CodeFilters";
 import { TopBar } from "@/components/shell/TopBar";
 import { Card } from "@/components/ui/Card";
+import { DataTable, EmptyRow, TableHead } from "@/components/ui/DataTable";
 import { MonthPicker } from "@/components/ui/MonthPicker";
 import { Pager } from "@/components/ui/Pager";
 import { StatusTag } from "@/components/ui/StatusTag";
@@ -64,66 +65,54 @@ export default async function CodesPage({ searchParams }: { searchParams: Promis
       />
       <main className="p-6">
         <BankTabs current="codes" />
-        <Card title="Kho mã giới thiệu" icon={<Ticket size={17} aria-hidden />} meta={`${total} mã`} pad={false}>
+        <Card title="Kho mã giới thiệu" icon={<Ticket size={17} aria-hidden />} meta={`${total} mã`}>
           <CodeFilters month={month} q={q} bankId={bankId} hideStopped={hideStopped} banks={allBanks} />
-          <div className="table-scroll">
-            <table className="w-full text-left text-sm">
-              <thead className="text-xs font-semibold tracking-wide text-text-2 uppercase">
-                <tr className="border-b border-line">
-                  {["Ngân hàng", "Tên hiển thị", "Ưu tiên", "Đã dùng", "Hoàn thành", "Đang giữ", "Không đạt", "Trường áp dụng", "Trạng thái", "Người tạo", "Thao tác"].map((h) => (
-                    <th key={h} scope="col" className="px-4 py-3 font-semibold whitespace-nowrap">
-                      {h}
-                    </th>
-                  ))}
+          <DataTable caption="Mã giới thiệu, lượt dùng, trường áp dụng và trạng thái">
+            <TableHead columns={["Ngân hàng", "Tên hiển thị", "Ưu tiên", "Đã dùng", "Hoàn thành", "Đang giữ", "Không đạt", "Trường áp dụng", "Trạng thái", "Người tạo", "Thao tác"]} />
+            <tbody>
+              {rows.map((c) => (
+                <tr key={c.id}>
+                  <td>{c.bankName}</td>
+                  <td>
+                    <span className="font-semibold">{c.displayName}</span>
+                    {c.code && <span className="block text-xs text-text-3">{c.code}</span>}
+                  </td>
+                  <td className="tabular-nums">{c.priority}</td>
+                  <td>
+                    <Usage used={c.used} quota={c.quota} />
+                  </td>
+                  <td className="tabular-nums">{c.passed}</td>
+                  <td className="tabular-nums">{c.holding}</td>
+                  <td className="tabular-nums">{c.failed}</td>
+                  <td>{c.schools.length ? c.schools.map((s) => s.label).join(", ") : <span className="text-text-3">Chưa gắn</span>}</td>
+                  <td>{STATUS[c.status]}</td>
+                  <td>{c.createdByName ?? ""}</td>
+                  <td>
+                    <CodeActions
+                      active={c.active}
+                      banks={allBanks}
+                      code={{
+                        id: c.id,
+                        bankId: c.bankId,
+                        displayName: c.displayName,
+                        code: c.code ?? "",
+                        qrKey: c.qrKey,
+                        openUrl: c.openUrl ?? "",
+                        monthlyQuota: c.monthlyQuota,
+                        priority: c.priority,
+                        schools: c.schools,
+                      }}
+                    />
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {rows.map((c) => (
-                  <tr key={c.id} className="border-b border-line last:border-0">
-                    <td className="px-4 py-3 whitespace-nowrap">{c.bankName}</td>
-                    <td className="px-4 py-3">
-                      <span className="font-semibold">{c.displayName}</span>
-                      {c.code && <span className="block text-xs text-text-3">{c.code}</span>}
-                    </td>
-                    <td className="px-4 py-3 tabular-nums">{c.priority}</td>
-                    <td className="px-4 py-3">
-                      <Usage used={c.used} quota={c.quota} />
-                    </td>
-                    <td className="px-4 py-3 tabular-nums">{c.passed}</td>
-                    <td className="px-4 py-3 tabular-nums">{c.holding}</td>
-                    <td className="px-4 py-3 tabular-nums">{c.failed}</td>
-                    <td className="px-4 py-3">{c.schools.length ? c.schools.map((s) => s.label).join(", ") : <span className="text-text-3">Chưa gắn</span>}</td>
-                    <td className="px-4 py-3">{STATUS[c.status]}</td>
-                    <td className="px-4 py-3 whitespace-nowrap">{c.createdByName ?? ""}</td>
-                    <td className="px-4 py-3">
-                      <CodeActions
-                        active={c.active}
-                        banks={allBanks}
-                        code={{
-                          id: c.id,
-                          bankId: c.bankId,
-                          displayName: c.displayName,
-                          code: c.code ?? "",
-                          qrKey: c.qrKey,
-                          openUrl: c.openUrl ?? "",
-                          monthlyQuota: c.monthlyQuota,
-                          priority: c.priority,
-                          schools: c.schools,
-                        }}
-                      />
-                    </td>
-                  </tr>
-                ))}
-                {!rows.length && (
-                  <tr>
-                    <td colSpan={11} className="px-4 py-10 text-center text-text-3 mobile:text-left">
-                      {q || bankId || hideStopped ? "Không có mã khớp bộ lọc." : "Chưa có mã giới thiệu nào."}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+              ))}
+              {!rows.length && (
+                <EmptyRow colSpan={11}>
+                  {q || bankId || hideStopped ? "Không có mã khớp bộ lọc." : "Chưa có mã giới thiệu nào."}
+                </EmptyRow>
+              )}
+            </tbody>
+          </DataTable>
           <Pager page={page} total={total} pageSize={PAGE_SIZE} href={(p) => query({ page: String(p) })} />
         </Card>
       </main>

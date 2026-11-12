@@ -4,6 +4,7 @@ import { KeyRound, Lock, LockOpen, Pencil } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
+import { rowActions, rowIconButton } from "@/components/ui/DataTable";
 import { apiSend } from "@/lib/api";
 import { ConfirmDialog } from "./ConfirmDialog";
 import { PasswordDialog } from "./PasswordDialog";
@@ -11,7 +12,6 @@ import { UserFormDialog, type UserFormDefaults } from "./UserFormDialog";
 
 type Props = { user: UserFormDefaults & { id: string; active: boolean; loginLocked: boolean }; canManage: boolean; isSelf: boolean; canGrantAdmin: boolean; variant: "row" | "detail" };
 
-const iconButton = "grid size-9 place-items-center rounded-lg border border-line bg-card text-text-2 hover:bg-surface hover:text-text";
 
 export function UserActions({ user, canManage, isSelf, canGrantAdmin, variant }: Props) {
   const router = useRouter();
@@ -26,12 +26,12 @@ export function UserActions({ user, canManage, isSelf, canGrantAdmin, variant }:
   return (
     <>
       {variant === "row" ? (
-        <span className="flex gap-1.5">
-          <button type="button" className={iconButton} aria-label={`Sửa tài khoản ${user.fullName}`} title="Sửa tài khoản" onClick={() => setDialog("edit")}>
+        <span className={rowActions}>
+          <button type="button" className={rowIconButton} aria-label={`Sửa tài khoản ${user.fullName}`} title="Sửa tài khoản" onClick={() => setDialog("edit")}>
             <Pencil size={16} aria-hidden />
           </button>
           {!isSelf && (
-            <button type="button" className={iconButton} aria-label={`${lockLabel} ${user.fullName}`} title={lockLabel} onClick={() => setDialog("lock")}>
+            <button type="button" className={rowIconButton} aria-label={`${lockLabel} ${user.fullName}`} title={lockLabel} onClick={() => setDialog("lock")}>
               {unlock ? <LockOpen size={16} aria-hidden /> : <Lock size={16} aria-hidden />}
             </button>
           )}

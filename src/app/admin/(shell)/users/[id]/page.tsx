@@ -1,6 +1,7 @@
 import { KeyRound, UserRoundCheck } from "lucide-react";
 import { notFound } from "next/navigation";
 import { TopBar } from "@/components/shell/TopBar";
+import { BackLink } from "@/components/ui/BackLink";
 import { Card } from "@/components/ui/Card";
 import { UserActions } from "@/components/users/UserActions";
 import { bankText, formDefaults, statusTag } from "@/components/users/userView";
@@ -28,8 +29,9 @@ export default async function UserDetailPage({ params }: { params: Promise<{ id:
 
   return (
     <>
-      <TopBar title={user.fullName} back={{ href: "/users", label: "Tài khoản" }} />
+      <TopBar title={user.fullName} />
       <main className="grid gap-4 p-6 lg:grid-cols-[2fr_1fr]">
+        <BackLink href="/users">Tài khoản</BackLink>
         <Card title="Tài khoản" icon={<UserRoundCheck size={17} aria-hidden />}>
           <dl className="mb-4 grid gap-3 sm:grid-cols-2">
             {info.map(([k, v]) => (

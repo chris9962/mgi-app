@@ -69,7 +69,6 @@ export function BankFormDialog({ initial, canAssign, onClose }: { initial?: Bank
       title={start.id ? "Sửa ngân hàng" : "Thêm ngân hàng"}
       onClose={onClose}
       dismissible={!pending}
-      width={560}
       footer={
         <>
           <Button variant="secondary" disabled={pending} onClick={onClose}>
@@ -81,8 +80,8 @@ export function BankFormDialog({ initial, canAssign, onClose }: { initial?: Bank
         </>
       }
     >
-      <form id="bank-form" onSubmit={submit} noValidate className="flex flex-col gap-4">
-        <div className="grid gap-4 sm:grid-cols-2">
+      <form id="bank-form" onSubmit={submit} noValidate className="flex flex-col gap-3.5 pb-1">
+        <div className="grid grid-cols-2 items-start gap-3 narrow:grid-cols-1">
           <TextField name="code" label="Mã ngân hàng" defaultValue={start.code} error={errors.code} autoCapitalize="characters" data-autofocus />
           <TextField name="sortOrder" label="Độ ưu tiên" inputMode="numeric" defaultValue={String(start.sortOrder)} error={errors.sortOrder} />
         </div>
@@ -121,14 +120,14 @@ export function BankFormDialog({ initial, canAssign, onClose }: { initial?: Bank
             )}
           </button>
           {(logoError || errors.logoKey) && (
-            <span id={logoErrorId} role="alert" className="text-[13px] text-danger">
+            <span id={logoErrorId} role="alert" className="text-[12.5px] text-danger">
               {logoError || errors.logoKey}
             </span>
           )}
         </div>
         {canAssign && <MultiSelect label="Người quản ngân hàng này" value={managers} onChange={setManagers} search={searchManagers} placeholder="Gõ tên, tên đăng nhập hoặc mã tài khoản…" error={errors.managerIds} />}
         {formError && (
-          <p role="alert" className="text-sm text-danger">
+          <p role="alert" className="text-[12.5px] text-danger">
             {formError}
           </p>
         )}

@@ -57,7 +57,6 @@ export function SchoolFormDialog({ provinces, initial, onClose }: { provinces: {
       title={start.id ? "Sửa trường" : "Thêm trường"}
       onClose={onClose}
       dismissible={!pending}
-      width={560}
       footer={
         <>
           <Button variant="secondary" disabled={pending} onClick={onClose}>
@@ -69,9 +68,9 @@ export function SchoolFormDialog({ provinces, initial, onClose }: { provinces: {
         </>
       }
     >
-      <form id="school-form" onSubmit={submit} noValidate className="flex flex-col gap-4">
+      <form id="school-form" onSubmit={submit} noValidate className="flex flex-col gap-3.5 pb-1">
         <TextField name="name" label="Tên trường" defaultValue={start.name} error={errors.name} data-autofocus />
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-2 items-start gap-3 narrow:grid-cols-1">
           <Select
             label="Tỉnh/thành phố"
             value={provinceCode}
@@ -94,12 +93,12 @@ export function SchoolFormDialog({ provinces, initial, onClose }: { provinces: {
             error={errors.wardCode}
           />
         </div>
-        <div className="grid gap-4 sm:grid-cols-2">
+        <div className="grid grid-cols-2 items-start gap-3 narrow:grid-cols-1">
           <TextField name="contactName" label="Họ tên người liên hệ" defaultValue={start.contactName} error={errors.contactName} />
           <TextField name="contactPhone" label="SĐT người liên hệ" inputMode="numeric" defaultValue={start.contactPhone} error={errors.contactPhone} />
         </div>
         {formError && (
-          <p role="alert" className="text-sm text-danger">
+          <p role="alert" className="text-[12.5px] text-danger">
             {formError}
           </p>
         )}

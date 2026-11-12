@@ -23,7 +23,6 @@ export function ConfirmDialog({ open, title, text, confirmLabel, danger, busy, o
       title={title}
       onClose={onClose}
       dismissible={!locked}
-      width={420}
       footer={
         <>
           <Button variant="secondary" disabled={locked} onClick={onClose}>
@@ -48,9 +47,9 @@ export function ConfirmDialog({ open, title, text, confirmLabel, danger, busy, o
         </>
       }
     >
-      <p className="text-sm">{text}</p>
+      <p>{text}</p>
       {error && (
-        <p role="alert" className="text-sm text-danger">
+        <p role="alert" className="text-[12.5px] text-danger">
           {error}
         </p>
       )}

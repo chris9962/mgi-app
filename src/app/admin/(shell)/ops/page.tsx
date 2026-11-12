@@ -4,6 +4,7 @@ import { AutoRefresh } from "@/components/ops/AutoRefresh";
 import { ResourceCell } from "@/components/ops/ResourceCell";
 import { TopBar } from "@/components/shell/TopBar";
 import { Card } from "@/components/ui/Card";
+import { DataTable, EmptyRow, TableHead } from "@/components/ui/DataTable";
 import { formatDateTime } from "@/lib/dates";
 import { formatBytes, formatCount, OPS_PHOTO_CHECK_DAYS, resourcePercent } from "@/lib/ops";
 import { requirePage } from "@/server/auth/current";
@@ -56,39 +57,26 @@ export default async function OpsPage() {
               <span className="text-[13px] text-text-2">Lượt đợi lâu nhất</span>
             </div>
           </div>
-          <div className="table-scroll">
-            <table className="w-full text-left text-sm">
-              <caption className="sr-only">Kết quả kiểm ảnh theo ngân hàng trong {OPS_PHOTO_CHECK_DAYS} ngày</caption>
-              <thead className="text-xs font-semibold tracking-wide text-text-2 uppercase">
-                <tr className="border-b border-line">
-                  {["Ngân hàng", "Đang đợi", "Đạt", "Không đạt", "Lỗi kiểm"].map((h) => (
-                    <th key={h} scope="col" className="px-4 py-3 font-semibold whitespace-nowrap">
-                      {h}
-                    </th>
+          <DataTable caption={`Kết quả kiểm ảnh theo ngân hàng trong ${OPS_PHOTO_CHECK_DAYS} ngày`}>
+            <TableHead columns={["Ngân hàng", "Đang đợi", "Đạt", "Không đạt", "Lỗi kiểm"]} />
+            <tbody>
+              {photoCheck.banks.map((b) => (
+                <tr key={b.bankId}>
+                  <td>{b.name}</td>
+                  {[b.pending, b.passed, b.failed, b.error].map((n, i) => (
+                    <td key={i} className="tabular-nums">
+                      {formatCount(n)}
+                    </td>
                   ))}
                 </tr>
-              </thead>
-              <tbody>
-                {photoCheck.banks.map((b) => (
-                  <tr key={b.bankId} className="border-b border-line last:border-0">
-                    <td className="px-4 py-3 font-semibold">{b.name}</td>
-                    {[b.pending, b.passed, b.failed, b.error].map((n, i) => (
-                      <td key={i} className="px-4 py-3 tabular-nums">
-                        {formatCount(n)}
-                      </td>
-                    ))}
-                  </tr>
-                ))}
-                {!photoCheck.banks.length && (
-                  <tr>
-                    <td colSpan={5} className="px-4 py-10 text-center text-text-3 mobile:text-left">
-                      Chưa có lượt kiểm nào trong {OPS_PHOTO_CHECK_DAYS} ngày.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+              ))}
+              {!photoCheck.banks.length && (
+                <EmptyRow colSpan={5}>
+                  Chưa có lượt kiểm nào trong {OPS_PHOTO_CHECK_DAYS} ngày.
+                </EmptyRow>
+              )}
+            </tbody>
+          </DataTable>
         </Card>
       </main>
     </>

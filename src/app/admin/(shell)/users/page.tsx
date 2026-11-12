@@ -1,14 +1,16 @@
-import { Search, UserRoundCheck } from "lucide-react";
+import { UserRoundCheck } from "lucide-react";
 import Link from "next/link";
 import { TopBar } from "@/components/shell/TopBar";
 import { Card } from "@/components/ui/Card";
+import { Pager } from "@/components/ui/Pager";
+import { SearchBox } from "@/components/ui/SearchBox";
+import { DataTable, EmptyRow, TableHead } from "@/components/ui/DataTable";
 import { AddUserButton } from "@/components/users/AddUserButton";
 import { UserActions } from "@/components/users/UserActions";
 import { bankText, formDefaults, permissionText, statusTag } from "@/components/users/userView";
 import { ROLE_LABEL } from "@/lib/types";
 import { readParam, type Params } from "@/lib/urlParams";
 import { requirePage } from "@/server/auth/current";
-import { SEARCH_MAX_LENGTH } from "@/lib/search";
 import { listUsers, PAGE_SIZE } from "@/server/users";
 
 export const metadata = { title: "Tài khoản" };
@@ -18,9 +20,6 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
   const sp = await searchParams;
   const q = readParam(sp, "q");
   const { rows, total, page: current } = await listUsers({ q, page: Number(readParam(sp, "page")) || 1 });
-  const pages = Math.max(1, Math.ceil(total / PAGE_SIZE));
-  const from = total ? (current - 1) * PAGE_SIZE + 1 : 0;
-  const to = Math.min(total, current * PAGE_SIZE);
   const href = (p: number) => `/users?${new URLSearchParams({ ...(q ? { q } : {}), page: String(p) })}`;
   const canGrantAdmin = actor.role === "admin";
 
@@ -30,92 +29,48 @@ export default async function UsersPage({ searchParams }: { searchParams: Promis
         title="Tài khoản"
         actions={
           <>
-            <form role="search" action="/users" className="relative narrow:w-full">
-              <Search size={16} aria-hidden className="pointer-events-none absolute top-1/2 left-3 -translate-y-1/2 text-text-3" />
-              <label htmlFor="user-search" className="sr-only">
-                Tìm tài khoản
-              </label>
-              <input
-                id="user-search"
-                name="q"
-                maxLength={SEARCH_MAX_LENGTH}
-                defaultValue={q}
-                placeholder="Tìm tên, tên đăng nhập…"
-                className="h-9 w-64 rounded-[10px] border border-field-border bg-card pr-3 pl-9 text-sm placeholder:text-text-3 narrow:w-full"
-              />
-            </form>
+            <SearchBox action="/users" label="Tìm tài khoản" placeholder="Tìm tên, tên đăng nhập…" defaultValue={q} />
             <AddUserButton canGrantAdmin={canGrantAdmin} />
           </>
         }
       />
       <main className="p-6">
-        <Card title="Tài khoản" icon={<UserRoundCheck size={17} aria-hidden />} meta={`${total} tài khoản`} pad={false}>
-          <div className="table-scroll">
-            <table className="w-full text-left text-sm">
-              <thead className="text-xs font-semibold tracking-wide text-text-2 uppercase">
-                <tr className="border-b border-line">
-                  {["Tài khoản", "Vai", "Chức danh", "Quyền", "Ngân hàng quản", "Trạng thái", "Thao tác"].map((h) => (
-                    <th key={h} scope="col" className="px-4 py-3 font-semibold whitespace-nowrap">
-                      {h}
-                    </th>
-                  ))}
+        <Card title="Tài khoản" icon={<UserRoundCheck size={17} aria-hidden />} meta={`${total} tài khoản`}>
+          <DataTable caption="Tài khoản, vai, quyền, ngân hàng quản và trạng thái">
+            <TableHead columns={["Tài khoản", "Vai", "Chức danh", "Quyền", "Ngân hàng quản", "Trạng thái", "Thao tác"]} />
+            <tbody>
+              {rows.map((u) => (
+                <tr key={u.id}>
+                  <td>
+                    <Link href={`/users/${u.id}`} className="text-link hover:underline">
+                      {u.fullName}
+                    </Link>
+                    <span className="block text-xs text-text-3">{u.username}</span>
+                  </td>
+                  <td>{ROLE_LABEL[u.role]}</td>
+                  <td>{u.title}</td>
+                  <td>{permissionText(u)}</td>
+<td>{bankText(u)}</td>
+                  <td>{statusTag(u)}</td>
+                  <td>
+                    <UserActions
+                      variant="row"
+                      user={formDefaults(u)}
+                      canManage={canGrantAdmin || u.role !== "admin"}
+                      isSelf={u.id === actor.id}
+                      canGrantAdmin={canGrantAdmin}
+                    />
+                  </td>
                 </tr>
-              </thead>
-              <tbody>
-                {rows.map((u) => (
-                  <tr key={u.id} className="border-b border-line last:border-0">
-                    <td className="px-4 py-3">
-                      <Link href={`/users/${u.id}`} className="text-link hover:underline">
-                        {u.fullName}
-                      </Link>
-                      <span className="block text-xs text-text-3">{u.username}</span>
-                    </td>
-                    <td className="px-4 py-3 whitespace-nowrap">{ROLE_LABEL[u.role]}</td>
-                    <td className="px-4 py-3">{u.title}</td>
-                    <td className="px-4 py-3">{permissionText(u)}</td>
-                    <td className="px-4 py-3">{bankText(u)}</td>
-                    <td className="px-4 py-3">{statusTag(u)}</td>
-                    <td className="px-4 py-3">
-                      <UserActions
-                        variant="row"
-                        user={formDefaults(u)}
-                        canManage={canGrantAdmin || u.role !== "admin"}
-                        isSelf={u.id === actor.id}
-                        canGrantAdmin={canGrantAdmin}
-                      />
-                    </td>
-                  </tr>
-                ))}
-                {!rows.length && (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-10 text-center text-text-3 mobile:text-left">
-                      Không có tài khoản khớp từ khoá.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
-          <nav aria-label="Phân trang" className="flex items-center justify-between border-t border-line px-4 py-3 text-sm text-text-2">
-            <span>
-              {from}–{to} trên {total}
-            </span>
-            <span className="flex items-center gap-3">
-              {current > 1 ? (
-                <Link href={href(current - 1)} className="rounded-lg border border-line px-3 py-1.5 hover:bg-surface">
-                  Trước
-                </Link>
-              ) : null}
-              <span>
-                {current} / {pages}
-              </span>
-              {current < pages ? (
-                <Link href={href(current + 1)} className="rounded-lg border border-line px-3 py-1.5 hover:bg-surface">
-                  Sau
-                </Link>
-              ) : null}
-            </span>
-          </nav>
+              ))}
+              {!rows.length && (
+                <EmptyRow colSpan={7}>
+                  Không có tài khoản khớp từ khoá.
+                </EmptyRow>
+              )}
+            </tbody>
+          </DataTable>
+          <Pager page={current} total={total} pageSize={PAGE_SIZE} href={href} />
         </Card>
       </main>
     </>

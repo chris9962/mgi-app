@@ -9,7 +9,7 @@ export const metadata: Metadata = {
 };
 
 // Đặt theme trước khi vẽ để trang không chớp màu sáng rồi mới sang tối.
-const themeScript = `try{var t=localStorage.getItem("theme");if(t==="dark")document.documentElement.dataset.theme="dark"}catch(e){}`;
+const themeScript = `try{var d=document.documentElement.dataset,t=localStorage.getItem("theme"),a=localStorage.getItem("accent");if(t==="dark")d.theme="dark";if(a)d.accent=a}catch(e){}`;
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (

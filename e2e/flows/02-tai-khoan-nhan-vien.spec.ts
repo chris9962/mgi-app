@@ -1,4 +1,5 @@
 import { chapter, expect, login, loginAs, logout, openMenu, sidebar, test } from "./support";
+import { openSidebarGroups } from "../sidebar-groups";
 
 const NAME = "E2E Trần Thu Ngân";
 const USERNAME = "zz_e2e_thungan";
@@ -42,6 +43,7 @@ test("Flow 2: Quản trị tạo tài khoản Nhân viên, cấp quyền, đặt
     await chapter(page, "Nhân viên mới đăng nhập");
     await loginAs(page, USERNAME, resetPassword);
     await expect(page).toHaveURL(/\/profile$/);
+    await openSidebarGroups(page);
     await expect(sidebar(page).getByRole("link", { name: "Trường", exact: true })).toBeVisible();
     await expect(sidebar(page).getByRole("link", { name: "Tài khoản", exact: true })).toHaveCount(0);
   });

@@ -3,6 +3,7 @@ import Link from "next/link";
 import { bankTag } from "@/components/customers/customerView";
 import { TopBar } from "@/components/shell/TopBar";
 import { Card } from "@/components/ui/Card";
+import { DataTable, EmptyRow, TableHead } from "@/components/ui/DataTable";
 import { ExportButton } from "@/components/ui/ExportButton";
 import { FilterChips } from "@/components/ui/FilterChips";
 import { Pager } from "@/components/ui/Pager";
@@ -74,46 +75,34 @@ export default async function CustomersPage({ searchParams }: { searchParams: Pr
       />
       <main className="p-6">
         <FilterChips chips={chipsOf(f)} />
-        <Card title="Hồ sơ học sinh" icon={<Users size={17} aria-hidden />} meta={`${total} hồ sơ`} pad={false}>
-          <div className="table-scroll">
-            <table className="w-full text-left text-sm">
-              <thead className="text-xs font-semibold tracking-wide text-text-2 uppercase">
-                <tr className="border-b border-line">
-                  {["Ngày", "Họ tên", "Lớp", "Trường", "SĐT phụ huynh", "Ngân hàng", "Người kiểm"].map((h) => (
-                    <th key={h} scope="col" className="px-4 py-3 font-semibold whitespace-nowrap">
-                      {h}
-                    </th>
-                  ))}
+        <Card title="Hồ sơ học sinh" icon={<Users size={17} aria-hidden />} meta={`${total} hồ sơ`}>
+          <DataTable caption="Hồ sơ học sinh, trường, ngân hàng đã chọn và người kiểm">
+            <TableHead columns={["Ngày", "Họ tên", "Lớp", "Trường", "SĐT phụ huynh", "Ngân hàng", "Người kiểm"]} />
+            <tbody>
+              {rows.map((c) => (
+                <tr key={c.id} className="align-top">
+                  <td className="tabular-nums">{formatShortDateTime(c.createdAt)}</td>
+                  <td>
+                    <Link href={`/customers/${c.id}`} className="text-link hover:underline">
+                      {c.fullName}
+                    </Link>
+                  </td>
+                  <td>{c.className}</td>
+                  <td>{c.schoolName}</td>
+                  <td className="tabular-nums">{formatPhone(c.parentPhone)}</td>
+                  <td>
+                    <BankCell banks={c.banks} />
+                  </td>
+                  <td>{c.reviewers.length ? c.reviewers.join(", ") : <span className="text-text-3">Chưa kiểm</span>}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {rows.map((c) => (
-                  <tr key={c.id} className="border-b border-line align-top last:border-0">
-                    <td className="px-4 py-3 whitespace-nowrap tabular-nums">{formatShortDateTime(c.createdAt)}</td>
-                    <td className="px-4 py-3 font-semibold">
-                      <Link href={`/customers/${c.id}`} className="text-link hover:underline">
-                        {c.fullName}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3">{c.className}</td>
-                    <td className="px-4 py-3">{c.schoolName}</td>
-                    <td className="px-4 py-3 whitespace-nowrap tabular-nums">{formatPhone(c.parentPhone)}</td>
-                    <td className="px-4 py-3">
-                      <BankCell banks={c.banks} />
-                    </td>
-                    <td className="px-4 py-3">{c.reviewers.length ? c.reviewers.join(", ") : <span className="text-text-3">Chưa kiểm</span>}</td>
-                  </tr>
-                ))}
-                {!rows.length && (
-                  <tr>
-                    <td colSpan={7} className="px-4 py-10 text-center text-text-3 mobile:text-left">
-                      {q || Object.keys(params).length ? "Không có hồ sơ khớp bộ lọc." : "Chưa có hồ sơ nào."}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+              ))}
+              {!rows.length && (
+                <EmptyRow colSpan={7}>
+                  {q || Object.keys(params).length ? "Không có hồ sơ khớp bộ lọc." : "Chưa có hồ sơ nào."}
+                </EmptyRow>
+              )}
+            </tbody>
+          </DataTable>
           <Pager page={page} total={total} pageSize={PAGE_SIZE} href={(p) => `/customers?${customerFilterQuery(f, { page: String(p) })}`} />
         </Card>
       </main>

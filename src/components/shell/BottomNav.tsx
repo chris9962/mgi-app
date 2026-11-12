@@ -1,19 +1,19 @@
 "use client";
 
 import { clsx } from "clsx";
-import { Landmark, Menu, TicketCheck, Users } from "lucide-react";
+import { GraduationCap, Menu, Ticket, WalletCards } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import type { ReactNode, Ref } from "react";
 import type { MenuItem } from "./menu";
 
 const ICON: Record<string, ReactNode> = {
-  "/customers": <Users size={18} aria-hidden />,
-  "/customer-banks": <Landmark size={18} aria-hidden />,
-  "/vouchers": <TicketCheck size={18} aria-hidden />,
+  "/customers": <GraduationCap size={18} strokeWidth={1.8} aria-hidden />,
+  "/customer-banks": <WalletCards size={18} strokeWidth={1.8} aria-hidden />,
+  "/vouchers": <Ticket size={18} strokeWidth={1.8} aria-hidden />,
 };
 
-const itemClass = "relative flex min-w-0 flex-auto flex-col items-center justify-center gap-1 px-0.5 text-center text-[11px] font-semibold focus-visible:-outline-offset-2 [&_svg]:opacity-80";
+const itemClass = "relative flex min-w-0 flex-auto flex-col items-center justify-center gap-1 px-1 py-2 text-center text-[11px] leading-[1.55] font-semibold focus-visible:-outline-offset-2 [&_svg]:opacity-80 [&_svg]:transition-opacity";
 
 export function BottomNav({ items, menuOpen, onOpenMenu, moreRef }: { items: MenuItem[]; menuOpen: boolean; onOpenMenu: () => void; moreRef: Ref<HTMLButtonElement> }) {
   const pathname = (usePathname() ?? "/").replace(/^\/admin(?=\/|$)/, "") || "/";
@@ -40,7 +40,7 @@ export function BottomNav({ items, menuOpen, onOpenMenu, moreRef }: { items: Men
         );
       })}
       <button type="button" ref={moreRef} aria-expanded={menuOpen} aria-controls="main-nav" onClick={onOpenMenu} className={itemClass}>
-        <Menu size={18} aria-hidden />
+        <Menu size={18} strokeWidth={1.8} aria-hidden />
         Thêm
       </button>
     </nav>

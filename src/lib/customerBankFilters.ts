@@ -20,7 +20,7 @@ export type CustomerBankFilters = {
   dir: "desc" | "asc";
 };
 
-const ids = (v: string): string[] => [...new Set(v.split(",").filter((id) => z.uuid().safeParse(id).success))].slice(0, 50);
+export const readIds = (v: string): string[] => [...new Set(v.split(",").filter((id) => z.uuid().safeParse(id).success))].slice(0, 50);
 
 // Ngân hàng và trường chọn được nhiều giá trị như ô Ngân hàng của mgst-app: id ghép bằng dấu phẩy trên URL.
 export function parseCustomerBankFilters(sp: Params): CustomerBankFilters {
@@ -28,10 +28,10 @@ export function parseCustomerBankFilters(sp: Params): CustomerBankFilters {
     q: readParam(sp, "q").trim(),
     from: readDay(sp, "from"),
     to: readDay(sp, "to"),
-    bank: ids(readParam(sp, "bank")),
+    bank: readIds(readParam(sp, "bank")),
     status: pickParam(readParam(sp, "status"), CUSTOMER_BANK_STATUSES),
     check: pickParam(readParam(sp, "check"), ["full", "missing"] as const),
-    school: ids(readParam(sp, "school")),
+    school: readIds(readParam(sp, "school")),
     dir: readParam(sp, "dir") === "asc" ? "asc" : "desc",
   };
 }

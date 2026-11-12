@@ -1,8 +1,12 @@
 import { expect, test, type Page } from "@playwright/test";
 import { api, asUser, createBank, createUser, newPage, open, pageScroll, PHONE, apiLogin } from "./edge-config-support";
+import { openSidebarGroups } from "./sidebar-groups";
 
 const sidebar = (page: Page) => page.getByRole("navigation", { name: "Điều hướng chính" });
-const menuHrefs = (page: Page) => sidebar(page).locator("a[href]").evaluateAll((links) => links.map((a) => a.getAttribute("href")).filter((h) => h !== "/profile"));
+const menuHrefs = async (page: Page) => {
+  await openSidebarGroups(page);
+  return sidebar(page).locator("a[href]").evaluateAll((links) => links.map((a) => a.getAttribute("href")).filter((h) => h !== "/profile"));
+};
 
 test("khung trang: họ tên và chức danh dài liền một chữ cắt gọn ở nút tài khoản, không tràn sidebar ở 1366 px và trong ngăn 390 px", async ({ browser }) => {
   const admin = await asUser(browser, "zz_e2e_admin");

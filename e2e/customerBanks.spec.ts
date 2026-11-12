@@ -1,5 +1,6 @@
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { E2E_STUDENT_SCHOOL_ID } from "../scripts/e2e-data";
+import { openSidebarGroups } from "./sidebar-groups";
 
 const PASSWORD = "e2e23test";
 const STUDENT = "Lương Thị Hai Dòng";
@@ -40,6 +41,7 @@ test("Trang Ngân hàng: học sinh chọn 2 ngân hàng ra 2 dòng, lọc theo 
   await studentWithTwoBanks(browser);
 
   const admin = await loginAs(browser, "zz_e2e_admin");
+  await openSidebarGroups(admin);
   const work = admin.getByRole("navigation", { name: "Điều hướng chính" }).getByRole("listitem").filter({ has: admin.getByRole("button", { name: "Nghiệp vụ" }) });
   await work.getByRole("link", { name: "Ngân hàng", exact: true }).click();
   await expect(admin).toHaveURL(/\/customer-banks$/);
@@ -104,7 +106,7 @@ test("Bộ lọc: Esc trong ô tìm trường chỉ đóng gợi ý, Esc lần n
   await expect(button).toBeFocused();
 });
 
-test("Bộ lọc: chọn 2 ngân hàng thì nút Bộ lọc đếm 1 mục đang bật, mục Ngân hàng ghi 2", async ({ browser }) => {
+test("Bộ lọc: chọn 2 ngân hàng thì mục Ngân hàng ghi 2, nút Bộ lọc không đeo số", async ({ browser }) => {
   const admin = await loginAs(browser, "zz_e2e_admin");
   await admin.goto("/customer-banks");
   await admin.getByRole("button", { name: "Bộ lọc" }).click();
@@ -114,5 +116,5 @@ test("Bộ lọc: chọn 2 ngân hàng thì nút Bộ lọc đếm 1 mục đang
   await admin.getByRole("checkbox", { name: "ZZE2E HS TPBank" }).check();
   await expect(admin).toHaveURL(/bank=[^&]+%2C/);
   await expect(sections.getByRole("button", { name: "Ngân hàng" })).toHaveText("Ngân hàng2");
-  await expect(admin.getByRole("button", { name: /^Bộ lọc/ })).toHaveText("Bộ lọc1 đang bật");
+  await expect(admin.getByRole("button", { name: /^Bộ lọc/ })).toHaveText("Bộ lọc");
 });

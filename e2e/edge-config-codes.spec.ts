@@ -224,9 +224,7 @@ test("Mã: bật Ẩn mã đã ngừng, ở trang 2 còn một mã, ngừng mã 
   await page.getByRole("dialog", { name: "Ngừng mã" }).getByRole("button", { name: "Ngừng" }).click();
   await expect(rows(page)).toHaveCount(15);
   const pager = page.getByRole("navigation", { name: "Phân trang" });
-  await expect(pager).toContainText("1–15 trên 15");
-  await expect(pager).toContainText("1 / 1");
-  await expect(pager.getByRole("link")).toHaveCount(0);
+  await expect(pager).toHaveCount(0);
   await expect(page.getByText("15 mã", { exact: true })).toBeVisible();
 });
 

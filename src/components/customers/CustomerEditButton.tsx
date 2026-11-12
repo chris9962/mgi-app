@@ -52,7 +52,6 @@ export function CustomerEditButton({ customer }: { customer: CustomerEditDefault
           title="Sửa thông tin"
           onClose={close}
           dismissible={!pending}
-          width={560}
           footer={
             <>
               <Button variant="secondary" disabled={pending} onClick={close}>
@@ -64,18 +63,18 @@ export function CustomerEditButton({ customer }: { customer: CustomerEditDefault
             </>
           }
         >
-          <form id="customer-edit" onSubmit={submit} noValidate className="flex flex-col gap-4">
-            <div className="grid gap-4 sm:grid-cols-[2fr_1fr]">
+          <form id="customer-edit" onSubmit={submit} noValidate className="flex flex-col gap-3.5 pb-1">
+            <div className="grid grid-cols-[2fr_1fr] items-start gap-3 narrow:grid-cols-1">
               <TextField name="fullName" label="Họ tên" defaultValue={customer.fullName} error={errors.fullName} data-autofocus />
               <TextField name="className" label="Lớp" defaultValue={customer.className} error={errors.className} />
             </div>
             <TextField name="phone" label="SĐT" inputMode="numeric" defaultValue={customer.phone} error={errors.phone} />
-            <div className="grid gap-4 sm:grid-cols-2">
+            <div className="grid grid-cols-2 items-start gap-3 narrow:grid-cols-1">
               <TextField name="parentName" label="Phụ huynh" defaultValue={customer.parentName} error={errors.parentName} />
               <TextField name="parentPhone" label="SĐT phụ huynh" inputMode="numeric" defaultValue={customer.parentPhone} error={errors.parentPhone} />
             </div>
             {formError && (
-              <p role="alert" className="text-sm text-danger">
+              <p role="alert" className="text-[12.5px] text-danger">
                 {formError}
               </p>
             )}

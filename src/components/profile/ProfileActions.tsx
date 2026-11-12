@@ -63,7 +63,6 @@ export function EditInfoRow({ fullName, phone }: { fullName: string; phone: stri
           title="Sửa thông tin"
           onClose={() => setOpen(false)}
           dismissible={!s.pending}
-          width={440}
           footer={
             <>
               <Button variant="secondary" disabled={s.pending} onClick={() => setOpen(false)}>
@@ -75,11 +74,11 @@ export function EditInfoRow({ fullName, phone }: { fullName: string; phone: stri
             </>
           }
         >
-          <form id="info-form" onSubmit={submit} noValidate className="flex flex-col gap-4">
+          <form id="info-form" onSubmit={submit} noValidate className="flex flex-col gap-3.5 pb-1">
             <TextField name="fullName" label="Họ tên" defaultValue={fullName} error={s.errors.fullName} data-autofocus />
             <TextField name="phone" label="Số điện thoại" inputMode="numeric" defaultValue={phone} error={s.errors.phone} />
             {s.formError && (
-              <p role="alert" className="text-sm text-danger">
+              <p role="alert" className="text-[12.5px] text-danger">
                 {s.formError}
               </p>
             )}
@@ -136,7 +135,6 @@ export function ChangePasswordRow() {
           title="Đổi mật khẩu"
           onClose={() => setOpen(false)}
           dismissible={!s.pending}
-          width={440}
           footer={
             <>
               <Button variant="secondary" disabled={s.pending} onClick={() => setOpen(false)}>
@@ -148,12 +146,12 @@ export function ChangePasswordRow() {
             </>
           }
         >
-          <form id="password-form" onSubmit={submit} noValidate className="flex flex-col gap-4">
+          <form id="password-form" onSubmit={submit} noValidate className="flex flex-col gap-3.5 pb-1">
             <PasswordField name="currentPassword" label="Mật khẩu hiện tại" placeholder="Mật khẩu đang dùng" autoComplete="current-password" error={s.errors.currentPassword} />
             <PasswordField name="newPassword" label="Mật khẩu mới" placeholder="Mật khẩu muốn đổi sang" autoComplete="new-password" error={s.errors.newPassword} />
             <PasswordField name="confirmPassword" label="Nhập lại mật khẩu mới" placeholder="Gõ lại mật khẩu mới" autoComplete="new-password" error={s.errors.confirmPassword} />
             {s.formError && (
-              <p role="alert" className="text-sm text-danger">
+              <p role="alert" className="text-[12.5px] text-danger">
                 {s.formError}
               </p>
             )}

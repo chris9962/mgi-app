@@ -3,6 +3,7 @@ import Link from "next/link";
 import { ResendButton } from "@/components/sms/ResendButton";
 import { TopBar } from "@/components/shell/TopBar";
 import { Card } from "@/components/ui/Card";
+import { DataTable, EmptyRow, TableHead } from "@/components/ui/DataTable";
 import { FilterChips } from "@/components/ui/FilterChips";
 import { Pager } from "@/components/ui/Pager";
 import { SearchBox } from "@/components/ui/SearchBox";
@@ -51,49 +52,37 @@ export default async function SmsPage({ searchParams }: { searchParams: Promise<
       />
       <main className="p-6">
         <FilterChips chips={f.status === "all" ? [] : [{ label: `Trạng thái: ${SMS_STATUS_LABEL[f.status]}`, href: `/sms?${smsFilterQuery({ ...f, status: "all" })}` }]} />
-        <Card title="Tin SMS" icon={<MessageSquareWarning size={17} aria-hidden />} meta={`${total} tin`} pad={false}>
-          <div className="table-scroll">
-            <table className="w-full text-left text-sm">
-              <thead className="text-xs font-semibold tracking-wide text-text-2 uppercase">
-                <tr className="border-b border-line">
-                  {["Gửi lúc", "Họ tên", "Trường", "SĐT nhận", "Lỗi", "Lần gửi", "Trạng thái", "Thao tác"].map((h) => (
-                    <th key={h} scope="col" className="px-4 py-3 font-semibold whitespace-nowrap">
-                      {h}
-                    </th>
-                  ))}
+        <Card title="Tin SMS" icon={<MessageSquareWarning size={17} aria-hidden />} meta={`${total} tin`}>
+          <DataTable caption="Tin SMS, người nhận, lỗi, số lần gửi và trạng thái">
+            <TableHead columns={["Gửi lúc", "Họ tên", "Trường", "SĐT nhận", "Lỗi", "Lần gửi", "Trạng thái", "Thao tác"]} />
+            <tbody>
+              {rows.map((m) => (
+                <tr key={m.id}>
+                  <td className="tabular-nums">{formatShortDateTime(m.sentAt ?? m.createdAt)}</td>
+                  <td>
+                    <Link href={`/customers/${m.customerId}`} className="text-link hover:underline">
+                      {m.fullName}
+                    </Link>
+                  </td>
+                  <td>{m.schoolName}</td>
+                  <td className="tabular-nums">{formatPhone(m.toPhone)}</td>
+                  <td>{m.error || <span className="text-text-3">Không có</span>}</td>
+                  <td className="tabular-nums">
+                    {m.attempts}/{MAX_ATTEMPTS}
+                  </td>
+                  <td>
+                    <StatusTag tone={TONE[m.status]}>{SMS_STATUS_LABEL[m.status]}</StatusTag>
+                  </td>
+                  <td>{m.status === "failed" && <ResendButton id={m.id} fullName={m.fullName} toPhone={m.toPhone} />}</td>
                 </tr>
-              </thead>
-              <tbody>
-                {rows.map((m) => (
-                  <tr key={m.id} className="border-b border-line last:border-0">
-                    <td className="px-4 py-3 whitespace-nowrap tabular-nums">{formatShortDateTime(m.sentAt ?? m.createdAt)}</td>
-                    <td className="px-4 py-3 font-semibold">
-                      <Link href={`/customers/${m.customerId}`} className="text-link hover:underline">
-                        {m.fullName}
-                      </Link>
-                    </td>
-                    <td className="px-4 py-3">{m.schoolName}</td>
-                    <td className="px-4 py-3 whitespace-nowrap tabular-nums">{formatPhone(m.toPhone)}</td>
-                    <td className="px-4 py-3">{m.error || <span className="text-text-3">Không có</span>}</td>
-                    <td className="px-4 py-3 tabular-nums">
-                      {m.attempts}/{MAX_ATTEMPTS}
-                    </td>
-                    <td className="px-4 py-3">
-                      <StatusTag tone={TONE[m.status]}>{SMS_STATUS_LABEL[m.status]}</StatusTag>
-                    </td>
-                    <td className="px-4 py-3">{m.status === "failed" && <ResendButton id={m.id} fullName={m.fullName} toPhone={m.toPhone} />}</td>
-                  </tr>
-                ))}
-                {!rows.length && (
-                  <tr>
-                    <td colSpan={8} className="px-4 py-10 text-center text-text-3 mobile:text-left">
-                      {f.q || (f.status !== "failed" && f.status !== "all") ? "Không có tin khớp bộ lọc." : f.status === "failed" ? "Không có tin lỗi." : "Chưa có tin nào."}
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+              ))}
+              {!rows.length && (
+                <EmptyRow colSpan={8}>
+                  {f.q || (f.status !== "failed" && f.status !== "all") ? "Không có tin khớp bộ lọc." : f.status === "failed" ? "Không có tin lỗi." : "Chưa có tin nào."}
+                </EmptyRow>
+              )}
+            </tbody>
+          </DataTable>
           <Pager page={page} total={total} pageSize={PAGE_SIZE} href={(p) => `/sms?${smsFilterQuery(f, { page: String(p) })}`} />
         </Card>
       </main>

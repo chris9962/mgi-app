@@ -48,7 +48,6 @@ export function ResendButton({ id, fullName, toPhone }: { id: string; fullName: 
           title="Gửi lại tin SMS"
           onClose={close}
           dismissible={!pending}
-          width={420}
           footer={
             <>
               <Button variant="secondary" disabled={pending} onClick={close}>
@@ -60,10 +59,10 @@ export function ResendButton({ id, fullName, toPhone }: { id: string; fullName: 
             </>
           }
         >
-          <form id="sms-resend" onSubmit={submit} noValidate className="flex flex-col gap-3">
+          <form id="sms-resend" onSubmit={submit} noValidate className="flex flex-col gap-3.5 pb-1">
             <TextField name="toPhone" label="SĐT nhận" inputMode="numeric" defaultValue={toPhone} error={errors.toPhone} data-autofocus />
             {errors.form && (
-              <p role="alert" className="text-sm text-danger">
+              <p role="alert" className="text-[12.5px] text-danger">
                 {errors.form}
               </p>
             )}

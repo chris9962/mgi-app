@@ -32,12 +32,13 @@ export function ExportButton({ href }: { href: string }) {
   // Màn hẹp: nút xuống hàng thứ hai, neo lời báo vào nút thì tràn mép trái; neo vào thanh tiêu đề để rộng hết màn hình.
   return (
     <span className="relative narrow:static">
-      <Button variant="secondary" disabled={pending} onClick={download}>
+      {/* Dưới 900 px nút chỉ còn icon như mgst-app; chữ vẫn là tên nút cho trình đọc màn hình. */}
+      <Button variant="secondary" disabled={pending} onClick={download} className="mobile:h-9 mobile:w-9 mobile:px-0 pointer-coarse:min-w-11">
         <Download size={16} aria-hidden />
-        {pending ? "Đang xuất" : "Xuất Excel"}
+        <span className="mobile:sr-only">{pending ? "Đang xuất…" : "Xuất Excel"}</span>
       </Button>
       {error && (
-        <span role="alert" className="absolute top-full right-0 z-10 mt-1 w-72 rounded-lg border border-danger bg-card px-3 py-2 text-[13px] text-danger shadow narrow:right-4 narrow:left-4 narrow:w-auto">
+        <span role="alert" className="absolute top-full right-0 z-10 mt-1 w-72 rounded-[10px] border border-danger bg-card px-3 py-2 text-[13px] text-danger shadow-(--elev-sm) narrow:right-4 narrow:left-4 narrow:w-auto">
           {error}
         </span>
       )}

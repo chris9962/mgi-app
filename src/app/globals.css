@@ -70,6 +70,115 @@
   color-scheme: dark;
 }
 
+/* Màu chủ đạo người dùng tự chọn ở hộp Giao diện, giá trị chép từ các khối [data-accent] của mgst-app. Cam là mặc định khi html không có data-accent.
+   Bộ tối: mục sidebar đang mở dùng cùng tông sáng với nút, vì chữ trên đó là --on-accent màu tối. */
+:root[data-accent="blue"] {
+  --accent: #1d4ed8;
+  --accent-hover: #1e40af;
+  --accent-ink: #1e3a8a;
+  --accent-soft: #dbeafe;
+  --sidebar-active: #2563eb;
+}
+
+:root[data-theme="dark"][data-accent="blue"] {
+  --accent: #60a5fa;
+  --accent-hover: #93c5fd;
+  --accent-ink: #bfdbfe;
+  --accent-soft: #172554;
+  --on-accent: #0b1a33;
+  --sidebar-active: #60a5fa;
+}
+
+:root[data-accent="cyan"] {
+  --accent: #0e7490;
+  --accent-hover: #155e75;
+  --accent-ink: #164e63;
+  --accent-soft: #cffafe;
+  --sidebar-active: #0e7490;
+}
+
+:root[data-theme="dark"][data-accent="cyan"] {
+  --accent: #22d3ee;
+  --accent-hover: #67e8f9;
+  --accent-ink: #a5f3fc;
+  --accent-soft: #083344;
+  --on-accent: #083344;
+  --sidebar-active: #22d3ee;
+}
+
+:root[data-accent="pink"] {
+  --accent: #be185d;
+  --accent-hover: #9d174d;
+  --accent-ink: #831843;
+  --accent-soft: #fce7f3;
+  --sidebar-active: #be185d;
+}
+
+:root[data-theme="dark"][data-accent="pink"] {
+  --accent: #f472b6;
+  --accent-hover: #f9a8d4;
+  --accent-ink: #fbcfe8;
+  --accent-soft: #500724;
+  --on-accent: #500724;
+  --sidebar-active: #f472b6;
+}
+
+:root[data-accent="slate"] {
+  --accent: #334155;
+  --accent-hover: #1e293b;
+  --accent-ink: #0f172a;
+  --accent-soft: #cbd5e1;
+  --sidebar-active: #475569;
+}
+
+:root[data-theme="dark"][data-accent="slate"] {
+  --accent: #e2e8f0;
+  --accent-hover: #f1f5f9;
+  --accent-ink: #f1f5f9;
+  --accent-soft: #475569;
+  --on-accent: #0f172a;
+  --sidebar-active: #e2e8f0;
+}
+
+/* Màu cho ảnh xem trước ở hộp Giao diện: ảnh Sáng phải hiện màu bộ sáng kể cả khi app đang ở bộ tối, nên không đọc token đang chạy. */
+:root {
+  --preview-light-bg: #f8f5f0;
+  --preview-light-card: #ffffff;
+  --preview-light-line: #ebe5dc;
+  --preview-light-text: #201e1d;
+  --preview-light-accent: #ca4d25;
+  --preview-dark-bg: #0f1826;
+  --preview-dark-card: #16202f;
+  --preview-dark-line: #26344a;
+  --preview-dark-text: #eef2f8;
+  --preview-dark-accent: #f97316;
+  --swatch-orange: #ca4d25;
+  --swatch-blue: #1d4ed8;
+  --swatch-cyan: #0e7490;
+  --swatch-pink: #be185d;
+  --swatch-slate: #334155;
+}
+
+:root[data-accent="blue"] {
+  --preview-light-accent: #1d4ed8;
+  --preview-dark-accent: #60a5fa;
+}
+
+:root[data-accent="cyan"] {
+  --preview-light-accent: #0e7490;
+  --preview-dark-accent: #22d3ee;
+}
+
+:root[data-accent="pink"] {
+  --preview-light-accent: #be185d;
+  --preview-dark-accent: #f472b6;
+}
+
+:root[data-accent="slate"] {
+  --preview-light-accent: #334155;
+  --preview-dark-accent: #e2e8f0;
+}
+
 @theme inline {
   --color-bg: var(--bg);
   --color-card: var(--card);
@@ -106,12 +215,31 @@
 /* Ngưỡng chép _breakpoints.scss của mgst-app: tới 900 px là bố cục điện thoại, tới 600 px là màn hẹp. Khai narrow sau để thắng mobile. */
 @custom-variant mobile (@media (max-width: 900px));
 @custom-variant narrow (@media (max-width: 600px));
-/* Màn điện thoại thấp: bảng Bộ lọc treo dưới nút cần tới khoảng 765 px chiều cao (thanh tiêu đề 3 hàng, bảng 544 px, thanh đáy), thấp hơn thì đứng trên thanh đáy. Khai sau narrow để thắng. */
+/* Màn điện thoại thấp: bảng Bộ lọc treo dưới nút cần tới khoảng 745 px chiều cao (thanh tiêu đề 2 hàng, bảng 586 px, thanh đáy), thấp hơn thì đứng trên thanh đáy. Khai sau narrow để thắng. */
 @custom-variant dock (@media (max-width: 900px) and (max-height: 780px));
 
 /* Cao thanh đáy (56 px hàng nút + 1 px viền), một số cho thanh, phần chừa đáy của nội dung và bảng Bộ lọc. */
 :root {
   --bottom-nav-h: 57px;
+}
+
+/* Bóng và lớp phủ hộp thoại chép --shadow-sm, --shadow-lg, ::backdrop của mgst-app; tên --elev-* để không đè --shadow-* của Tailwind. */
+:root {
+  --elev-sm: 0 1px 2px rgb(32 30 29 / 8%);
+  --elev-lg: 0 12px 32px rgb(32 30 29 / 24%);
+  --backdrop: rgb(32 30 29 / 45%);
+}
+
+:root[data-theme="dark"] {
+  --elev-sm: 0 1px 2px rgb(0 0 0 / 8%);
+  --elev-lg: 0 12px 32px rgb(0 0 0 / 24%);
+}
+
+/* Bộ tối trên máy tính: hộp thoại chồng hộp thoại cùng màu nền, cần viền để thấy mép (chép Dialog.module.css của mgst-app). */
+@media (min-width: 900.02px) {
+  :root[data-theme="dark"] dialog[data-panel] {
+    border: 1px solid var(--line-strong);
+  }
 }
 
 /* Ngăn trượt hay hộp thoại mở thì trang phía sau đứng yên (chép mgst-app); áp theo khổ màn nên xoay qua 900 px là hết khoá. */
@@ -129,6 +257,117 @@
   overflow-x: auto;
   /* Chỉ khai overflow-x thì chiều dọc thành auto: bảng dư nửa pixel là hiện thêm thanh cuộn dọc. */
   overflow-y: hidden;
+}
+
+/* Token của thẻ bao và nhãn trạng thái, giá trị chép organic.css và các khối [data-accent] của mgst-app. */
+:root {
+  --shadow-color: 32 30 29;
+  --chip-bg: #fbece5;
+  --chip-ink: #d95328;
+  --accent-light: #f6bfa9;
+}
+
+:root[data-theme="dark"] {
+  --shadow-color: 0 0 0;
+  --chip-bg: #3b2110;
+  --chip-ink: #fdba74;
+  --accent-light: #5a3316;
+}
+
+:root[data-accent="blue"] {
+  --chip-bg: #eff6ff;
+  --chip-ink: #1d4ed8;
+  --accent-light: #bfdbfe;
+}
+
+:root[data-theme="dark"][data-accent="blue"] {
+  --chip-bg: #172554;
+  --chip-ink: #93c5fd;
+  --accent-light: #1e3a8a;
+}
+
+:root[data-accent="cyan"] {
+  --chip-bg: #ecfeff;
+  --chip-ink: #0e7490;
+  --accent-light: #a5f3fc;
+}
+
+:root[data-theme="dark"][data-accent="cyan"] {
+  --chip-bg: #083344;
+  --chip-ink: #67e8f9;
+  --accent-light: #164e63;
+}
+
+:root[data-accent="pink"] {
+  --chip-bg: #fdf2f8;
+  --chip-ink: #be185d;
+  --accent-light: #fbcfe8;
+}
+
+:root[data-theme="dark"][data-accent="pink"] {
+  --chip-bg: #500724;
+  --chip-ink: #f9a8d4;
+  --accent-light: #831843;
+}
+
+:root[data-accent="slate"] {
+  --chip-bg: #cbd5e1;
+  --chip-ink: #334155;
+  --accent-light: #94a3b8;
+}
+
+:root[data-theme="dark"][data-accent="slate"] {
+  --chip-bg: #475569;
+  --chip-ink: #f1f5f9;
+  --accent-light: #64748b;
+}
+
+@theme inline {
+  --color-chip-bg: var(--chip-bg);
+  --color-chip-ink: var(--chip-ink);
+  --color-accent-light: var(--accent-light);
+  --shadow-card: 0 1px 2px rgb(var(--shadow-color) / 8%);
+}
+
+/* Bảng danh sách, số đo chép .table của organic.css và RankTable.module.css của mgst-app. Nằm ở lớp components để utility đặt trên từng ô vẫn thắng. */
+@layer components {
+  .data-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+    line-height: 1.55;
+    text-align: left;
+  }
+  .data-table th,
+  .data-table td {
+    padding: 8.8px;
+    white-space: nowrap;
+  }
+  .data-table th {
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--text-2);
+    border-bottom: 1px solid var(--line);
+  }
+  .data-table td {
+    border-bottom: 1px solid color-mix(in srgb, var(--text) 8%, transparent);
+  }
+  .data-table tbody tr:hover {
+    background: color-mix(in srgb, var(--text) 4%, transparent);
+  }
+}
+
+/* Tailwind 4 để con trỏ mặc định trên nút. Đặt ở lớp base để utility như disabled:cursor-not-allowed vẫn thắng. */
+@layer base {
+  button:not(:disabled),
+  [role="button"]:not([aria-disabled="true"]),
+  select:not(:disabled),
+  summary,
+  label:has(input[type="checkbox"], input[type="radio"]) {
+    cursor: pointer;
+  }
 }
 
 body {
