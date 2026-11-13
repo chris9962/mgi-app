@@ -46,6 +46,7 @@ test("Flow 4: học sinh mở link QR, chọn 2 ngân hàng, nộp ảnh, gửi 
     await page.getByLabel("SĐT phụ huynh").blur();
     await expect(page.getByText("SĐT phụ huynh phải khác SĐT học sinh.")).toBeVisible();
     await page.getByLabel("SĐT phụ huynh").fill("0987654321");
+    await page.getByRole("checkbox", { name: "Đồng ý" }).check();
     await page.getByRole("button", { name: "Tiếp tục" }).click();
   });
 

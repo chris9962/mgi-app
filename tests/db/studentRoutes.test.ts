@@ -33,7 +33,7 @@ beforeAll(async () => {
   if (!s.ok) throw new Error(s.message);
   schoolId = s.id;
   const c = await createCustomer(
-    CustomerForm.parse({ schoolId, fullName: "Học Sinh Route", className: "10A1", phone: "0900000601", parentName: "Phụ Huynh", parentPhone: "0910000601", existingBankIds: [] }),
+    CustomerForm.parse({ schoolId, fullName: "Học Sinh Route", className: "10A1", phone: "0900000601", parentName: "Phụ Huynh", parentPhone: "0910000601", consent: true, existingBankIds: [] }),
     null,
   );
   if (!c.ok) throw new Error(c.message);
@@ -55,7 +55,7 @@ describe("route ghi của học sinh", () => {
   });
 
   test("tạo hồ sơ từ trang khác thì 403", async () => {
-    const body = { schoolId, fullName: "A", className: "10A1", phone: "0900000602", parentName: "B", parentPhone: "0910000602", existingBankIds: [] };
+    const body = { schoolId, fullName: "A", className: "10A1", phone: "0900000602", parentName: "B", parentPhone: "0910000602", consent: true, existingBankIds: [] };
     expect((await createRoute(req("/api/customers", { origin: "http://evil.example", body }))).status).toBe(403);
   });
 
@@ -65,7 +65,7 @@ describe("route ghi của học sinh", () => {
   });
 
   test("hồ sơ mới ghi IP cuối của X-Forwarded-For (địa chỉ Nginx ghi), không ghi địa chỉ học sinh tự khai ở đầu", async () => {
-    const body = { schoolId, fullName: "Học Sinh IP", className: "10A1", phone: "0900000603", parentName: "B", parentPhone: "0910000603", existingBankIds: [] };
+    const body = { schoolId, fullName: "Học Sinh IP", className: "10A1", phone: "0900000603", parentName: "B", parentPhone: "0910000603", consent: true, existingBankIds: [] };
     const request = req("/api/customers", { body });
     request.headers.set("X-Forwarded-For", "6.6.6.6, 203.0.113.9");
     expect((await createRoute(request)).status).toBeLessThan(300);

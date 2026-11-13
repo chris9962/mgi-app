@@ -8,6 +8,7 @@ import { queuePhotoChecks } from "./photoChecks";
 import { hashToken } from "./auth/session";
 import { publicSchool } from "./schools";
 import { getSettings } from "./settings";
+import { CONSENT_VERSION } from "@/lib/consent";
 import { currentYearMonth, isYearMonth } from "@/lib/month";
 import { maskPhone, plain } from "@/lib/text";
 import type { CustomerFormValues, CustomerSelfEditInput, CustomerSelfEditValues } from "@/lib/customerForm";
@@ -127,6 +128,8 @@ export async function createCustomer(values: CustomerFormValues, ip: string | nu
         parentPhone: values.parentPhone,
         tokenHash,
         createdIp: ip && isIP(ip) ? ip : null,
+        consentAt: new Date(),
+        consentVersion: CONSENT_VERSION,
         status: noBank ? "no_bank" : "new",
       })
       .returning({ id: customers.id });

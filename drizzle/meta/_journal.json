@@ -78,6 +78,13 @@
       "when": 1794226934786,
       "tag": "0010_bank_logo_key",
       "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1794534441469,
+      "tag": "0011_customer_consent",
+      "breakpoints": true
     }
   ]
 }

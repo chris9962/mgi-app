@@ -32,6 +32,7 @@ async function submitWithScreens(browser: Browser) {
   await page.getByLabel("SĐT", { exact: true }).fill("0977000111");
   await page.getByLabel("Họ và tên phụ huynh").fill("Lý Văn Ảnh");
   await page.getByLabel("SĐT phụ huynh").fill("0977000222");
+  await page.getByRole("checkbox", { name: "Đồng ý" }).check();
   await page.getByRole("button", { name: "Tiếp tục" }).click();
   await page.getByRole("button", { name: /ZZE2E HS VPBank/ }).click();
   await page.getByRole("button", { name: /ZZE2E HS TPBank/ }).click();

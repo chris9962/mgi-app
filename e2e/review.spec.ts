@@ -25,6 +25,7 @@ async function submittedStudent(browser: Browser): Promise<Page> {
   await page.getByLabel("SĐT", { exact: true }).fill("0933222444");
   await page.getByLabel("Họ và tên phụ huynh").fill("Ngô Văn Phụ");
   await page.getByLabel("SĐT phụ huynh").fill("0977123456");
+  await page.getByRole("checkbox", { name: "Đồng ý" }).check();
   await page.getByRole("button", { name: "Tiếp tục" }).click();
   await page.getByRole("button", { name: /ZZE2E HS VPBank/ }).click();
   await page.getByRole("button", { name: /ZZE2E HS TPBank/ }).click();

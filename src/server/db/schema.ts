@@ -240,6 +240,8 @@ export const customers = pgTable(
     submittedAt: at("submitted_at"),
     firstPassedAt: at("first_passed_at"),
     createdIp: inet("created_ip"),
+    consentAt: at("consent_at"),
+    consentVersion: text("consent_version"),
     lastSeenAt: at("last_seen_at"),
     createdAt: createdAt(),
   },

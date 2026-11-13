@@ -46,7 +46,7 @@ const phonesDiffer = (v: { phone: string; parentPhone: string }) => v.phone !== 
 const PHONES_DIFFER = { path: ["parentPhone"], message: "SĐT phụ huynh phải khác SĐT học sinh." };
 
 export const CustomerForm = z
-  .object({ schoolId: uuid(), ...info, existingBankIds: z.array(uuid(), { error: BAD }).max(50, BAD) }, { error: BAD })
+  .object({ schoolId: uuid(), ...info, existingBankIds: z.array(uuid(), { error: BAD }).max(50, BAD), consent: z.literal(true, { error: "Chưa đồng ý điều khoản xử lý dữ liệu cá nhân." }) }, { error: BAD })
   .refine(phonesDiffer, PHONES_DIFFER);
 
 // Người quản ngân hàng sửa thông tin khai ở B1; trường và ngân hàng đã có không đổi được.

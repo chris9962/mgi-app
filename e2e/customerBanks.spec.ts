@@ -26,6 +26,7 @@ async function studentWithTwoBanks(browser: Browser) {
   await page.getByLabel("SĐT", { exact: true }).fill("0933555777");
   await page.getByLabel("Họ và tên phụ huynh").fill("Lương Văn Cha");
   await page.getByLabel("SĐT phụ huynh").fill("0977555777");
+  await page.getByRole("checkbox", { name: "Đồng ý" }).check();
   await page.getByRole("button", { name: "Tiếp tục" }).click();
   await page.getByRole("button", { name: /ZZE2E HS VPBank/ }).click();
   await page.getByRole("button", { name: /ZZE2E HS TPBank/ }).click();

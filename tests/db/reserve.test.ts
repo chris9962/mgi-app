@@ -39,7 +39,7 @@ const addCode = async (key: string, bankKey: string, schoolKey: string, quota: n
 async function student(schoolKey: string, existing: string[] = []): Promise<Customer> {
   phoneSeq += 1;
   const r = await createCustomer(
-    CustomerForm.parse({ schoolId: school[schoolKey], fullName: "Học Sinh", className: "10A1", phone: `0900000${phoneSeq}`, parentName: "Phụ Huynh", parentPhone: `0910000${phoneSeq}`, existingBankIds: existing.map((k) => bank[k]) }),
+    CustomerForm.parse({ schoolId: school[schoolKey], fullName: "Học Sinh", className: "10A1", phone: `0900000${phoneSeq}`, parentName: "Phụ Huynh", parentPhone: `0910000${phoneSeq}`, consent: true, existingBankIds: existing.map((k) => bank[k]) }),
     null,
     MONTH,
   );

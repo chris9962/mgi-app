@@ -15,7 +15,7 @@ let phoneSeq = 700;
 async function student(existingBankIds: string[] = []): Promise<Customer> {
   phoneSeq += 1;
   const r = await createCustomer(
-    CustomerForm.parse({ schoolId: p.schoolId, fullName: "Học Sinh Sửa", className: "10A1", phone: `0900000${phoneSeq}`, parentName: "Phụ Huynh", parentPhone: `0910000${phoneSeq}`, existingBankIds }),
+    CustomerForm.parse({ schoolId: p.schoolId, fullName: "Học Sinh Sửa", className: "10A1", phone: `0900000${phoneSeq}`, parentName: "Phụ Huynh", parentPhone: `0910000${phoneSeq}`, consent: true, existingBankIds }),
     null,
     MONTH,
   );

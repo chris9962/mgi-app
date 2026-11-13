@@ -24,6 +24,7 @@ test("Học sinh quét link trường, khai thông tin, chọn 2 ngân hàng, n�
   await expect(page.getByText("SĐT phụ huynh phải khác SĐT học sinh.")).toBeVisible();
   await expect(page.getByRole("button", { name: "Tiếp tục" })).toBeDisabled();
   await page.getByLabel("SĐT phụ huynh").fill("0987654321");
+  await page.getByRole("checkbox", { name: "Đồng ý" }).check();
   // Logo đọc từ S3 qua link đã ký: ảnh tải được thì có chiều rộng thật.
   await expect.poll(() => page.locator("label", { hasText: "ZZE2E HS MB" }).locator("img").evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
   await page.getByRole("checkbox", { name: "ZZE2E HS MB" }).check();
@@ -80,6 +81,7 @@ test("đang tải ảnh thì không gửi kiểm tra được; tải ảnh lỗi
   await page.getByLabel("SĐT", { exact: true }).fill("0912000111");
   await page.getByLabel("Họ và tên phụ huynh").fill("Lê Văn Tư");
   await page.getByLabel("SĐT phụ huynh").fill("0987000111");
+  await page.getByRole("checkbox", { name: "Đồng ý" }).check();
   await page.getByRole("button", { name: "Tiếp tục" }).click();
   await page.getByRole("button", { name: /ZZE2E HS MB/ }).click();
   await page.getByRole("button", { name: /ZZE2E HS TPBank/ }).click();
@@ -122,7 +124,7 @@ test("ảnh 15 MB gửi qua API tới đủ route: proxy không cắt body ở 1
   const origin = "http://bank.localhost:3100";
   const created = await request.post("/api/customers", {
     headers: { Origin: origin },
-    data: { schoolId: E2E_STUDENT_SCHOOL_ID, fullName: "Đặng Ảnh Lớn", className: "12c1", phone: "0912000222", parentName: "Đặng Văn Ba", parentPhone: "0987000222", existingBankIds: [] },
+    data: { schoolId: E2E_STUDENT_SCHOOL_ID, fullName: "Đặng Ảnh Lớn", className: "12c1", phone: "0912000222", parentName: "Đặng Văn Ba", parentPhone: "0987000222", consent: true, existingBankIds: [] },
   });
   expect(created.status()).toBe(201);
   const auth = { Origin: origin, Authorization: `Bearer ${(await created.json()).token}` };

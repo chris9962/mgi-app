@@ -9,6 +9,7 @@ import { createCode, setCodeActive } from "../../src/server/referralCodes";
 import { createCustomer, customerFromRequest, openBanksAtSchool, programBanksAtSchool } from "../../src/server/customers";
 import { BankForm } from "../../src/lib/bankForm";
 import { CodeForm } from "../../src/lib/codeForm";
+import { CONSENT_VERSION } from "../../src/lib/consent";
 import { CustomerForm } from "../../src/lib/customerForm";
 import { SchoolForm } from "../../src/lib/schoolForm";
 import { currentYearMonth } from "../../src/lib/month";
@@ -43,7 +44,7 @@ const form = (extra: Record<string, unknown> = {}) => ({
   phone: "0912 345 678",
   parentName: "Trần Văn Hùng",
   parentPhone: "0987654321",
-  existingBankIds: [],
+  consent: true, existingBankIds: [],
   ...extra,
 });
 
@@ -110,6 +111,8 @@ describe("B1 khai thông tin", () => {
     if (!r.ok) throw new Error(r.message);
     const [row] = await db.select().from(customers).where(eq(customers.id, r.id));
     expect(row).toMatchObject({ fullName: "Trần Minh Anh", className: "11A3", nameSearch: "tran minh anh", phone: "0912345678", parentPhone: "0987654321", status: "new", createdIp: "203.0.113.7" });
+    expect(row.consentVersion).toBe(CONSENT_VERSION);
+    expect(row.consentAt).toBeInstanceOf(Date);
     expect((await db.select().from(customerExistingBanks).where(eq(customerExistingBanks.customerId, r.id))).map((x) => x.bankId)).toEqual([bank.MB]);
     const found = await customerFromRequest(new Request("http://bank.localhost", { headers: { Authorization: `Bearer ${r.token}` } }));
     expect(found?.id).toBe(r.id);

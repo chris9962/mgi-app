@@ -48,7 +48,7 @@ function pngClaiming(width: number, height: number): Buffer {
 }
 
 test("G1 tạo hồ sơ thiếu Origin, Origin trang khác, Origin trang quản lý: 403", async ({ request }) => {
-  const body = { schoolId: SCHOOL.photo, ...info("Không Có Origin"), existingBankIds: [] };
+  const body = { schoolId: SCHOOL.photo, ...info("Không Có Origin"), consent: true, existingBankIds: [] };
   for (const headers of [{}, { Origin: "http://evil.example" }, { Origin: "http://admin.localhost:3100" }, { Origin: "khong-phai-url" }] as Record<string, string>[]) {
     expect((await create(request, body, headers)).status(), JSON.stringify(headers)).toBe(403);
   }
@@ -58,17 +58,17 @@ test("G2 body không phải JSON, mảng, null, họ tên là số: 400 câu ti�
   await vietnamese400(await create(request, "khong phai json {"));
   await vietnamese400(await create(request, []));
   await vietnamese400(await create(request, null));
-  expect(await vietnamese400(await create(request, { schoolId: SCHOOL.photo, ...info("x"), fullName: 123, existingBankIds: [] }))).toBe("Nhập họ và tên");
-  expect(await vietnamese400(await create(request, { schoolId: SCHOOL.photo, ...info(`${"A".repeat(101)}`), existingBankIds: [] }))).toBe("Tối đa 100 ký tự");
-  expect(await vietnamese400(await create(request, { schoolId: SCHOOL.photo, ...info("Tên\u0000Có NUL"), existingBankIds: [] }))).toBe("Có ký tự không hợp lệ");
+  expect(await vietnamese400(await create(request, { schoolId: SCHOOL.photo, ...info("x"), fullName: 123, consent: true, existingBankIds: [] }))).toBe("Nhập họ và tên");
+  expect(await vietnamese400(await create(request, { schoolId: SCHOOL.photo, ...info(`${"A".repeat(101)}`), consent: true, existingBankIds: [] }))).toBe("Tối đa 100 ký tự");
+  expect(await vietnamese400(await create(request, { schoolId: SCHOOL.photo, ...info("Tên\u0000Có NUL"), consent: true, existingBankIds: [] }))).toBe("Có ký tự không hợp lệ");
   // \ud83c là nửa đầu của một emoji: JSON gửi được, cột jsonb của Postgres thì từ chối.
   for (const extra of [{ fullName: "Tên Nửa Emoji\ud83c" }, { className: "10A\ud83c" }, { parentName: "Phụ Huynh\ud83c" }]) {
-    expect(await vietnamese400(await create(request, { schoolId: SCHOOL.photo, ...info("Nửa Emoji", extra), existingBankIds: [] })), JSON.stringify(extra)).toBe("Có ký tự không hợp lệ");
+    expect(await vietnamese400(await create(request, { schoolId: SCHOOL.photo, ...info("Nửa Emoji", extra), consent: true, existingBankIds: [] })), JSON.stringify(extra)).toBe("Có ký tự không hợp lệ");
   }
 });
 
 test("G3 schoolId sai dạng, không có, trường đã đóng: 400, 404, 409", async ({ request }) => {
-  const body = (schoolId: string) => ({ schoolId, ...info("Sai Trường"), existingBankIds: [] });
+  const body = (schoolId: string) => ({ schoolId, ...info("Sai Trường"), consent: true, existingBankIds: [] });
   await vietnamese400(await create(request, body("abc")));
   const missing = await create(request, body(UNKNOWN));
   expect([missing.status(), (await missing.json()).message]).toEqual([404, "Không tìm thấy trường."]);
@@ -77,8 +77,8 @@ test("G3 schoolId sai dạng, không có, trường đã đóng: 400, 404, 409",
 });
 
 test("G4 existingBankIds 51 phần tử, id ngân hàng không có: 400", async ({ request }) => {
-  await vietnamese400(await create(request, { schoolId: SCHOOL.photo, ...info("Nhiều Ngân Hàng"), existingBankIds: Array.from({ length: 51 }, () => randomUUID()) }));
-  expect(await vietnamese400(await create(request, { schoolId: SCHOOL.photo, ...info("Ngân Hàng Lạ"), existingBankIds: [UNKNOWN] }))).toBe("Ngân hàng không có trong danh sách.");
+  await vietnamese400(await create(request, { schoolId: SCHOOL.photo, ...info("Nhiều Ngân Hàng"), consent: true, existingBankIds: Array.from({ length: 51 }, () => randomUUID()) }));
+  expect(await vietnamese400(await create(request, { schoolId: SCHOOL.photo, ...info("Ngân Hàng Lạ"), consent: true, existingBankIds: [UNKNOWN] }))).toBe("Ngân hàng không có trong danh sách.");
 });
 
 test("G5 tra trường bằng id sai dạng, id không có: 404", async ({ request }) => {

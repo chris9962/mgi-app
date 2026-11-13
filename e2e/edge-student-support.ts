@@ -40,7 +40,7 @@ type StudentMe = {
 };
 
 export async function apiCreate(request: APIRequestContext, schoolId: string, who: Info, existingBankIds: string[] = []): Promise<ApiStudent> {
-  const res = await request.post(`${STUDENT}/api/customers`, { headers: ORIGIN, data: { schoolId, ...who, existingBankIds } });
+  const res = await request.post(`${STUDENT}/api/customers`, { headers: ORIGIN, data: { schoolId, ...who, consent: true, existingBankIds } });
   expect(res.status(), await res.text()).toBe(201);
   const { id, token } = await res.json();
   const auth = { ...ORIGIN, Authorization: `Bearer ${token}` };
@@ -92,6 +92,7 @@ export async function fillInfo(page: Page, who: Info) {
   await page.getByLabel("SĐT", { exact: true }).fill(who.phone);
   await page.getByLabel("Họ và tên phụ huynh").fill(who.parentName);
   await page.getByLabel("SĐT phụ huynh").fill(who.parentPhone);
+  await page.getByRole("checkbox", { name: "Đồng ý" }).check();
 }
 
 export async function expectNoSideScroll(page: Page) {

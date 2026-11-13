@@ -1,8 +1,11 @@
 "use client";
 
-import { useState, type FormEvent } from "react";
+import { useId, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
+import { Checkbox } from "@/components/ui/Checkbox";
+import { Dialog } from "@/components/ui/Dialog";
 import { TextField } from "@/components/ui/TextField";
+import { CONSENT_SECTIONS, CONSENT_TITLE } from "@/lib/consent";
 import { CustomerForm, type CustomerSelfEditInput } from "@/lib/customerForm";
 import { studentApi } from "@/lib/studentApi";
 import { saveProfile } from "@/lib/studentDevice";
@@ -19,8 +22,12 @@ export function InfoForm({ school, initial, onSaved }: { school: StudentSchool; 
   const [touched, setTouched] = useState<Set<Key>>(new Set());
   const [serverError, setServerError] = useState<{ field?: string; message: string } | null>(null);
   const [pending, setPending] = useState(false);
+  // Hồ sơ đã có thì đã đồng ý lúc tạo: màn sửa không hỏi lại.
+  const [consent, setConsent] = useState(Boolean(initial));
+  const [termsOpen, setTermsOpen] = useState(false);
+  const termsLinkId = useId();
 
-  const raw = { ...values, schoolId: school.id, existingBankIds: existing };
+  const raw = { ...values, schoolId: school.id, existingBankIds: existing, consent };
   const parsed = CustomerForm.safeParse(raw);
   const errors = new Map<string, string>();
   if (!parsed.success) for (const issue of parsed.error.issues) if (!errors.has(String(issue.path[0]))) errors.set(String(issue.path[0]), issue.message);
@@ -95,6 +102,26 @@ export function InfoForm({ school, initial, onSaved }: { school: StudentSchool; 
           <span className="text-[13px] text-text-3">Chưa có thì bỏ trống</span>
         </fieldset>
       )}
+      {!initial && (
+        <div className="flex flex-wrap items-center gap-x-1.5">
+          <Checkbox label="Đồng ý" name="consent" checked={consent} onChange={(e) => setConsent(e.target.checked)} aria-describedby={termsLinkId} />
+          <button id={termsLinkId} type="button" onClick={() => setTermsOpen(true)} className="min-h-9 text-left text-[13.5px] text-accent-ink underline underline-offset-2">
+            điều khoản xử lý dữ liệu cá nhân
+          </button>
+        </div>
+      )}
+      <Dialog open={termsOpen} title={CONSENT_TITLE} onClose={() => setTermsOpen(false)}>
+        {CONSENT_SECTIONS.map((section) => (
+          <section key={section.title}>
+            <h3 className="text-[15px] font-semibold">{section.title}</h3>
+            <ul className="list-disc pl-5 text-text-2">
+              {section.lines.map((line) => (
+                <li key={line}>{line}</li>
+              ))}
+            </ul>
+          </section>
+        ))}
+      </Dialog>
       {formError && (
         <p role="alert" className="text-sm text-danger">
           {formError}

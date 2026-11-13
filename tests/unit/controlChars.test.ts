@@ -24,7 +24,7 @@ const FORMS: [string, ZodType, Record<string, unknown>, string[]][] = [
   ["Tài khoản", UserForm, { fullName: "Người dùng", staffCode: "S1", phone: "", username: "abc", role: "staff", title: "Chức danh", permissions: [] }, ["fullName", "staffCode", "title"]],
   ["Cá nhân", InfoForm, { fullName: "Người dùng", phone: "" }, ["fullName"]],
   ["Cài đặt", SettingsForm, { smsTemplate: "Ma {MA_VOUCHER}", zaloUrl: "https://zalo.me/a", pviAppUrl: "https://pvi.vn" }, ["zaloUrl", "pviAppUrl"]],
-  ["Học sinh", CustomerForm, { schoolId: UUID, ...INFO, existingBankIds: [] }, ["fullName", "className", "parentName"]],
+  ["Học sinh", CustomerForm, { schoolId: UUID, ...INFO, consent: true, existingBankIds: [] }, ["fullName", "className", "parentName"]],
   ["Sửa thông tin", CustomerEditForm, INFO, ["fullName", "className", "parentName"]],
   ["Ghi chú", NoteForm, { note: "Ghi chú" }, ["note"]],
 ];

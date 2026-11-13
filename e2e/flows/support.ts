@@ -82,7 +82,7 @@ const asFile = (screen?: Screen) => screen ?? { name: "anh.jpg", mimeType: "imag
 // Phần học sinh của các flow hậu kiểm dựng qua API web học sinh: flow 4 đã quay trọn màn học sinh.
 export async function apiStudent(page: Page, info: StudentInfo, bankNames: string[], opts: { screens?: Record<string, Screen>; submit?: boolean } = {}): Promise<Student> {
   const headers = { Origin: STUDENT };
-  const created = await page.request.post(`${STUDENT}/api/customers`, { headers, data: { schoolId: E2E_STUDENT_SCHOOL_ID, ...info, existingBankIds: [] } });
+  const created = await page.request.post(`${STUDENT}/api/customers`, { headers, data: { schoolId: E2E_STUDENT_SCHOOL_ID, ...info, consent: true, existingBankIds: [] } });
   expect(created.status()).toBe(201);
   const { id, token } = await created.json();
   const auth = { ...headers, Authorization: `Bearer ${token}` };
