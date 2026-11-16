@@ -32,6 +32,12 @@ describe("scripts/e2e-videos.ts", () => {
     expect(videoCopies(report, "/out")).toEqual([]);
   });
 
+  // Báo cáo ghi đường dẫn spec tính từ e2e/, nên có tiền tố flows/.
+  test("spec trong thư mục nhóm ra video ở thư mục nhóm cùng tên", () => {
+    const report = { suites: [{ file: "flows/quan-ly/QL-7-ngan-hang.spec.ts", specs: [spec("flows/quan-ly/QL-7-ngan-hang.spec.ts", "Ngân hàng", "flows", [{ status: "passed", attachments: [video("/r/f/video.webm")] }])] }] };
+    expect(videoCopies(report, "/out").map((c) => c.to)).toEqual(["/out/quan-ly/QL-7-ngan-hang.webm"]);
+  });
+
   // Playwright ghi tên video theo thứ tự mở trang nhưng thêm vào báo cáo theo thứ tự lưu xong: tab phụ ngắn lưu xong trước.
   test("tab phụ lưu xong trước vẫn lấy video.webm của trang chính", () => {
     const report = { suites: [{ file: "04-hoc-sinh.spec.ts", specs: [spec("04-hoc-sinh.spec.ts", "Flow 4", "flows", [{ status: "passed", attachments: [video("/r/e/video-1.webm"), video("/r/e/video.webm")] }])] }] };

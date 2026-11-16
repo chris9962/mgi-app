@@ -1,0 +1,433 @@
+[
+  {
+    "code": "BIDV",
+    "guide": [
+      "Tải app đăng ký định danh - quét mã QR (nếu có)",
+      "Chọn stk như ý, nhập CN - mã giới thiệu đang ghim",
+      "Đăng nhập giao dịch qua lại 100k (không gd qua các ví bắt buộc ck qua lại)"
+    ],
+    "slots": [
+      {
+        "name": "Ảnh 1",
+        "checkName": false,
+        "checkCode": false
+      },
+      {
+        "name": "Ảnh 2",
+        "checkName": false,
+        "checkCode": false
+      },
+      {
+        "name": "Ảnh 3",
+        "checkName": false,
+        "checkCode": false
+      },
+      {
+        "name": "Ảnh 4",
+        "checkName": false,
+        "checkCode": false
+      }
+    ]
+  },
+  {
+    "code": "LPB",
+    "guide": [
+      "Tải app LPBANK PLUS , đăng kí tài khoản",
+      "Nhập mã giới thiệu và chi nhánh",
+      "Thực hiện các yêu cầu xác thực ( chụp cccd , xác thực eKYC theo hướng dẫn , nhập mã OT) Chụp ảnh mở tài khoản thành công",
+      "Phát sinh Giao dịch 100k qua lại"
+    ],
+    "slots": [
+      {
+        "name": "Ảnh giao dịch biến động số dư",
+        "checkName": false,
+        "checkCode": false
+      },
+      {
+        "name": "Ảnh chứa QR",
+        "checkName": false,
+        "checkCode": false
+      },
+      {
+        "name": "Thông tin tài khoản",
+        "checkName": true,
+        "checkCode": false
+      },
+      {
+        "name": "Phát hành thẻ thành công",
+        "checkName": false,
+        "checkCode": false
+      },
+      {
+        "name": "Nhập MGT và CN",
+        "checkName": false,
+        "checkCode": true
+      },
+      {
+        "name": "số điện thoại và cccd",
+        "checkName": false,
+        "checkCode": false
+      },
+      {
+        "name": "phiếu thông tin",
+        "checkName": false,
+        "checkCode": false
+      }
+    ]
+  },
+  {
+    "code": "MB",
+    "guide": [
+      "Quét QR (bắt buộc) và tải app MB Bank",
+      "Nhập mã giới thiệu và chi nhánh đang ghim",
+      "Thực hiện Chuyển khoản vào 200k, sau đó chuyển ra 02 lần, mỗi lần 100k",
+      "Huỷ liên kết thiết bị và bàn giao tài khoản cho khách"
+    ],
+    "slots": [
+      {
+        "name": "Ảnh nhập mã giới thiệu",
+        "checkName": false,
+        "checkCode": true
+      },
+      {
+        "name": "Ảnh thông tin tài khoản",
+        "checkName": true,
+        "checkCode": false
+      },
+      {
+        "name": "Ảnh lịch sử giao dịch thấy rõ 2 lần chuyển khoản ra",
+        "checkName": false,
+        "checkCode": false
+      },
+      {
+        "name": "Ảnh huỷ liên kết thiết bị",
+        "checkName": false,
+        "checkCode": false
+      },
+      {
+        "name": "Ảnh 5",
+        "checkName": false,
+        "checkCode": false
+      }
+    ]
+  },
+  {
+    "code": "MBV",
+    "guide": [
+      "Tải app MBV và tạo tài khoản.",
+      "Nhập đúng Mã GT, hệ thống sẽ tự động hiện ra Tên CB và Chi nhánh",
+      "Chuyển vào tài khoản 100.000 VNĐ, thực hiện giao dịch chuyển ra 100.000 VNĐ"
+    ],
+    "slots": [
+      {
+        "name": "Màn hình nhập mã GT/Tên CB/CN",
+        "checkName": false,
+        "checkCode": true
+      },
+      {
+        "name": "Lịch sử giao dịch",
+        "checkName": false,
+        "checkCode": false
+      },
+      {
+        "name": "Ảnh mở TK thành công",
+        "checkName": false,
+        "checkCode": false
+      },
+      {
+        "name": "Phiếu thông tin KH",
+        "checkName": false,
+        "checkCode": false
+      }
+    ]
+  },
+  {
+    "code": "MSBA",
+    "guide": [
+      "Tải app MSB và tạo tài khoản.",
+      "Nhập đúng Mã GT, CN và PGD đang được ghim.",
+      "Chuyển vào tài khoản 50.000 VNĐ, thực hiện giao dịch chuyển ra 50.000 VNĐ và kích hoạt thẻ."
+    ],
+    "slots": [
+      {
+        "name": "Màn hình nhập mã GT/CN/PGD",
+        "checkName": false,
+        "checkCode": true
+      },
+      {
+        "name": "Màn hình kích hoạt thẻ thành công",
+        "checkName": false,
+        "checkCode": false
+      },
+      {
+        "name": "Lịch sử giao dịch",
+        "checkName": false,
+        "checkCode": false
+      },
+      {
+        "name": "Đăng nhập trên máy khách (bắt buộc)",
+        "checkName": false,
+        "checkCode": false
+      },
+      {
+        "name": "Ảnh mở TK thành công (bắt buộc)",
+        "checkName": false,
+        "checkCode": false
+      },
+      {
+        "name": "Phiếu thông tin KH",
+        "checkName": false,
+        "checkCode": false
+      }
+    ]
+  },
+  {
+    "code": "MSBB",
+    "guide": [
+      "Tải app MSB và tạo tài khoản.",
+      "Nhập đúng Mã GT, CN và PGD đang được ghim.",
+      "Chuyển vào tài khoản 50.000 VNĐ, thực hiện giao dịch chuyển ra 50.000 VNĐ và kích hoạt thẻ."
+    ],
+    "slots": [
+      {
+        "name": "Màn hình nhập mã GT/CN/PGD",
+        "checkName": false,
+        "checkCode": true
+      },
+      {
+        "name": "Màn hình kích hoạt thẻ thành công",
+        "checkName": false,
+        "checkCode": false
+      },
+      {
+        "name": "Lịch sử giao dịch",
+        "checkName": false,
+        "checkCode": false
+      },
+      {
+        "name": "Ảnh mở TK thành công",
+        "checkName": false,
+        "checkCode": false
+      },
+      {
+        "name": "Phiếu thông tin KH",
+        "checkName": false,
+        "checkCode": false
+      }
+    ]
+  },
+  {
+    "code": "SHB",
+    "guide": [
+      "Tải app SHB về máy, quét QR nhập thông tin đăng ký tài khoản và MGT. (BẮT BUỘC)",
+      "Nhập đúng Mã GT đang được ghim ẤN MỞ TK theo link (BẮT BUỘC)",
+      "Mở tài khoản thành công. Chuyển vào tài khoản 50.000 VNĐ, thực hiện giao dịch chuyển ra 50.000 VNĐ",
+      "LƯU Ý: + Không chuyển qua lại 50k cũng tên khách + Chỉ khai thác KH từ 18-59 tuổi + Không mở cùng 1 thiết bị"
+    ],
+    "slots": [
+      {
+        "name": "Màn hình nhập mã GT",
+        "checkName": false,
+        "checkCode": true
+      },
+      {
+        "name": "Ảnh mở TK trực tuyến",
+        "checkName": false,
+        "checkCode": false
+      },
+      {
+        "name": "Ảnh mở TK Thành Công",
+        "checkName": false,
+        "checkCode": false
+      },
+      {
+        "name": "Lịch sử giao dịch",
+        "checkName": false,
+        "checkCode": false
+      },
+      {
+        "name": "Ảnh 5",
+        "checkName": false,
+        "checkCode": false
+      }
+    ]
+  },
+  {
+    "code": "TCB",
+    "guide": [],
+    "slots": [
+      {
+        "name": "Ảnh 1",
+        "checkName": false,
+        "checkCode": false
+      },
+      {
+        "name": "Ảnh 2",
+        "checkName": false,
+        "checkCode": false
+      },
+      {
+        "name": "Ảnh 3",
+        "checkName": false,
+        "checkCode": false
+      }
+    ]
+  },
+  {
+    "code": "TPB",
+    "guide": [
+      "Tải app Tpbank nhập mã giới thiệu đã chọn, NHẬP GMAIL RÕ RÀNG CÓ CHỨA THÔNG TIN KHÁCH và mở tài khoản.",
+      "Đăng nhập, quét QR phát sinh giao dịch trên 50k,",
+      "Nhập số tài khoản là số tài khoản thanh toán, gồm 11 số bắt đầu từ 1000... đã được gợi ý sẵn,",
+      "Lưu ý: KHÔNG SỬ DỤNG 1 THIẾT BỊ MỞ NHIỀU TÀI KHOẢN, không chuyển khoản trùng tên với tài khoản mới mở, không mở trùng khách đã có thông tin đăng kí Gmail trước đó."
+    ],
+    "slots": [
+      {
+        "name": "Ảnh nhập mã đầu tiên",
+        "checkName": false,
+        "checkCode": true
+      },
+      {
+        "name": "Ảnh tạo tài khoản thành công thấy mã giới thiệu",
+        "checkName": false,
+        "checkCode": true
+      },
+      {
+        "name": "Ảnh giao dịch chuyển khoản",
+        "checkName": false,
+        "checkCode": false
+      },
+      {
+        "name": "Ảnh phiếu ghi thông tin cho KH",
+        "checkName": false,
+        "checkCode": false
+      },
+      {
+        "name": "Ảnh chứa tên khách và số tài khoản",
+        "checkName": true,
+        "checkCode": false
+      }
+    ]
+  },
+  {
+    "code": "VIB",
+    "guide": [
+      "Mở ứng dụng MyVIB → chọn Mở tài khoản miễn phí → nhập số điện thoại.",
+      "Thực hiện xác thực CCCD gắn chip và khuôn mặt theo hướng dẫn.",
+      "Kiểm tra thông tin cá nhân → tạo tên đăng nhập và mật khẩu.",
+      "Nhập mã giới thiệu",
+      "Xác nhận điều khoản và thực hiện OTP để hoàn tất mở tài khoản.",
+      "Vào mục Tài khoản để xem thông tin và chọn QR để tạo mã QR nhận tiền."
+    ],
+    "slots": [
+      {
+        "name": "Mở Tài Khoản Thành Công",
+        "checkName": false,
+        "checkCode": false
+      },
+      {
+        "name": "Nhập mã GT",
+        "checkName": false,
+        "checkCode": true
+      },
+      {
+        "name": "Ảnh QR tài khoản",
+        "checkName": false,
+        "checkCode": false
+      },
+      {
+        "name": "Ảnh mở thẻ thành công",
+        "checkName": false,
+        "checkCode": false
+      },
+      {
+        "name": "Ảnh giao dịch thành công",
+        "checkName": false,
+        "checkCode": false
+      }
+    ]
+  },
+  {
+    "code": "VPA",
+    "guide": [
+      "Bấm Đăng ký app VPB (không quét QR)",
+      "Định danh, nhập mã Dao ghim (nếu có). Nhập MGT: MINHAP (bắt buộc)",
+      "Đăng nhập lần đầu, quét QR ck vào tài khoản 20K",
+      "Thực hiện 2 giao dịch 1. Giao dịch nạp chứng khoán 10k về tài khoản chứng khoán. 2. Giao dịch chuyển ra 10K",
+      "Cty sẽ tặng khách 20k vào ngày hôm sau vấn khách thực hiện giao dịch bất kỳ (bắt buộc)"
+    ],
+    "slots": [
+      {
+        "name": "Lúc nhập mã Dao và MGT",
+        "checkName": false,
+        "checkCode": true
+      },
+      {
+        "name": "Thông tin tk đky thành công",
+        "checkName": true,
+        "checkCode": false
+      },
+      {
+        "name": "Ảnh phiếu thông tin",
+        "checkName": false,
+        "checkCode": false
+      },
+      {
+        "name": "Ảnh nạp chứng khoán",
+        "checkName": false,
+        "checkCode": false
+      },
+      {
+        "name": "Ảnh giao dịch ck ra 10K",
+        "checkName": false,
+        "checkCode": false
+      },
+      {
+        "name": "Ảnh cài đặt app đăng nhập trên điện thoại",
+        "checkName": false,
+        "checkCode": false
+      }
+    ]
+  },
+  {
+    "code": "VPB",
+    "guide": [
+      "Quét QR để mở tk VPB Neo (bắt buộc)",
+      "Định danh, nhập mã Dao đang ghim.(MGT giữ nguyên không xoá)",
+      "Đăng nhập lần đầu, quét QR ck vào tài khoản 20K",
+      "Thực hiện 3 giao dịch 1. Giao dịch nạp chứng khoán 10k về tài khoản chứng khoán trưởng phòng. 2. Giao dịch chuyển ra 10K 3. App hoàn 10K các bạn tặng cho khách. =>> Tư vấn khách thực hiện thêm 1 giao dịch trong 01 tuần sau khi mở TK, sẽ được hoàn thêm 20k vào tài khoản."
+    ],
+    "slots": [
+      {
+        "name": "Lúc nhập mã Dao và MGT",
+        "checkName": false,
+        "checkCode": true
+      },
+      {
+        "name": "Thông tin tk đky thành công",
+        "checkName": true,
+        "checkCode": false
+      },
+      {
+        "name": "Ảnh phiếu thông tin khách hàng",
+        "checkName": false,
+        "checkCode": false
+      },
+      {
+        "name": "Ảnh nạp chứng khoán",
+        "checkName": false,
+        "checkCode": false
+      },
+      {
+        "name": "Ảnh cài đặt app đăng nhập trên điện thoại khách",
+        "checkName": false,
+        "checkCode": false
+      },
+      {
+        "name": "Ảnh 6",
+        "checkName": false,
+        "checkCode": false
+      }
+    ]
+  }
+]
