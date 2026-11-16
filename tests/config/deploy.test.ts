@@ -46,7 +46,7 @@ describe("Nginx", () => {
     const size = Number(read("deploy/nginx/app.conf").match(/client_max_body_size (\d+)m;/)?.[1]);
     expect(size).toBeGreaterThanOrEqual(20);
     const site = read("deploy/nginx/site.conf.example");
-    for (const host of ["admin.minhgroup-i.com.vn", "bank.minhgroup-i.com.vn"]) expect(site).toContain(`server_name ${host};`);
+    for (const host of ["admin.mgst.com.vn", "bank.mgst.com.vn"]) expect(site).toContain(`server_name ${host};`);
     expect(site.match(/include \/opt\/mgi-bank\/deploy\/nginx\/app\.conf;/g)?.length).toBe(2);
   });
 });

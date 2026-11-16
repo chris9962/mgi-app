@@ -52,22 +52,25 @@ Làm đúng thứ tự. Mỗi bước có lệnh đầy đủ ở mục được
 
 ## 3. DNS
 
-Tên miền `minhgroup-i.com.vn` do chủ dự án quản lý. Thêm hai bản ghi A trỏ về Floating IP của máy chủ:
+mgi-bank dùng tên con của `mgst.com.vn` và chạy chung máy chủ với mgst-app (`79.108.219.111`). Chủ dự án chốt ngày 2026-11-16. DNS do PA Việt Nam quản lý. Bản ghi đã thêm ngày 2026-11-16:
 
 | Host | Loại | Giá trị |
 |---|---|---|
-| `admin` | A | `<IP máy chủ>` |
-| `bank` | A | `<IP máy chủ>` |
+| `admin` | A | `79.108.219.111` |
+| `bank` | A | `79.108.219.111` |
+| `admin` | CAA | `0 issue "letsencrypt.org"` |
+| `bank` | CAA | `0 issue "letsencrypt.org"` |
 
-Kiểm sau khi thêm:
+Kiểm:
 
 ```bash
-dig +short admin.minhgroup-i.com.vn
-dig +short bank.minhgroup-i.com.vn
-dig +short CAA minhgroup-i.com.vn
+dig +short admin.mgst.com.vn
+dig +short bank.mgst.com.vn
+dig +short CAA admin.mgst.com.vn
+dig +short CAA bank.mgst.com.vn
 ```
 
-Hai dòng đầu phải ra IP máy chủ. Dòng thứ ba có giá trị mà không có `letsencrypt.org` thì certbot dừng với lỗi `CAA record ... prevents issuance`. Khi đó chủ dự án thêm bản ghi CAA `0 issue "letsencrypt.org"` cho từng tên `admin` và `bank`. CAA đặt ở tên con thay CAA của tên cha, site chính giữ nguyên nhà cấp cũ. mgst-app đã gặp đúng lỗi này với `app.mgst.com.vn`.
+Bản ghi CAA bắt buộc phải có. Tên cha `mgst.com.vn` mang CAA `0 issue "sectigo.com"`. Thiếu CAA riêng thì certbot dừng với lỗi `CAA record ... prevents issuance`. Giá trị phải đúng `letsencrypt.org`, ghi `letsencrypt` không có `.org` cũng bị từ chối. Không đụng bản ghi của `mgst.com.vn` và `app`.
 
 ## 3b. Bucket S3
 
@@ -118,10 +121,10 @@ curl -fsSL https://bun.sh/install | bash && ln -sf /root/.bun/bin/bun /usr/local
 
 Unit systemd gọi `/root/.bun/bin/bun`. Cài Bun ở chỗ khác thì sửa dòng `ExecStart` của các file trong `deploy/systemd/`.
 
-Clone repo nhánh `main`. Máy chủ cần deploy key đọc được repo `chris9962/mgi-bank`:
+Clone repo nhánh `main`. Repo GitHub tên `chris9962/mgi-app`, khác tên thư mục `mgi-bank`. Repo để public theo quyết định của chủ dự án ngày 2026-11-16, nên máy chủ clone bằng HTTPS, không cần deploy key. Repo chuyển sang private thì máy chủ phải có deploy key và đổi remote sang SSH.
 
 ```bash
-git clone -b main git@github.com:chris9962/mgi-bank.git /opt/mgi-bank
+git clone -b main https://github.com/chris9962/mgi-app.git /opt/mgi-bank
 cd /opt/mgi-bank
 bun install --frozen-lockfile
 ```
@@ -138,9 +141,9 @@ Viết `/opt/mgi-bank/.env.local`. Không đặt giá trị trong dấu nháy: `
 ```bash
 cat > /opt/mgi-bank/.env.local <<'EOF'
 DATABASE_URL=postgres://mgibank:<mật khẩu DB>@127.0.0.1:5436/mgibank
-ADMIN_HOST=admin.minhgroup-i.com.vn
-STUDENT_HOST=bank.minhgroup-i.com.vn
-STUDENT_ORIGIN=https://bank.minhgroup-i.com.vn
+ADMIN_HOST=admin.mgst.com.vn
+STUDENT_HOST=bank.mgst.com.vn
+STUDENT_ORIGIN=https://bank.mgst.com.vn
 S3_ENDPOINT=https://s3-han02.fptcloud.com
 S3_REGION=han02
 S3_BUCKET=mgi-bank-images
@@ -201,10 +204,10 @@ ln -s /opt/mgi-bank/deploy/nginx/limits.conf /etc/nginx/conf.d/mgi-bank-limits.c
 cp /opt/mgi-bank/deploy/nginx/site.conf.example /etc/nginx/sites-available/mgi-bank.conf
 ln -s /etc/nginx/sites-available/mgi-bank.conf /etc/nginx/sites-enabled/mgi-bank.conf
 nginx -t && systemctl reload nginx
-certbot --nginx -d admin.minhgroup-i.com.vn -d bank.minhgroup-i.com.vn \
+certbot --nginx -d admin.mgst.com.vn -d bank.mgst.com.vn \
   --non-interactive --agree-tos -m <email nhận thông báo> --redirect
 nginx -t && systemctl reload nginx
-curl -s -o /dev/null -w "%{http_code}\n" https://admin.minhgroup-i.com.vn/login
+curl -s -o /dev/null -w "%{http_code}\n" https://admin.mgst.com.vn/login
 ```
 
 Lệnh cuối in `502` khi app chưa chạy, in `200` sau mục 7.
@@ -218,7 +221,7 @@ Cấu hình làm các việc sau:
 - Giới hạn request theo IP với ngưỡng cao, vì cả trường dùng chung một IP Wi-Fi: 30 request mỗi giây, dồn được 600. File tĩnh `/_next/static/` không tính. Vượt ngưỡng thì trả 429.
 - Đường gửi ảnh `/api/customers/me/photos` có vùng riêng: 10 request mỗi giây, dồn được 300. Mỗi ảnh là một request. Cách tính: 300 học sinh chung một IP, mỗi em 3 tới 6 ảnh trong 10 phút là tới 1.800 request; một lớp 40 em gửi cùng lúc là tới 240.
 - Đường tạo hồ sơ `POST /api/customers` (B1) có thêm vùng riêng: 2 request mỗi giây, dồn được 100. Cách tính: 300 em tạo hồ sơ trong 10 phút, một lớp 40 em cùng lúc. Vùng này chặn một máy đổ hàng nghìn hồ sơ rác.
-- HSTS: qua https, mọi phản hồi mang `Strict-Transport-Security: max-age=31536000` (giá trị đặt ở `deploy/nginx/limits.conf`, header ở `deploy/nginx/app.conf`). Trình duyệt đã vào https một lần thì trong một năm không gọi http nữa, Wi-Fi trường không hạ được kết nối xuống http. Không bật `includeSubDomains` vì tên miền con khác của `minhgroup-i.com.vn` có thể chưa có https. Không dùng cờ `--hsts` của certbot để cấu hình nằm trong repo.
+- HSTS: qua https, mọi phản hồi mang `Strict-Transport-Security: max-age=31536000` (giá trị đặt ở `deploy/nginx/limits.conf`, header ở `deploy/nginx/app.conf`). Trình duyệt đã vào https một lần thì trong một năm không gọi http nữa, Wi-Fi trường không hạ được kết nối xuống http. Không bật `includeSubDomains` vì tên miền con khác của `mgst.com.vn` có thể chưa có https. Không dùng cờ `--hsts` của certbot để cấu hình nằm trong repo.
 - Trần body 22 MB ở cả hai tên miền (`client_max_body_size 22m` trong `deploy/nginx/app.conf`): ảnh tối đa 20 MB cộng phần bao của multipart. Trong app có thêm hai trần. `next.config.ts` đặt `experimental.proxyClientMaxBodySize` là 22 MB, vì `src/proxy.ts` chạy cho mọi đường dẫn và Next chỉ giữ 10 MB body khi có proxy, ảnh lớn hơn bị cắt. `putImage` từ chối file quá 20 MB.
 - Bảo trì: file `deploy/maintenance/on` có thì trang trả 503 với trang bảo trì, API trả 503 với JSON. `deploy/maintenance-on.sh` và `deploy/maintenance-off.sh` bật tắt, không cần reload Nginx.
 
@@ -416,18 +419,18 @@ journalctl -u mgi-bank-s3-orphans.service -n 50 --no-pager
 
 Bản test chạy chung máy chủ production, bật khi cần và tắt khi xong. Bản test có clone, container, database, bucket và tên miền riêng, lấy nhánh `dev`. Bản test không chạy worker: lượt kiểm ảnh và tin SMS nằm chờ.
 
-Chủ dự án chọn hai tên miền, ví dụ `admin-test.minhgroup-i.com.vn` và `bank-test.minhgroup-i.com.vn`, rồi trỏ DNS như mục 3. Tạo một bucket ảnh riêng cho bản test, ví dụ `mgi-bank-test-images`. `deploy/test-env.sh` dừng khi bucket trùng bucket production.
+Chủ dự án chọn hai tên miền, ví dụ `admin-test.mgst.com.vn` và `bank-test.mgst.com.vn`, rồi trỏ DNS như mục 3. Tạo một bucket ảnh riêng cho bản test, ví dụ `mgi-bank-test-images`. `deploy/test-env.sh` dừng khi bucket trùng bucket production.
 
 Dựng lần đầu:
 
 ```bash
-git clone -b dev git@github.com:chris9962/mgi-bank.git /opt/mgi-bank-test
+git clone -b dev https://github.com/chris9962/mgi-app.git /opt/mgi-bank-test
 cd /opt/mgi-bank-test
 cat > .env.local <<'EOF'
 DATABASE_URL=postgres://mgibank_test:<mật khẩu DB test>@127.0.0.1:5437/mgibank_test
-ADMIN_HOST=admin-test.minhgroup-i.com.vn
-STUDENT_HOST=bank-test.minhgroup-i.com.vn
-STUDENT_ORIGIN=https://bank-test.minhgroup-i.com.vn
+ADMIN_HOST=admin-test.mgst.com.vn
+STUDENT_HOST=bank-test.mgst.com.vn
+STUDENT_ORIGIN=https://bank-test.mgst.com.vn
 S3_ENDPOINT=https://s3-han02.fptcloud.com
 S3_REGION=han02
 S3_BUCKET=mgi-bank-test-images
@@ -442,7 +445,7 @@ bun run db:create-admin -- --username <tên đăng nhập> --full-name "<Họ t�
 cp /opt/mgi-bank-test/deploy/nginx/test-site.conf.example /etc/nginx/sites-available/mgi-bank-test.conf
 ln -s /etc/nginx/sites-available/mgi-bank-test.conf /etc/nginx/sites-enabled/mgi-bank-test.conf
 nginx -t && systemctl reload nginx
-certbot --nginx -d admin-test.minhgroup-i.com.vn -d bank-test.minhgroup-i.com.vn --non-interactive --agree-tos -m <email> --redirect
+certbot --nginx -d admin-test.mgst.com.vn -d bank-test.mgst.com.vn --non-interactive --agree-tos -m <email> --redirect
 ```
 
 Chọn tên miền khác thì sửa hai dòng `server_name` trong file site và hai biến `ADMIN_HOST`, `STUDENT_HOST`.
@@ -467,7 +470,7 @@ Script dừng khi chạy ngoài `/opt/mgi-bank-test` hoặc khi `DATABASE_URL` k
 | `DATABASE_URL` | có | Postgres ở `127.0.0.1:5436`. Container nhận bản đổi sang `mgi-bank-db:5432` |
 | `ADMIN_HOST` | có | tên miền trang quản lý |
 | `STUDENT_HOST` | có | tên miền web học sinh |
-| `STUDENT_ORIGIN` | có | gốc link QR in cho trường, `https://bank.minhgroup-i.com.vn` |
+| `STUDENT_ORIGIN` | có | gốc link QR in cho trường, `https://bank.mgst.com.vn` |
 | `S3_ENDPOINT`, `S3_REGION`, `S3_BUCKET`, `S3_ACCESS_KEY_ID`, `S3_SECRET_ACCESS_KEY` | có | bucket ảnh production |
 | `VOUCHER_SECRET` | có | khoá HMAC của 4 ký tự kiểm trong mã voucher, không đổi sau mã đầu tiên |
 | `S3_QUOTA_GB` | không | hạn mức bucket ảnh, ô S3 của Trang 18 hiện phần trăm |

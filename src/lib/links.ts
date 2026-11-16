@@ -1,1 +1,1 @@
-export const studentLink = (schoolId: string) => `${(process.env.STUDENT_ORIGIN ?? "https://bank.minhgroup-i.com.vn").replace(/\/+$/, "")}/t/${schoolId}`;
+export const studentLink = (schoolId: string) => `${(process.env.STUDENT_ORIGIN ?? "https://bank.mgst.com.vn").replace(/\/+$/, "")}/t/${schoolId}`;

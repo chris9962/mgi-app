@@ -3,7 +3,7 @@ import { NAME, SCHOOL } from "../scripts/e2e-data-student";
 import { PHONE, STUDENT, cameraOptions, qrCamera, withEdgeData } from "./edge-student-support";
 
 // QR in sẵn mang tên miền thật: máy thử vẫn phải đọc ra id trường.
-test.use({ ...PHONE, ...cameraOptions(qrCamera(`https://bank.minhgroup-i.com.vn/t/${SCHOOL.photo}`)) });
+test.use({ ...PHONE, ...cameraOptions(qrCamera(`https://bank.mgst.com.vn/t/${SCHOOL.photo}`)) });
 withEdgeData();
 
 test("A15 camera thấy QR link trường mang tên miền thật: vào B1 của trường đó", async ({ page }) => {

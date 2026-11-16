@@ -29,7 +29,7 @@ describe("xử lý id trường trong link", () => {
 
 describe("đọc id trường từ chữ trong QR", () => {
   test("link của trường ra id, chữ viết hoa đổi thường", () => {
-    expect(schoolIdInLink(`https://bank.minhgroup-i.com.vn/t/${A}`)).toBe(A);
+    expect(schoolIdInLink(`https://bank.mgst.com.vn/t/${A}`)).toBe(A);
     expect(schoolIdInLink(`http://bank.localhost:3100/t/${A.toUpperCase()}?x=1`)).toBe(A);
   });
 
