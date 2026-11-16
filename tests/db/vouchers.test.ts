@@ -37,9 +37,9 @@ describe("Trang Mã voucher", () => {
     expect((await list(other, { q: "zzvch" })).rows).toEqual([]);
   });
 
-  test("dòng có họ tên, lớp, trường, phụ huynh, ngày cấp", async () => {
+  test("dòng có họ tên, lớp, trường, ngày cấp", async () => {
     const [row] = (await list(holder, { q: "zzvch-tma" })).rows;
-    expect([row.fullName, row.className, row.schoolName, row.parentName]).toEqual(["Vchds Trần Minh Anh", "11A3", p.schoolName, "Phụ Huynh Test"]);
+    expect([row.fullName, row.className, row.schoolName]).toEqual(["Vchds Trần Minh Anh", "11A3", p.schoolName]);
     expect(row.issuedAt.toISOString()).toBe("2026-11-04T07:05:00.000Z");
   });
 

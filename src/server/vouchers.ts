@@ -13,7 +13,7 @@ import type { SessionUser } from "@/lib/types";
 
 export const PAGE_SIZE = 15;
 
-export type VoucherRow = { id: string; code: string; customerId: string; fullName: string; className: string; schoolName: string; parentName: string; issuedAt: Date; smsStatus: SmsStatus | null };
+export type VoucherRow = { id: string; code: string; customerId: string; fullName: string; className: string; schoolName: string; issuedAt: Date; smsStatus: SmsStatus | null };
 
 // Câu con ghi rõ "vouchers"."customer_id": Drizzle in cột trần, "customer_id" trong câu con sẽ trỏ nhầm sang bảng con.
 const VOUCHER_CUSTOMER = sql.raw(`"vouchers"."customer_id"`);
@@ -47,7 +47,6 @@ export const voucherColumns = {
   fullName: customers.fullName,
   className: customers.className,
   schoolName: schools.name,
-  parentName: customers.parentName,
   issuedAt: vouchers.issuedAt,
   smsStatus: smsMessages.status,
 };

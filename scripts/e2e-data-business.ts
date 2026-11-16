@@ -38,22 +38,17 @@ export const bWaitName = (i: number) => `Biên Chờ Kiểm ${String.fromCharCod
 export const bWaitId = (i: number) => id(400 + i);
 
 export const B_LONG_NAME = exactly("Biên Nguyễn Hoàng Bảo Ngọc Phương Thảo Minh Châu Khánh Linh Thùy Dương ", 100);
-export const B_LONG_PARENT = exactly("Phụ Huynh Trần Văn Hoàng Minh Quang Đức Trọng Nghĩa ", 100);
 export const B_LONG_CLASS = "12CHUYENTOANTINHOCAB";
 export const B_UNBROKEN_NAME = exactly("BiênTênLiềnKhôngDấuCách", 100);
-export const B_UNBROKEN_PARENT = exactly("PhụHuynhTênLiềnKhôngCách", 100);
 export const B_UNBROKEN_NOTE = exactly("GhiChúLiềnKhôngCóDấuCách", 1000);
 // Worker SMS lưu tới 500 ký tự lỗi của nhà mạng.
 export const B_LONG_SMS_ERROR = exactly("LỗiNhàMạngTrảVềKhôngCóDấuCách", 500);
 export const B_XSS = "Biên <script>alert(1)</script>";
-export const B_IMG = "<img src=x onerror=alert(1)> Phụ Huynh";
 export const B_QUOTES = `Biên "Kép" 'Đơn' 50% a_b \\ x`;
 export const B_EMOJI = "Biên 😀 Emoji Ðức";
 export const B_FORMULA = "=1+2 Biên Công Thức";
 export const B_FORMULA_CLASS = "=1+1";
-export const B_FORMULA_PARENT = "+Cha Biên Cộng";
 export const B_MINUS = "-Biên Trừ";
-export const B_MINUS_PARENT = "@Mẹ Biên Còng";
 export const B_LATE = "Biên Giờ Khuya";
 export const B_EARLY = "Biên Giờ Sớm";
 export const B_LATE_VOUCHER = "ZZBIEN-BGK-10A1-AAAA";

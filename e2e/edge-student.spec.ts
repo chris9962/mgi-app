@@ -264,7 +264,6 @@ test.describe("B. B1 khai thông tin", () => {
       ["Họ và tên", "Nhập họ và tên"],
       ["Lớp", "Nhập lớp"],
       ["SĐT", PHONE_ERROR],
-      ["Họ và tên phụ huynh", "Nhập họ và tên phụ huynh"],
       ["SĐT phụ huynh", PHONE_ERROR],
     ];
     for (const [label, error] of fields) {

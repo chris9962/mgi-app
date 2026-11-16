@@ -18,7 +18,6 @@ test("Học sinh quét link trường, khai thông tin, chọn 2 ngân hàng, n�
   await page.getByLabel("Họ và tên", { exact: true }).fill("Trần Minh Anh");
   await page.getByLabel("Lớp").fill("11 a3");
   await page.getByLabel("SĐT", { exact: true }).fill("0912 345 678");
-  await page.getByLabel("Họ và tên phụ huynh").fill("Trần Văn Hùng");
   await page.getByLabel("SĐT phụ huynh").fill("0912345678");
   await page.getByLabel("SĐT phụ huynh").blur();
   await expect(page.getByText("SĐT phụ huynh phải khác SĐT học sinh.")).toBeVisible();
@@ -79,7 +78,6 @@ test("đang tải ảnh thì không gửi kiểm tra được; tải ảnh lỗi
   await page.getByLabel("Họ và tên", { exact: true }).fill("Lê Hoàng Nam");
   await page.getByLabel("Lớp").fill("10b1");
   await page.getByLabel("SĐT", { exact: true }).fill("0912000111");
-  await page.getByLabel("Họ và tên phụ huynh").fill("Lê Văn Tư");
   await page.getByLabel("SĐT phụ huynh").fill("0987000111");
   await page.getByRole("checkbox", { name: "Đồng ý" }).check();
   await page.getByRole("button", { name: "Tiếp tục" }).click();
@@ -124,7 +122,7 @@ test("ảnh 15 MB gửi qua API tới đủ route: proxy không cắt body ở 1
   const origin = "http://bank.localhost:3100";
   const created = await request.post("/api/customers", {
     headers: { Origin: origin },
-    data: { schoolId: E2E_STUDENT_SCHOOL_ID, fullName: "Đặng Ảnh Lớn", className: "12c1", phone: "0912000222", parentName: "Đặng Văn Ba", parentPhone: "0987000222", consent: true, existingBankIds: [] },
+    data: { schoolId: E2E_STUDENT_SCHOOL_ID, fullName: "Đặng Ảnh Lớn", className: "12c1", phone: "0912000222", parentPhone: "0987000222", consent: true, existingBankIds: [] },
   });
   expect(created.status()).toBe(201);
   const auth = { Origin: origin, Authorization: `Bearer ${(await created.json()).token}` };

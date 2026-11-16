@@ -11,7 +11,7 @@ export const CONSENT_SECTIONS: { title: string; lines: string[] }[] = [
     title: "Dữ liệu thu thập",
     lines: [
       "Họ tên, lớp, trường, SĐT của học sinh.",
-      "Họ tên, SĐT của phụ huynh.",
+      "SĐT của phụ huynh.",
       "Ngân hàng học sinh đã có tài khoản.",
       "Ảnh chụp màn hình app ngân hàng. Ảnh có thể chứa thông tin tài khoản ngân hàng, là dữ liệu cá nhân nhạy cảm.",
     ],
@@ -33,7 +33,7 @@ export const CONSENT_SECTIONS: { title: string; lines: string[] }[] = [
   },
   {
     title: "Cam kết của người khai",
-    lines: ["Người khai đủ 18 tuổi.", "Thông tin khai đầy đủ, chính xác.", "Phụ huynh đã đồng ý cho khai họ tên và SĐT của phụ huynh."],
+    lines: ["Người khai đủ 16 tuổi.", "Thông tin khai đầy đủ, chính xác.", "Phụ huynh đã đồng ý cho khai SĐT của phụ huynh."],
   },
   { title: "Liên hệ", lines: [`Gửi yêu cầu qua Zalo của ${BRAND_SHORT} trên trang này.`] },
 ];

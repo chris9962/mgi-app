@@ -124,7 +124,6 @@ export async function createCustomer(values: CustomerFormValues, ip: string | nu
         nameSearch: plain(values.fullName),
         className: values.className,
         phone: values.phone,
-        parentName: values.parentName,
         parentPhone: values.parentPhone,
         tokenHash,
         createdIp: ip && isIP(ip) ? ip : null,
@@ -150,7 +149,7 @@ export async function ownCustomerInfo(customer: Customer): Promise<{ ok: true; i
   const existing = await existingBankIds(db, customer.id);
   return {
     ok: true,
-    info: { fullName: customer.fullName, className: customer.className, phone: customer.phone, parentName: customer.parentName, parentPhone: customer.parentPhone, existingBankIds: [...existing] },
+    info: { fullName: customer.fullName, className: customer.className, phone: customer.phone, parentPhone: customer.parentPhone, existingBankIds: [...existing] },
   };
 }
 
@@ -173,7 +172,7 @@ export async function updateOwnCustomer(customer: Customer, values: CustomerSelf
     const noBank = hasAllBanks(await loadCandidates(tx, current.schoolId, month), new Set(existing));
     await tx
       .update(customers)
-      .set({ fullName: values.fullName, nameSearch: plain(values.fullName), className: values.className, phone: values.phone, parentName: values.parentName, parentPhone: values.parentPhone, status: noBank ? "no_bank" : "new" })
+      .set({ fullName: values.fullName, nameSearch: plain(values.fullName), className: values.className, phone: values.phone, parentPhone: values.parentPhone, status: noBank ? "no_bank" : "new" })
       .where(eq(customers.id, customer.id));
     await tx.delete(customerExistingBanks).where(eq(customerExistingBanks.customerId, customer.id));
     if (existing.length) await tx.insert(customerExistingBanks).values(existing.map((bankId) => ({ customerId: customer.id, bankId })));

@@ -41,7 +41,6 @@ export type CustomerDetail = {
   fullName: string;
   className: string;
   phone: string;
-  parentName: string;
   parentPhone: string;
   status: CustomerStatus;
   schoolName: string;
@@ -65,7 +64,6 @@ export async function getCustomerDetail(actor: SessionUser, id: string): Promise
       nameSearch: customers.nameSearch,
       className: customers.className,
       phone: customers.phone,
-      parentName: customers.parentName,
       parentPhone: customers.parentPhone,
       status: customers.status,
       schoolName: schools.name,
@@ -142,7 +140,6 @@ export async function getCustomerDetail(actor: SessionUser, id: string): Promise
     fullName: c.fullName,
     className: c.className,
     phone: c.phone,
-    parentName: c.parentName,
     parentPhone: c.parentPhone,
     status: c.status,
     schoolName: c.schoolName,
@@ -207,7 +204,7 @@ export async function updateCustomerInfo(actor: SessionUser, id: string, values:
     if (voucher) return fail("Hồ sơ đã có voucher, không sửa được thông tin.", 409);
     await tx
       .update(customers)
-      .set({ fullName: values.fullName, nameSearch: plain(values.fullName), className: values.className, phone: values.phone, parentName: values.parentName, parentPhone: values.parentPhone })
+      .set({ fullName: values.fullName, nameSearch: plain(values.fullName), className: values.className, phone: values.phone, parentPhone: values.parentPhone })
       .where(eq(customers.id, id));
     if (values.fullName !== before.fullName) {
       // Họ tên đổi thì kết quả tìm họ tên trên ảnh cũ không còn đúng; dòng chưa gửi kiểm tra sẽ được xếp lúc gửi.
@@ -223,7 +220,7 @@ export async function updateCustomerInfo(actor: SessionUser, id: string, values:
         sent.filter((r) => named.some((n) => n.bankId === r.bankId)).map((r) => r.id),
       );
     }
-    const pick = ({ fullName, className, phone, parentName, parentPhone }: CustomerEditValues) => ({ fullName, className, phone, parentName, parentPhone });
+    const pick = ({ fullName, className, phone, parentPhone }: CustomerEditValues) => ({ fullName, className, phone, parentPhone });
     await writeAudit(tx, { userId: actor.id, action: "update_customer", targetType: "customers", targetId: id, detail: { before: pick(before), after: pick(values) }, ip });
     return { ok: true as const };
   });

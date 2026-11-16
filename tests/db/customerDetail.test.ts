@@ -15,7 +15,7 @@ let staffNone: SessionUser;
 
 const key = () => `proofs/2026-11-05/${randomUUID()}.webp`;
 const edit = (v: Partial<Record<string, string>> = {}) =>
-  CustomerEditForm.parse({ fullName: "Detail Trần Minh Anh", className: "11a3", phone: "0912345678", parentName: "Trần Văn Hùng", parentPhone: "0987654321", ...v });
+  CustomerEditForm.parse({ fullName: "Detail Trần Minh Anh", className: "11a3", phone: "0912345678", parentPhone: "0987654321", ...v });
 
 async function submitted(fullName = "Detail Trần Minh Anh") {
   const c = await insertCustomer(p, { fullName, phone: "0912345678", status: "pending_review", submittedAt: new Date(), banks: [{ key: "A", status: "pending" }, { key: "B", status: "pending" }] });
@@ -124,6 +124,6 @@ describe("sửa thông tin", () => {
   test("ngoài phạm vi trả 404, SĐT học sinh trùng SĐT phụ huynh bị từ chối ở form", async () => {
     const c = await submitted();
     expect(await updateCustomerInfo(staffNone, c.id, edit(), null)).toMatchObject({ ok: false, status: 404 });
-    expect(CustomerEditForm.safeParse({ fullName: "A", className: "1", phone: "0912345678", parentName: "B", parentPhone: "0912345678" }).success).toBe(false);
+    expect(CustomerEditForm.safeParse({ fullName: "A", className: "1", phone: "0912345678", parentPhone: "0912345678" }).success).toBe(false);
   });
 });

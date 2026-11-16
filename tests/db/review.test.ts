@@ -152,7 +152,7 @@ describe("đánh dấu", () => {
 describe("trùng mã voucher", () => {
   test("mã sinh ra đã có người dùng thì sinh lại theo lượt kế tiếp, vẫn cấp được voucher và SMS", async () => {
     const c = await student();
-    const input = { customerId: c.id, provinceCode: "80", wardCode: "25585", parentName: "Phụ Huynh Test", schoolName: p.schoolName, fullName: "Review Trần Minh Anh", className: "11A3" };
+    const input = { customerId: c.id, provinceCode: "80", wardCode: "25585", schoolName: p.schoolName, fullName: "Review Trần Minh Anh", className: "11A3" };
     const taken = voucherCode(input, process.env.VOUCHER_SECRET!);
     const other = await student();
     await db.insert(vouchers).values({ customerId: other.id, code: taken });

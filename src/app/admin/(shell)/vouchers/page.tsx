@@ -61,7 +61,7 @@ export default async function VouchersPage({ searchParams }: { searchParams: Pro
         <FilterChips chips={chips} />
         <Card title="Mã voucher" icon={<TicketCheck size={17} aria-hidden />} meta={`${total} mã`}>
           <DataTable caption="Mã voucher, học sinh, trường và ngày cấp">
-            <TableHead columns={["Mã voucher", "Họ tên", "Lớp", "Trường", "Phụ huynh", "Ngày cấp", "Tin SMS"]} />
+            <TableHead columns={["Mã voucher", "Họ tên", "Lớp", "Trường", "Ngày cấp", "Tin SMS"]} />
             <tbody>
               {rows.map((v) => (
                 <tr key={v.id}>
@@ -77,7 +77,6 @@ export default async function VouchersPage({ searchParams }: { searchParams: Pro
                   </td>
                   <td>{v.className}</td>
                   <td>{v.schoolName}</td>
-                  <td>{v.parentName}</td>
                   <td className="tabular-nums">{formatDateTime(v.issuedAt)}</td>
                   <td>{v.smsStatus && <StatusTag tone={SMS_TONE[v.smsStatus]}>{SMS_STATUS_LABEL[v.smsStatus]}</StatusTag>}</td>
                 </tr>

@@ -73,7 +73,7 @@ describe("kho mã giới thiệu", () => {
     for (const [i, status] of statuses.entries()) {
       const [c] = await db
         .insert(customers)
-        .values({ schoolId, fullName: "HS", nameSearch: "hs", className: "11A1", phone: `09000000${10 + i}`, parentName: "PH", parentPhone: `09100000${10 + i}`, tokenHash: `zz-code-${r.id}-${i}` })
+        .values({ schoolId, fullName: "HS", nameSearch: "hs", className: "11A1", phone: `09000000${10 + i}`, parentPhone: `09100000${10 + i}`, tokenHash: `zz-code-${r.id}-${i}` })
         .returning({ id: customers.id });
       await db.insert(customerBanks).values({ customerId: c.id, bankId: bankA, slot: 1, referralCodeId: r.id, referralCode: "ND-A3", yearMonth: MONTH, status });
     }

@@ -59,7 +59,7 @@ describe("trường", () => {
 test("cột Hồ sơ và Đạt ≥ 1 đếm đúng hồ sơ của trường", async () => {
   const r = await createSchool(actor, form("Đếm hồ sơ"));
   if (!r.ok) throw new Error(r.message);
-  const base = { schoolId: r.id, fullName: "A", nameSearch: "a", className: "11A1", phone: "0900000001", parentName: "B", parentPhone: "0900000002" };
+  const base = { schoolId: r.id, fullName: "A", nameSearch: "a", className: "11A1", phone: "0900000001", parentPhone: "0900000002" };
   await db.insert(customers).values([
     { ...base, tokenHash: "zz-test-1-" + r.id },
     { ...base, tokenHash: "zz-test-2-" + r.id, firstPassedAt: new Date() },

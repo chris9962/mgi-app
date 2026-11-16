@@ -9,7 +9,7 @@ import { TextField } from "@/components/ui/TextField";
 import { apiSend } from "@/lib/api";
 import { CustomerEditForm } from "@/lib/customerForm";
 
-export type CustomerEditDefaults = { id: string; fullName: string; className: string; phone: string; parentName: string; parentPhone: string };
+export type CustomerEditDefaults = { id: string; fullName: string; className: string; phone: string; parentPhone: string };
 
 export function CustomerEditButton({ customer }: { customer: CustomerEditDefaults }) {
   const router = useRouter();
@@ -27,7 +27,7 @@ export function CustomerEditButton({ customer }: { customer: CustomerEditDefault
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const f = new FormData(event.currentTarget);
-    const raw = Object.fromEntries(["fullName", "className", "phone", "parentName", "parentPhone"].map((k) => [k, String(f.get(k) ?? "")]));
+    const raw = Object.fromEntries(["fullName", "className", "phone", "parentPhone"].map((k) => [k, String(f.get(k) ?? "")]));
     const parsed = CustomerEditForm.safeParse(raw);
     if (!parsed.success) return setErrors(Object.fromEntries(parsed.error.issues.map((i) => [String(i.path[0]), i.message])));
     setErrors({});
@@ -69,10 +69,7 @@ export function CustomerEditButton({ customer }: { customer: CustomerEditDefault
               <TextField name="className" label="Lớp" defaultValue={customer.className} error={errors.className} />
             </div>
             <TextField name="phone" label="SĐT" inputMode="numeric" defaultValue={customer.phone} error={errors.phone} />
-            <div className="grid grid-cols-2 items-start gap-3 narrow:grid-cols-1">
-              <TextField name="parentName" label="Phụ huynh" defaultValue={customer.parentName} error={errors.parentName} />
-              <TextField name="parentPhone" label="SĐT phụ huynh" inputMode="numeric" defaultValue={customer.parentPhone} error={errors.parentPhone} />
-            </div>
+            <TextField name="parentPhone" label="SĐT phụ huynh" inputMode="numeric" defaultValue={customer.parentPhone} error={errors.parentPhone} />
             {formError && (
               <p role="alert" className="text-[12.5px] text-danger">
                 {formError}

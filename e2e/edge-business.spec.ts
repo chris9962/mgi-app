@@ -272,7 +272,7 @@ test("Trang 3 xuất Excel: đúng bộ lọc, không có dòng nào vẫn tải
   expect(empty.rows[2][0]).toBe("STT");
 
   const sheet = await readExport(page, `/api/admin/customers/export?${q("bien")}`);
-  const [name, cls, parent, phone] = ["HỌ TÊN", "LỚP", "PHỤ HUYNH", "SĐT"].map((h) => column(sheet, h));
+  const [name, cls, phone] = ["HỌ TÊN", "LỚP", "SĐT"].map((h) => column(sheet, h));
   const at = (text: string) => sheet.rows.findIndex((r) => r[name] === text);
   const cell = (row: number, col: number) => ({ value: sheet.rows[row][col], type: sheet.types[row][col] });
   const formula = at("=1+2 BIEN CONG THUC");
@@ -280,16 +280,11 @@ test("Trang 3 xuất Excel: đúng bộ lọc, không có dòng nào vẫn tải
   expect(formula).toBeGreaterThan(2);
   expect(minus).toBeGreaterThan(2);
   const text = ExcelJS.ValueType.String;
-  expect([cell(formula, name), cell(formula, cls), cell(formula, parent)]).toEqual([
+  expect([cell(formula, name), cell(formula, cls)]).toEqual([
     { value: "=1+2 BIEN CONG THUC", type: text },
     { value: "=1+1", type: text },
-    { value: "+CHA BIEN CONG", type: text },
   ]);
-  expect([cell(minus, name), cell(minus, parent)]).toEqual([
-    { value: "-BIEN TRU", type: text },
-    { value: "@ME BIEN CONG", type: text },
-  ]);
-  expect(cell(at("BIEN <SCRIPT>ALERT(1)</SCRIPT>"), parent).value).toBe("<IMG SRC=X ONERROR=ALERT(1)> PHU HUYNH");
+  expect(cell(minus, name)).toEqual({ value: "-BIEN TRU", type: text });
   const long = at(B.B_LONG_NAME.normalize("NFD").replace(/[̀-ͯ]/g, "").replace(/đ/g, "d").replace(/Đ/g, "D").toUpperCase());
   expect(long).toBeGreaterThan(2);
   expect(sheet.rows[long][name].length).toBe(100);

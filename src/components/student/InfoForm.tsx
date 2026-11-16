@@ -12,12 +12,12 @@ import { saveProfile } from "@/lib/studentDevice";
 import type { StudentSchool } from "@/lib/studentState";
 import { BankLogo, Bottom } from "./parts";
 
-const EMPTY = { fullName: "", className: "", phone: "", parentName: "", parentPhone: "" };
+const EMPTY = { fullName: "", className: "", phone: "", parentPhone: "" };
 type Key = keyof typeof EMPTY;
 
 // initial: học sinh quay lại sửa hồ sơ đã có; không có thì tạo hồ sơ mới.
 export function InfoForm({ school, initial, onSaved }: { school: StudentSchool; initial?: CustomerSelfEditInput; onSaved: () => void }) {
-  const [values, setValues] = useState(() => (initial ? { fullName: initial.fullName, className: initial.className, phone: initial.phone, parentName: initial.parentName, parentPhone: initial.parentPhone } : EMPTY));
+  const [values, setValues] = useState(() => (initial ? { fullName: initial.fullName, className: initial.className, phone: initial.phone, parentPhone: initial.parentPhone } : EMPTY));
   const [existing, setExisting] = useState<string[]>(initial?.existingBankIds ?? []);
   const [touched, setTouched] = useState<Set<Key>>(new Set());
   const [serverError, setServerError] = useState<{ field?: string; message: string } | null>(null);
@@ -77,8 +77,6 @@ export function InfoForm({ school, initial, onSaved }: { school: StudentSchool; 
           <TextField label="SĐT" type="tel" inputMode="numeric" autoComplete="tel" {...field("phone")} />
         </div>
       </div>
-      <h2 className="mt-1 text-[15px] font-semibold">Phụ huynh</h2>
-      <TextField label="Họ và tên phụ huynh" autoComplete="off" {...field("parentName")} />
       <TextField label="SĐT phụ huynh" type="tel" inputMode="numeric" autoComplete="off" {...field("parentPhone")} />
       {school.banks.length > 0 && (
         <fieldset className="flex flex-col gap-1.5">
@@ -110,7 +108,22 @@ export function InfoForm({ school, initial, onSaved }: { school: StudentSchool; 
           </button>
         </div>
       )}
-      <Dialog open={termsOpen} title={CONSENT_TITLE} onClose={() => setTermsOpen(false)}>
+      <Dialog
+        open={termsOpen}
+        title={CONSENT_TITLE}
+        onClose={() => setTermsOpen(false)}
+        footer={
+          <Button
+            type="button"
+            onClick={() => {
+              setConsent(true);
+              setTermsOpen(false);
+            }}
+          >
+            Đồng ý
+          </Button>
+        }
+      >
         {CONSENT_SECTIONS.map((section) => (
           <section key={section.title}>
             <h3 className="text-[15px] font-semibold">{section.title}</h3>

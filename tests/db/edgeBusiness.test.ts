@@ -155,8 +155,8 @@ describe("xuất Excel quá 20.000 dòng", () => {
     const ofSchool = sql`select id from customers where school_id = ${big.schoolId}`;
     // Dựng thẳng bằng generate_series: 20.001 lần insertCustomer mất vài phút.
     await db.execute(sql`
-      insert into customers (school_id, full_name, name_search, class_name, phone, parent_name, parent_phone, status, token_hash, submitted_at)
-      select ${big.schoolId}, 'Bigx ' || g, 'bigx ' || g, '10A1', '09' || lpad(g::text, 8, '0'), 'Phụ Huynh', '08' || lpad(g::text, 8, '0'), 'reviewed', md5('bigx-' || g || '-' || random()), now()
+      insert into customers (school_id, full_name, name_search, class_name, phone, parent_phone, status, token_hash, submitted_at)
+      select ${big.schoolId}, 'Bigx ' || g, 'bigx ' || g, '10A1', '09' || lpad(g::text, 8, '0'), '08' || lpad(g::text, 8, '0'), 'reviewed', md5('bigx-' || g || '-' || random()), now()
       from generate_series(1, ${EXPORT_LIMIT + 1}) g`);
     await db.execute(sql`
       insert into customer_banks (customer_id, bank_id, slot, referral_code_id, referral_code, year_month, status, submitted_at)

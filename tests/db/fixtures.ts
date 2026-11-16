@@ -54,7 +54,6 @@ export async function insertCustomer(
       nameSearch: plain(values.fullName),
       className: values.className ?? "11A3",
       phone: values.phone ?? nextPhone("090"),
-      parentName: "Phụ Huynh Test",
       parentPhone: values.parentPhone ?? nextPhone("098"),
       status: values.status,
       tokenHash: hashToken(randomUUID()),

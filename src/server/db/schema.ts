@@ -233,7 +233,6 @@ export const customers = pgTable(
     nameSearch: text("name_search").notNull(),
     className: text("class_name").notNull(),
     phone: text("phone").notNull(),
-    parentName: text("parent_name").notNull(),
     parentPhone: text("parent_phone").notNull(),
     status: customerStatus("status").notNull().default("new"),
     tokenHash: text("token_hash").notNull().unique(),

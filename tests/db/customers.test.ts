@@ -42,7 +42,6 @@ const form = (extra: Record<string, unknown> = {}) => ({
   fullName: "  Trần   Minh Anh ",
   className: "11 a3",
   phone: "0912 345 678",
-  parentName: "Trần Văn Hùng",
   parentPhone: "0987654321",
   consent: true, existingBankIds: [],
   ...extra,
@@ -68,7 +67,7 @@ beforeAll(async () => {
   const full = await addCode("FULL", "B1-FULL", [schoolId], 1);
   const [holder] = await db
     .insert(customers)
-    .values({ schoolId, fullName: "HS", nameSearch: "hs", className: "10A1", phone: "0900000101", parentName: "PH", parentPhone: "0910000101", tokenHash: "zz-b1-full" })
+    .values({ schoolId, fullName: "HS", nameSearch: "hs", className: "10A1", phone: "0900000101", parentPhone: "0910000101", tokenHash: "zz-b1-full" })
     .returning({ id: customers.id });
   await db.insert(customerBanks).values({ customerId: holder.id, bankId: bank.FULL, slot: 1, referralCodeId: full, referralCode: "B1-FULL", yearMonth: MONTH });
 });
@@ -91,7 +90,6 @@ describe("B1 khai thông tin", () => {
     const fails = (extra: Record<string, unknown>) => CustomerForm.safeParse(form(extra)).success === false;
     expect(fails({ fullName: " " })).toBe(true);
     expect(fails({ className: "  " })).toBe(true);
-    expect(fails({ parentName: "" })).toBe(true);
     expect(fails({ phone: "091234567" })).toBe(true);
     expect(fails({ phone: "1912345678" })).toBe(true);
     expect(fails({ parentPhone: "09876543210" })).toBe(true);

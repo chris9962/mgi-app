@@ -78,7 +78,6 @@ test("Trang 4: tên có <script>, phụ huynh có <img onerror>, ghi chú có th
   });
   await open(page, detail(B.B_IDS.xss));
   await expect(page.getByRole("heading", { level: 1 })).toHaveText(B.B_XSS);
-  await expect(page.getByRole("region", { name: "Thông tin" }).getByText(B.B_IMG, { exact: true })).toBeVisible();
   const note = bank1(page).getByRole("region", { name: "Ghi chú nội bộ" }).locator("p");
   expect(await note.evaluate((el) => (el as HTMLElement).innerText)).toBe("<b>đậm</b>\nDòng hai 😀");
   expect(await note.locator("b").count()).toBe(0);
@@ -93,7 +92,7 @@ test("Trang 4 URL sai: id không phải uuid, uuid không có trả 404 ở tran
   const headers = { Origin: ADMIN };
   for (const id of ["abc", missing]) {
     expect((await page.request.get(`/api/admin/customers/${id}`)).status()).toBe(404);
-    expect((await page.request.patch(`/api/admin/customers/${id}`, { headers, data: { fullName: "A", className: "1", phone: "0911111111", parentName: "B", parentPhone: "0922222222" } })).status()).toBe(404);
+    expect((await page.request.patch(`/api/admin/customers/${id}`, { headers, data: { fullName: "A", className: "1", phone: "0911111111", parentPhone: "0922222222" } })).status()).toBe(404);
     expect((await page.request.get(`/api/admin/photos/${id}`, { maxRedirects: 0 })).status()).toBe(404);
     expect((await page.request.post(`/api/admin/customer-banks/${id}/review`, { headers, data: { result: "passed", expected: "pending" } })).status()).toBe(404);
     expect((await page.request.put(`/api/admin/customer-banks/${id}/note`, { headers, data: { note: "x" } })).status()).toBe(404);
@@ -113,7 +112,6 @@ test("Trang 4 Sửa thông tin: ô trống, chỉ khoảng trắng, quá dài, S
     ["Họ tên", "a".repeat(101), "Tối đa 100 ký tự"],
     ["Lớp", "", "Nhập lớp"],
     ["Lớp", "1".repeat(21), "Tối đa 20 ký tự"],
-    ["Phụ huynh", "  ", "Nhập họ và tên phụ huynh"],
     ["SĐT", "+84912345678", "SĐT phải có 10 số, bắt đầu bằng 0."],
     ["SĐT", "091234567", "SĐT phải có 10 số, bắt đầu bằng 0."],
     ["SĐT", "09123abc56", "SĐT phải có 10 số, bắt đầu bằng 0."],
@@ -181,8 +179,8 @@ test("Trang 4 ghi chú: ô nhập chặn ở 1.000 ký tự, API từ chối 1.0
   // \ud83c là nửa đầu của một emoji: JSON gửi được, cột jsonb của audit_log thì từ chối.
   res = await put("nửa emoji \ud83c");
   expect([res.status(), (await res.json()).message]).toEqual([400, "Có ký tự không hợp lệ"]);
-  const edit = { fullName: "Biên Ghi Chú", className: "10A1", phone: "0912345678", parentName: "Phụ Huynh", parentPhone: "0987654321" };
-  for (const field of ["fullName", "className", "parentName"] as const) {
+  const edit = { fullName: "Biên Ghi Chú", className: "10A1", phone: "0912345678", parentPhone: "0987654321" };
+  for (const field of ["fullName", "className"] as const) {
     const r = await a.request.patch(`/api/admin/customers/${B.B_IDS.note}`, { headers: { Origin: ADMIN }, data: { ...edit, [field]: `${edit[field]}\ud83c` } });
     expect([field, r.status(), await r.json()]).toEqual([field, 400, { message: "Có ký tự không hợp lệ", field }]);
   }
@@ -605,7 +603,7 @@ test("Trang 4 phân quyền: Nhân viên mở hồ sơ ngoài phạm vi và gọ
   expect(await open(staff, detail(B.B_IDS.only2))).toBe(404);
   expect(await open(staff, detail(B.B_IDS.none))).toBe(404);
   expect((await staff.request.get(`/api/admin/customers/${B.B_IDS.only2}`)).status()).toBe(404);
-  expect((await staff.request.patch(`/api/admin/customers/${B.B_IDS.only2}`, { headers, data: { fullName: "Đổi Tên", className: "10A1", phone: B.bPhone(208), parentName: "A", parentPhone: B.bParentPhone(208) } })).status()).toBe(404);
+  expect((await staff.request.patch(`/api/admin/customers/${B.B_IDS.only2}`, { headers, data: { fullName: "Đổi Tên", className: "10A1", phone: B.bPhone(208), parentPhone: B.bParentPhone(208) } })).status()).toBe(404);
   expect((await staff.request.post(`/api/admin/customer-banks/${only2Row}/review`, { headers, data: { result: "passed", expected: "pending" } })).status()).toBe(404);
   expect((await staff.request.put(`/api/admin/customer-banks/${only2Row}/note`, { headers, data: { note: "x" } })).status()).toBe(404);
   expect((await staff.request.post(`/api/admin/customer-banks/${only2Row}/photos`, { headers, multipart: { slotId: randomUUID(), file: { name: "a.jpg", mimeType: "image/jpeg", buffer: readFileSync(PHOTO) } } })).status()).toBe(404);

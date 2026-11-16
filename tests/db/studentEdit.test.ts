@@ -15,7 +15,7 @@ let phoneSeq = 700;
 async function student(existingBankIds: string[] = []): Promise<Customer> {
   phoneSeq += 1;
   const r = await createCustomer(
-    CustomerForm.parse({ schoolId: p.schoolId, fullName: "Học Sinh Sửa", className: "10A1", phone: `0900000${phoneSeq}`, parentName: "Phụ Huynh", parentPhone: `0910000${phoneSeq}`, consent: true, existingBankIds }),
+    CustomerForm.parse({ schoolId: p.schoolId, fullName: "Học Sinh Sửa", className: "10A1", phone: `0900000${phoneSeq}`, parentPhone: `0910000${phoneSeq}`, consent: true, existingBankIds }),
     null,
     MONTH,
   );
@@ -24,7 +24,7 @@ async function student(existingBankIds: string[] = []): Promise<Customer> {
 }
 const fresh = async (c: Customer) => (await db.select().from(customers).where(eq(customers.id, c.id)))[0];
 const edit = (over: Record<string, unknown> = {}) =>
-  CustomerSelfEditForm.parse({ fullName: "  Tên   Mới ", className: "11 b2", phone: "0900 000 799", parentName: "Phụ Huynh Mới", parentPhone: "0910000799", existingBankIds: [], ...over });
+  CustomerSelfEditForm.parse({ fullName: "  Tên   Mới ", className: "11 b2", phone: "0900 000 799", parentPhone: "0910000799", existingBankIds: [], ...over });
 
 beforeAll(async () => {
   await cleanTestUsers();
@@ -38,10 +38,10 @@ beforeEach(async () => {
 describe("học sinh sửa thông tin trước khi gửi kiểm tra", () => {
   test("hồ sơ chưa chọn ngân hàng: đọc lại được thông tin đã khai và sửa được", async () => {
     const c = await student([p.bank.a]);
-    expect(await ownCustomerInfo(c)).toMatchObject({ ok: true, info: { fullName: "Học Sinh Sửa", className: "10A1", phone: c.phone, parentName: "Phụ Huynh", parentPhone: c.parentPhone, existingBankIds: [p.bank.a] } });
+    expect(await ownCustomerInfo(c)).toMatchObject({ ok: true, info: { fullName: "Học Sinh Sửa", className: "10A1", phone: c.phone, parentPhone: c.parentPhone, existingBankIds: [p.bank.a] } });
     expect(await updateOwnCustomer(c, edit({ existingBankIds: [p.bank.b] }), MONTH)).toEqual({ ok: true });
     const after = await fresh(c);
-    expect(after).toMatchObject({ fullName: "Tên Mới", nameSearch: "ten moi", className: "11B2", phone: "0900000799", parentName: "Phụ Huynh Mới", parentPhone: "0910000799", status: "new" });
+    expect(after).toMatchObject({ fullName: "Tên Mới", nameSearch: "ten moi", className: "11B2", phone: "0900000799", parentPhone: "0910000799", status: "new" });
     expect((await db.select().from(customerExistingBanks).where(eq(customerExistingBanks.customerId, c.id))).map((r) => r.bankId)).toEqual([p.bank.b]);
   });
 

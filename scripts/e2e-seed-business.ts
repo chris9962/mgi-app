@@ -17,7 +17,7 @@ type Spec = {
   n: number;
   schoolId?: string;
   className?: string;
-  parentName?: string;
+  
   phone?: string;
   createdAt?: Date;
   banks?: { bank: 1 | 2; status: BankStatus; note?: string }[];
@@ -91,14 +91,14 @@ export async function seedBusiness(adminId: string) {
     // 23:30 ngày 31/10 và 00:30 ngày 01/11 giờ Việt Nam: lệch ngày nếu so theo UTC.
     { id: B.B_IDS.late, fullName: B.B_LATE, n: 220, createdAt: new Date("2026-10-31T16:30:00Z"), banks: [{ bank: 2, status: "passed" }], voucher: { code: B.B_LATE_VOUCHER, issuedAt: new Date("2026-10-31T16:45:00Z") }, sms: { status: "sent", at: new Date("2026-10-31T16:50:00Z") } },
     { id: B.B_IDS.early, fullName: B.B_EARLY, n: 221, createdAt: new Date("2026-10-31T17:30:00Z"), banks: [{ bank: 2, status: "passed" }], voucher: { code: B.B_EARLY_VOUCHER, issuedAt: new Date("2026-10-31T17:45:00Z") } },
-    { id: B.B_IDS.long, fullName: B.B_LONG_NAME, n: 201, className: B.B_LONG_CLASS, parentName: B.B_LONG_PARENT, banks: [{ bank: 1, status: "pending" }] },
-    { id: B.B_IDS.unbroken, fullName: B.B_UNBROKEN_NAME, n: 202, parentName: B.B_UNBROKEN_PARENT, banks: [{ bank: 1, status: "pending", note: B.B_UNBROKEN_NOTE }] },
-    { id: B.B_IDS.xss, fullName: B.B_XSS, n: 203, parentName: B.B_IMG, banks: [{ bank: 1, status: "pending", note: "<b>đậm</b>\nDòng hai 😀" }] },
+    { id: B.B_IDS.long, fullName: B.B_LONG_NAME, n: 201, className: B.B_LONG_CLASS, banks: [{ bank: 1, status: "pending" }] },
+    { id: B.B_IDS.unbroken, fullName: B.B_UNBROKEN_NAME, n: 202, banks: [{ bank: 1, status: "pending", note: B.B_UNBROKEN_NOTE }] },
+    { id: B.B_IDS.xss, fullName: B.B_XSS, n: 203, banks: [{ bank: 1, status: "pending", note: "<b>đậm</b>\nDòng hai 😀" }] },
     { id: B.B_IDS.quotes, fullName: B.B_QUOTES, n: 204, banks: [{ bank: 1, status: "selected" }] },
     { id: B.B_IDS.emoji, fullName: B.B_EMOJI, n: 205, banks: [{ bank: 1, status: "selected" }] },
     // Có voucher để file Mã voucher cũng có ô bắt đầu bằng = + - @.
-    { id: B.B_IDS.formula, fullName: B.B_FORMULA, n: 206, className: B.B_FORMULA_CLASS, parentName: B.B_FORMULA_PARENT, banks: [{ bank: 1, status: "passed" }], voucher: { code: B.B_FORMULA_VOUCHER, issuedAt: new Date("2026-10-27T03:00:00Z") } },
-    { id: B.B_IDS.minus, fullName: B.B_MINUS, n: 207, parentName: B.B_MINUS_PARENT, banks: [{ bank: 1, status: "passed" }], voucher: { code: B.B_MINUS_VOUCHER, issuedAt: new Date("2026-10-27T03:01:00Z") } },
+    { id: B.B_IDS.formula, fullName: B.B_FORMULA, n: 206, className: B.B_FORMULA_CLASS, banks: [{ bank: 1, status: "passed" }], voucher: { code: B.B_FORMULA_VOUCHER, issuedAt: new Date("2026-10-27T03:00:00Z") } },
+    { id: B.B_IDS.minus, fullName: B.B_MINUS, n: 207, banks: [{ bank: 1, status: "passed" }], voucher: { code: B.B_MINUS_VOUCHER, issuedAt: new Date("2026-10-27T03:01:00Z") } },
     { id: B.B_IDS.only2, fullName: B.B_NAMES.only2, n: 208, banks: [{ bank: 2, status: "pending" }], sms: { status: "failed", at: new Date("2026-10-25T03:00:00Z") } },
     { id: B.B_IDS.both, fullName: B.B_NAMES.both, n: 209, banks: [{ bank: 1, status: "pending" }, { bank: 2, status: "pending" }] },
     { id: B.B_IDS.none, fullName: B.B_NAMES.none, n: 210 },
@@ -144,7 +144,6 @@ export async function seedBusiness(adminId: string) {
       nameSearch: plain(s.fullName),
       className: s.className ?? "10A1",
       phone: s.phone ?? B.bPhone(s.n),
-      parentName: s.parentName ?? "Phụ Huynh Biên",
       parentPhone: B.bParentPhone(s.n),
       status: customerStatus(rows),
       tokenHash: newCustomerToken().tokenHash,

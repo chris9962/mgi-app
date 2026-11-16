@@ -3,7 +3,7 @@ import type { ZodType } from "zod";
 import { BankChoiceForm, CustomerForm, PhotoTargetForm } from "../../src/lib/customerForm";
 
 const UUID = "3f2b9c1e-8a4d-4f6b-9c2e-1a2b3c4d5e6f";
-const VALID = { schoolId: UUID, fullName: "Trần Minh Anh", className: "11A3", phone: "0912345678", parentName: "Trần Văn Hùng", parentPhone: "0987654321", consent: true, existingBankIds: [] };
+const VALID = { schoolId: UUID, fullName: "Trần Minh Anh", className: "11A3", phone: "0912345678", parentPhone: "0987654321", consent: true, existingBankIds: [] };
 // Câu báo lỗi tiếng Việt luôn có ít nhất một chữ có dấu; câu mặc định của zod ("Invalid input...") thì không.
 const VIETNAMESE = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
 
@@ -38,8 +38,8 @@ describe("câu báo lỗi của form học sinh", () => {
 });
 
 describe("ký tự điều khiển", () => {
-  test("NUL và ký tự điều khiển trong họ tên, tên phụ huynh, lớp bị từ chối", () => {
-    for (const bad of [{ fullName: "Trần\u0000Anh" }, { parentName: "\u0007Hùng" }, { className: "11A\u0000" }, { fullName: "An\u007f" }]) {
+  test("NUL và ký tự điều khiển trong họ tên, lớp bị từ chối", () => {
+    for (const bad of [{ fullName: "Trần\u0000Anh" }, { className: "11A\u0000" }, { fullName: "An\u007f" }]) {
       const r = CustomerForm.safeParse({ ...VALID, ...bad });
       expect(r.success).toBe(false);
       expect(r.error!.issues[0].message).toMatch(VIETNAMESE);

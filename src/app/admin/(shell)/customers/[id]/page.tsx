@@ -127,7 +127,6 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
     ["Lớp", c.className],
     ["Trường", c.schoolName],
     ["SĐT", <span key="p" className="tabular-nums">{formatPhone(c.phone)}</span>],
-    ["Phụ huynh", c.parentName],
     [
       "SĐT phụ huynh",
       <a key="pp" href={`tel:${c.parentPhone}`} className="text-link tabular-nums hover:underline" aria-label={`Gọi ${formatPhone(c.parentPhone)}`}>
@@ -163,7 +162,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
           <InfoList items={info} />
           {c.canEdit && (
             <div className="mt-4 flex justify-end border-t border-line pt-4">
-              <CustomerEditButton customer={{ id: c.id, fullName: c.fullName, className: c.className, phone: c.phone, parentName: c.parentName, parentPhone: c.parentPhone }} />
+              <CustomerEditButton customer={{ id: c.id, fullName: c.fullName, className: c.className, phone: c.phone, parentPhone: c.parentPhone }} />
             </div>
           )}
         </Card>

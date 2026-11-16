@@ -5,7 +5,6 @@ const base: VoucherInput = {
   customerId: "8f2c0000-0000-4000-8000-000000000001",
   provinceCode: "80",
   wardCode: "25585",
-  parentName: "Trần Văn Hùng",
   schoolName: "THPT Nguyễn Du",
   fullName: "Trần Minh Anh",
   className: "11A3",
@@ -47,14 +46,13 @@ describe("mã voucher", () => {
     for (const ch of code.slice(-4)) expect(VOUCHER_ALPHABET).toContain(ch);
   });
 
-  test("cùng dữ liệu cùng mã; khác id, xã, phụ huynh hay khoá thì ký tự kiểm khác", () => {
+  test("cùng dữ liệu cùng mã; khác id, xã hay khoá thì ký tự kiểm khác", () => {
     const code = voucherCode(base, SECRET);
     expect(voucherCode({ ...base }, SECRET)).toBe(code);
     const others = [
       voucherCode({ ...base, customerId: "8f2c0000-0000-4000-8000-000000000002" }, SECRET),
       voucherCode({ ...base, wardCode: "25586" }, SECRET),
       voucherCode({ ...base, provinceCode: "79" }, SECRET),
-      voucherCode({ ...base, parentName: "Trần Văn Hưng" }, SECRET),
       voucherCode(base, "khoa-khac"),
     ];
     for (const o of others) {

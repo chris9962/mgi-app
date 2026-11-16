@@ -71,7 +71,7 @@ describe("route quản lý theo quyền", () => {
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.rows.length).toBe(1);
-    expect(Object.keys(body.rows[0]).sort()).toEqual(["className", "code", "customerId", "fullName", "id", "issuedAt", "parentName", "schoolName"]);
+    expect(Object.keys(body.rows[0]).sort()).toEqual(["className", "code", "customerId", "fullName", "id", "issuedAt", "schoolName", "smsStatus"]);
     expect(JSON.stringify(body)).not.toMatch(/phone|0987|0912/i);
   });
 

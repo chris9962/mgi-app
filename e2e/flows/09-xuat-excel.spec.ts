@@ -30,8 +30,8 @@ const metaCount = async (page: Page, card: string) => Number(/^(\d+)/.exec((awai
 
 test("Flow 9: Xuất Excel ở Trang 3, Trang 5, Trang 12 và trang Ngân hàng: đầu bảng 3 tầng, đúng số dòng", async ({ page }, info) => {
   await loginAs(page, "zz_e2e_admin");
-  const one = await apiStudent(page, { fullName: "Xuất Thị Một", className: "11b1", phone: "0933500001", parentName: "Xuất Văn Cha", parentPhone: "0977500001" }, [VPB, TPB]);
-  const two = await apiStudent(page, { fullName: "Xuất Văn Hai", className: "11b1", phone: "0933500002", parentName: "Xuất Văn Bố", parentPhone: "0977500002" }, [VPB, MB]);
+  const one = await apiStudent(page, { fullName: "Xuất Thị Một", className: "11b1", phone: "0933500001", parentPhone: "0977500001" }, [VPB, TPB]);
+  const two = await apiStudent(page, { fullName: "Xuất Văn Hai", className: "11b1", phone: "0933500002", parentPhone: "0977500002" }, [VPB, MB]);
   await apiReview(page, bankOf(one, VPB).id, "passed");
   await apiReview(page, bankOf(two, MB).id, "passed");
 

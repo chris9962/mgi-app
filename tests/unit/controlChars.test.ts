@@ -14,7 +14,7 @@ const UUID = "3f2b9c1e-8a4d-4f6b-9c2e-1a2b3c4d5e6f";
 // Nửa đầu của 🎓: JSON.stringify giữ nguyên dạng \ud83c, cột jsonb của Postgres từ chối.
 const HIGH = "\ud83c";
 const LOW = "\udf93";
-const INFO = { fullName: "Trần Minh Anh", className: "11A3", phone: "0912345678", parentName: "Trần Văn Hùng", parentPhone: "0987654321" };
+const INFO = { fullName: "Trần Minh Anh", className: "11A3", phone: "0912345678", parentPhone: "0987654321" };
 
 const FORMS: [string, ZodType, Record<string, unknown>, string[]][] = [
   ["Trường", SchoolForm, { name: "THPT A", provinceCode: "80", wardCode: "25585", contactName: "Người liên hệ", contactPhone: "0903111222" }, ["name", "provinceCode", "wardCode", "contactName"]],
@@ -24,8 +24,8 @@ const FORMS: [string, ZodType, Record<string, unknown>, string[]][] = [
   ["Tài khoản", UserForm, { fullName: "Người dùng", staffCode: "S1", phone: "", username: "abc", role: "staff", title: "Chức danh", permissions: [] }, ["fullName", "staffCode", "title"]],
   ["Cá nhân", InfoForm, { fullName: "Người dùng", phone: "" }, ["fullName"]],
   ["Cài đặt", SettingsForm, { smsTemplate: "Ma {MA_VOUCHER}", zaloUrl: "https://zalo.me/a", pviAppUrl: "https://pvi.vn" }, ["zaloUrl", "pviAppUrl"]],
-  ["Học sinh", CustomerForm, { schoolId: UUID, ...INFO, consent: true, existingBankIds: [] }, ["fullName", "className", "parentName"]],
-  ["Sửa thông tin", CustomerEditForm, INFO, ["fullName", "className", "parentName"]],
+  ["Học sinh", CustomerForm, { schoolId: UUID, ...INFO, consent: true, existingBankIds: [] }, ["fullName", "className"]],
+  ["Sửa thông tin", CustomerEditForm, INFO, ["fullName", "className"]],
   ["Ghi chú", NoteForm, { note: "Ghi chú" }, ["note"]],
 ];
 

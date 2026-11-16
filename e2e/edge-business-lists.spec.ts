@@ -128,10 +128,10 @@ test.describe("trang Ngân hàng nhóm Nghiệp vụ", () => {
     const empty = await readExport(page, `/api/admin/customer-banks/export?${q("zz khong co ai bien")}`);
     expect([empty.rows.length, empty.rows[1][0]]).toEqual([3, "0"]);
     const sheet = await readExport(page, `/api/admin/customer-banks/export?${q("bien")}`);
-    const [name, cls, parent] = ["HỌ TÊN", "LỚP", "PHỤ HUYNH"].map((h) => column(sheet, h));
+    const [name, cls] = ["HỌ TÊN", "LỚP"].map((h) => column(sheet, h));
     const row = sheet.rows.findIndex((r) => r[name] === "=1+2 BIEN CONG THUC");
     expect(row).toBeGreaterThan(2);
-    expect([sheet.rows[row][cls], sheet.rows[row][parent], sheet.types[row][name], sheet.types[row][cls]]).toEqual(["=1+1", "+CHA BIEN CONG", ExcelJS.ValueType.String, ExcelJS.ValueType.String]);
+    expect([sheet.rows[row][cls], sheet.types[row][name], sheet.types[row][cls]]).toEqual(["=1+1", ExcelJS.ValueType.String, ExcelJS.ValueType.String]);
     expect((await page.request.get("/api/admin/customer-banks/export?q=bien%00")).status()).toBe(200);
   });
 
@@ -224,18 +224,16 @@ test.describe("Trang 12 Mã voucher", () => {
     expect([empty.rows.length, empty.rows[1][0]]).toEqual([3, "0"]);
 
     const all = await readExport(page, `/api/admin/vouchers/export?${q("bien")}`);
-    const [code, name, cls, parent] = ["MÃ VOUCHER", "HỌ TÊN", "LỚP", "PHỤ HUYNH"].map((h) => column(all, h));
+    const [code, name, cls] = ["MÃ VOUCHER", "HỌ TÊN", "LỚP"].map((h) => column(all, h));
     const cell = (row: number, col: number) => ({ value: all.rows[row][col], type: all.types[row][col] });
     const text = ExcelJS.ValueType.String;
     const formula = all.rows.findIndex((r) => r[code] === B.B_FORMULA_VOUCHER);
     const minus = all.rows.findIndex((r) => r[code] === B.B_MINUS_VOUCHER);
     expect([formula > 2, minus > 2]).toEqual([true, true]);
-    expect([cell(formula, name), cell(formula, cls), cell(formula, parent), cell(minus, name), cell(minus, parent)]).toEqual([
+    expect([cell(formula, name), cell(formula, cls), cell(minus, name)]).toEqual([
       { value: "=1+2 BIEN CONG THUC", type: text },
       { value: "=1+1", type: text },
-      { value: "+CHA BIEN CONG", type: text },
       { value: "-BIEN TRU", type: text },
-      { value: "@ME BIEN CONG", type: text },
     ]);
     expect((await page.request.get("/api/admin/vouchers/export?q=bien%00")).status()).toBe(200);
   });

@@ -25,7 +25,7 @@ const slot: Record<string, string> = {};
 async function student(): Promise<Customer> {
   phoneSeq += 1;
   const r = await createCustomer(
-    CustomerForm.parse({ schoolId, fullName: "Học Sinh Ảnh", className: "10A1", phone: `0900000${phoneSeq}`, parentName: "Phụ Huynh", parentPhone: `0910000${phoneSeq}`, consent: true, existingBankIds: [] }),
+    CustomerForm.parse({ schoolId, fullName: "Học Sinh Ảnh", className: "10A1", phone: `0900000${phoneSeq}`, parentPhone: `0910000${phoneSeq}`, consent: true, existingBankIds: [] }),
     null,
     MONTH,
   );

@@ -12,7 +12,7 @@ const sections = (page: Page) => page.getByRole("navigation", { name: "Mục l�
 
 test("Flow 10: trang Ngân hàng nhóm Nghiệp vụ: 2 ngân hàng ra 2 dòng, tìm, lọc, Nhân viên chỉ thấy ngân hàng mình quản", async ({ page }) => {
   await loginAs(page, "zz_e2e_admin");
-  await apiStudent(page, { fullName: NAME, className: "10a1", phone: "0933555777", parentName: "Lương Văn Cha", parentPhone: "0977555777" }, [VPB, TPB]);
+  await apiStudent(page, { fullName: NAME, className: "10a1", phone: "0933555777", parentPhone: "0977555777" }, [VPB, TPB]);
 
   await test.step("Quản trị mở trang Ngân hàng trong nhóm Nghiệp vụ", async () => {
     await openMenu(page, "Ngân hàng", "Nghiệp vụ");

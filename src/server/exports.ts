@@ -38,7 +38,6 @@ async function customerRows(actor: SessionUser, f: CustomerFilters) {
       className: customers.className,
       schoolName: schools.name,
       phone: customers.phone,
-      parentName: customers.parentName,
       parentPhone: customers.parentPhone,
       status: customers.status,
       submittedAt: customers.submittedAt,
@@ -70,7 +69,6 @@ const CUSTOMER_COLUMNS: ExcelColumn<CustomerExportRow>[] = [
   { ...STUDENT, header: "LỚP", width: 8, value: (r) => r.className },
   { ...STUDENT, header: "TRƯỜNG", width: 26, value: (r) => r.schoolName },
   { ...STUDENT, header: "SĐT", width: 13, type: "text", value: (r) => r.phone },
-  { ...STUDENT, header: "PHỤ HUYNH", width: 24, transform: "name", value: (r) => r.parentName },
   { ...STUDENT, header: "SĐT PHỤ HUYNH", width: 14, type: "text", value: (r) => r.parentPhone },
   { ...STUDENT, header: "TRẠNG THÁI", width: 16, value: (r) => CUSTOMER_STATUS_LABEL[r.status] },
   { ...STUDENT, header: "GỬI LÚC", width: 17, value: (r) => (r.submittedAt ? formatDateTime(r.submittedAt) : "") },
@@ -99,7 +97,6 @@ const CUSTOMER_BANK_COLUMNS: ExcelColumn<CustomerBankRow>[] = [
   { ...STUDENT, header: "LỚP", width: 8, value: (r) => r.className },
   { ...STUDENT, header: "TRƯỜNG", width: 26, value: (r) => r.schoolName },
   { ...STUDENT, header: "SĐT", width: 13, type: "text", value: (r) => r.phone },
-  { ...STUDENT, header: "PHỤ HUYNH", width: 24, transform: "name", value: (r) => r.parentName },
   { ...STUDENT, header: "SĐT PHỤ HUYNH", width: 14, type: "text", value: (r) => r.parentPhone },
   { ...BANK, header: "NGÂN HÀNG", width: 16, value: (r) => r.bankName },
   { ...BANK, header: "MÃ GIỚI THIỆU", width: 16, type: "text", value: (r) => r.referralCode },
@@ -153,7 +150,6 @@ const VOUCHER_COLUMNS: ExcelColumn<VoucherExportRow>[] = [
   { ...STUDENT, header: "HỌ TÊN", width: 24, transform: "name", value: (r) => r.fullName },
   { ...STUDENT, header: "LỚP", width: 8, value: (r) => r.className },
   { ...STUDENT, header: "TRƯỜNG", width: 26, value: (r) => r.schoolName },
-  { ...STUDENT, header: "PHỤ HUYNH", width: 24, transform: "name", value: (r) => r.parentName },
 ];
 
 export async function exportVouchers(actor: SessionUser, f: VoucherFilters, ip: string | null): Promise<ExportResult> {

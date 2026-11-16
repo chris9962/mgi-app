@@ -4,7 +4,7 @@ import { removeDiacritics } from "@/lib/text";
 // Bỏ 0, O, 1, I, L: phụ huynh đọc mã từ SMS rồi gõ lại trên app PVI.
 export const VOUCHER_ALPHABET = "23456789ABCDEFGHJKMNPQRSTUVWXYZ";
 
-export type VoucherInput = { customerId: string; provinceCode: string; wardCode: string; parentName: string; schoolName: string; fullName: string; className: string };
+export type VoucherInput = { customerId: string; provinceCode: string; wardCode: string; schoolName: string; fullName: string; className: string };
 
 const letters = (s: string) => removeDiacritics(s).toUpperCase().replace(/[^A-Z0-9]/g, "");
 
@@ -24,12 +24,12 @@ export const abbreviate = (name: string): string =>
 
 export const classPart = (className: string): string => letters(className);
 
-// Ký tự kiểm là HMAC của dữ liệu không in trên mã (id, tỉnh, xã, phụ huynh) và 3 phần chữ: người ngoài không tự tạo được mã hợp lệ.
+// Ký tự kiểm là HMAC của dữ liệu không in trên mã (id, tỉnh, xã) và 3 phần chữ: người ngoài không tự tạo được mã hợp lệ.
 // attempt > 0 khi mã đã có người dùng: thêm số lượt vào thông điệp để ra ký tự kiểm khác, vẫn tính lại được.
 export function voucherCode(input: VoucherInput, secret: string, attempt = 0): string {
   if (!secret) throw new Error("Thiếu VOUCHER_SECRET, không sinh được mã voucher.");
   const parts = [abbreviate(input.schoolName), nameInitials(input.fullName), classPart(input.className)];
-  const message = [input.customerId, input.provinceCode, input.wardCode, input.parentName.normalize("NFC").trim(), ...parts, ...(attempt ? [`#${attempt}`] : [])].join("\n");
+  const message = [input.customerId, input.provinceCode, input.wardCode, ...parts, ...(attempt ? [`#${attempt}`] : [])].join("\n");
   let n = createHmac("sha256", secret).update(message).digest().readBigUInt64BE(0);
   let check = "";
   for (let i = 0; i < 4; i++) {

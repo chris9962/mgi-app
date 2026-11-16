@@ -46,7 +46,6 @@ export async function reviewCustomerBank(actor: SessionUser, input: ReviewInput,
         id: customers.id,
         fullName: customers.fullName,
         className: customers.className,
-        parentName: customers.parentName,
         parentPhone: customers.parentPhone,
         status: customers.status,
         firstPassedAt: customers.firstPassedAt,
@@ -84,7 +83,7 @@ export async function reviewCustomerBank(actor: SessionUser, input: ReviewInput,
 
     let code: string | undefined;
     if (issue) {
-      const voucherInput = { customerId: c.id, provinceCode: c.provinceCode, wardCode: c.wardCode, parentName: c.parentName, schoolName: c.schoolName, fullName: c.fullName, className: c.className };
+      const voucherInput = { customerId: c.id, provinceCode: c.provinceCode, wardCode: c.wardCode, schoolName: c.schoolName, fullName: c.fullName, className: c.className };
       await tx.update(customers).set({ firstPassedAt: now }).where(eq(customers.id, c.id));
       for (let attempt = 0; ; attempt++) {
         const candidate = voucherCode(voucherInput, secret!, attempt);

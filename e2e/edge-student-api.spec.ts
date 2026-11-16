@@ -62,7 +62,7 @@ test("G2 body không phải JSON, mảng, null, họ tên là số: 400 câu ti�
   expect(await vietnamese400(await create(request, { schoolId: SCHOOL.photo, ...info(`${"A".repeat(101)}`), consent: true, existingBankIds: [] }))).toBe("Tối đa 100 ký tự");
   expect(await vietnamese400(await create(request, { schoolId: SCHOOL.photo, ...info("Tên\u0000Có NUL"), consent: true, existingBankIds: [] }))).toBe("Có ký tự không hợp lệ");
   // \ud83c là nửa đầu của một emoji: JSON gửi được, cột jsonb của Postgres thì từ chối.
-  for (const extra of [{ fullName: "Tên Nửa Emoji\ud83c" }, { className: "10A\ud83c" }, { parentName: "Phụ Huynh\ud83c" }]) {
+  for (const extra of [{ fullName: "Tên Nửa Emoji\ud83c" }, { className: "10A\ud83c" }]) {
     expect(await vietnamese400(await create(request, { schoolId: SCHOOL.photo, ...info("Nửa Emoji", extra), consent: true, existingBankIds: [] })), JSON.stringify(extra)).toBe("Có ký tự không hợp lệ");
   }
 });

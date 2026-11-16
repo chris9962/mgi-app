@@ -38,7 +38,6 @@ const info = {
         .refine(noControlChar, CONTROL_CHAR_MESSAGE),
     ),
   phone,
-  parentName: name("Nhập họ và tên phụ huynh"),
   parentPhone: phone,
 };
 
