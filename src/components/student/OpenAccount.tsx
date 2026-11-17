@@ -1,17 +1,25 @@
 "use client";
 
 import { clsx } from "clsx";
-import { Check, Copy, ExternalLink } from "lucide-react";
+import { Check, Copy, ExternalLink, Send } from "lucide-react";
 import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { ImageLightbox } from "@/components/ui/ImageLightbox";
+import { StatusTag, type Tone } from "@/components/ui/StatusTag";
 import { ConfirmDialog } from "@/components/users/ConfirmDialog";
 import { studentApi } from "@/lib/studentApi";
-import type { StudentBank, StudentState } from "@/lib/studentState";
+import type { CustomerBankStatus, StudentBank, StudentState } from "@/lib/studentState";
 import { AppHead, BankLogo, Bottom, useStepBack, useStepNav } from "./parts";
 import { PhotoSlot } from "./PhotoSlot";
 
 const complete = (b: StudentBank) => b.slots.every((s) => s.photo);
+const isOpen = (b: StudentBank) => b.status === "selected";
+
+const SENT: Record<Exclude<CustomerBankStatus, "selected">, { label: string; tone: Tone; hint: string }> = {
+  pending: { label: "Chờ kiểm tra", tone: "progress", hint: "Đã gửi kiểm tra. Nhân viên kiểm tra trong giờ làm việc." },
+  passed: { label: "Đạt", tone: "ok", hint: "Đã kiểm tra xong." },
+  failed: { label: "Không đạt", tone: "danger", hint: "Đã kiểm tra xong." },
+};
 
 function CodeBox({ bank }: { bank: StudentBank }) {
   const [copy, setCopy] = useState<"idle" | "copied" | "failed">("idle");
@@ -74,10 +82,23 @@ function CodeBox({ bank }: { bank: StudentBank }) {
   );
 }
 
-function BankPanel({ bank, onSaved, onBusy }: { bank: StudentBank; onSaved: () => Promise<void>; onBusy: (slotId: string, busy: boolean) => void }) {
+type PanelProps = { bank: StudentBank; busy: boolean; onSaved: () => Promise<void>; onBusy: (slotId: string, busy: boolean) => void; onSubmit: () => void };
+
+function BankPanel({ bank, busy, onSaved, onBusy, onSubmit }: PanelProps) {
   const done = bank.slots.filter((s) => s.photo).length;
   const samples = bank.slots.flatMap((s, i) => (s.sampleUrl ? [{ slotId: s.id, src: s.sampleUrl, alt: `Ảnh mẫu ${s.name}`, caption: `${i + 1}. ${s.name}` }] : []));
   const [sampleAt, setSampleAt] = useState<number | null>(null);
+  if (!isOpen(bank)) {
+    const sent = SENT[bank.status as Exclude<CustomerBankStatus, "selected">];
+    return (
+      <div className="flex items-center gap-3 rounded-2xl border border-line bg-card p-4 shadow-sm">
+        <StatusTag size="md" tone={sent.tone}>
+          {sent.label}
+        </StatusTag>
+        <p className="text-sm text-text-2">{sent.hint}</p>
+      </div>
+    );
+  }
   return (
     <div className="flex flex-col gap-4">
       {bank.steps.length > 0 && (
@@ -108,15 +129,27 @@ function BankPanel({ bank, onSaved, onBusy }: { bank: StudentBank; onSaved: () =
           </ul>
         </section>
       )}
+      {/* Gửi riêng ngân hàng này; đang tải hoặc chọn lại ảnh thì chưa gửi: gửi lúc đó là gửi ảnh cũ. */}
+      <Button large block disabled={!complete(bank) || busy} onClick={onSubmit}>
+        <Send size={16} aria-hidden />
+        Hoàn thành {bank.name}
+      </Button>
       {sampleAt !== null && <ImageLightbox photos={samples} startIndex={sampleAt} onClose={() => setSampleAt(null)} />}
     </div>
   );
 }
 
-export function OpenAccount({ state, onChange, onEdit }: { state: StudentState; onChange: () => Promise<void>; onEdit: () => Promise<string | null> }) {
+type Props = { state: StudentState; onChange: () => Promise<void>; onEdit: () => Promise<string | null>; onSubmitted?: (submitted: number) => void };
+
+export function OpenAccount({ state, onChange, onEdit, onSubmitted }: Props) {
   const banks = state.banks;
-  const [active, setActive] = useState(banks[0]?.id ?? "");
+  const open = banks.filter(isOpen);
+  const sent = banks.filter((b) => !isOpen(b));
+  const [active, setActive] = useState(open[0]?.id ?? banks[0]?.id ?? "");
   const [confirmBack, setConfirmBack] = useState<1 | 2 | null>(null);
+  const [confirmStop, setConfirmStop] = useState(false);
+  // Ngân hàng đang hỏi "đã hoàn thành chưa" trước khi gửi.
+  const [confirmSubmit, setConfirmSubmit] = useState<string | null>(null);
   const [error, setError] = useState("");
   const [sending, setSending] = useState(false);
   const nav = useStepNav();
@@ -126,42 +159,63 @@ export function OpenAccount({ state, onChange, onEdit }: { state: StudentState; 
   const tabs = useRef<(HTMLButtonElement | null)[]>([]);
   const focusError = useRef(false);
   const current = banks.find((b) => b.id === active) ?? banks[0];
-  const hasPhoto = banks.some((b) => b.slots.some((s) => s.photo));
-  // Đang tải hoặc chọn lại ảnh thì chưa gửi: gửi lúc đó là gửi ảnh cũ, ảnh mới bị bỏ.
-  const ready = banks.length > 0 && banks.every(complete) && busySlots.length === 0;
+  const hasPhoto = open.some((b) => b.slots.some((s) => s.photo));
   const markBusy = (slotId: string, busy: boolean) => setBusySlots((list) => (busy ? [...list, slotId] : list.filter((id) => id !== slotId)));
+  const busyIn = (b: StudentBank) => b.slots.some((s) => busySlots.includes(s.id));
   // Ảnh vừa nộp có thể lấp đúng khung mà câu lỗi đang nhắc: câu cũ không được ở lại tới lần bấm sau.
   const photoSaved = () => {
     setError("");
     return onChange();
   };
 
-  async function submit() {
+  // Nộp xong ảnh cuối của một ngân hàng thì hỏi đã hoàn thành chưa (feedback 2026-11-16): so với lượt tải trước để chỉ hỏi đúng lúc vừa đủ.
+  const wasComplete = useRef(new Map(banks.map((b) => [b.id, complete(b)])));
+  useEffect(() => {
+    for (const b of banks) {
+      const before = wasComplete.current.get(b.id) ?? false;
+      const now = complete(b);
+      wasComplete.current.set(b.id, now);
+      if (!before && now && isOpen(b) && b.slots.length > 0) setConfirmSubmit(b.id);
+    }
+  }, [banks]);
+
+  async function submitBank(id: string) {
     setSending(true);
     setError("");
-    const r = await studentApi("POST", "/api/customers/me/submit");
-    if (r.ok) return onChange();
+    setConfirmSubmit(null);
+    const r = await studentApi<{ submitted: number }>("POST", `/api/customers/me/banks/${id}/submit`);
+    if (r.ok) {
+      // Chuyển sang ngân hàng còn đang mở để học sinh làm tiếp.
+      const next = open.find((b) => b.id !== id);
+      if (next) setActive(next.id);
+      await onChange();
+      setSending(false);
+      onSubmitted?.(r.data.submitted);
+      return;
+    }
     // Hồ sơ đã đổi ở máy chủ (tab khác đã gửi, người quản lý thêm khung ảnh): tải lại để màn khớp máy chủ.
     if (r.status === 400 || r.status === 409) await onChange();
     setSending(false);
     setError(r.message);
   }
 
-  async function back(target: 1 | 2): Promise<string | null> {
-    setLeaving(target);
+  // Bỏ các ngân hàng chưa gửi: quay lại bước 2, hay dừng mở thêm sau khi đã gửi ít nhất một ngân hàng.
+  async function dropOpen(target: 1 | 2 | "stop"): Promise<string | null> {
+    if (target !== "stop") setLeaving(target);
     setError("");
     const r = await studentApi("DELETE", "/api/customers/me/banks");
     if (r.ok) {
       // Máy chủ xoá xong mới chuyển màn. Không mở được màn sửa thông tin thì về bước chọn ngân hàng.
-      if (target === 2 || (await onEdit())) await onChange();
+      if (target !== 1 || (await onEdit())) await onChange();
       return null;
     }
     // Hồ sơ đã đổi ở máy chủ (trường vừa đóng, tab khác đã gửi kiểm tra): tải lại để màn khớp máy chủ, báo lỗi ở màn chứ không ở hộp hỏi.
     if (r.status === 409) {
       await onChange();
-      // Nút Quay lại vừa bấm đã ẩn sau khi tải lại: không chuyển tiêu điểm thì nó rơi về đầu trang.
+      // Nút vừa bấm đã ẩn sau khi tải lại: không chuyển tiêu điểm thì nó rơi về đầu trang.
       focusError.current = true;
       setConfirmBack(null);
+      setConfirmStop(false);
       setError(r.message);
       setLeaving(null);
       return null;
@@ -172,8 +226,10 @@ export function OpenAccount({ state, onChange, onEdit }: { state: StudentState; 
 
   useStepBack(nav, askBack);
   async function askBack(target: 1 | 2) {
+    // Đã gửi một ngân hàng thì họ tên, lớp, SĐT phụ huynh khoá theo (chốt 2026-11-17).
+    if (target === 1 && sent.length) return setError("Đã gửi kiểm tra, không sửa được thông tin.");
     if (hasPhoto) return setConfirmBack(target);
-    const message = await back(target);
+    const message = await dropOpen(target);
     if (message) setError(message);
   }
 
@@ -187,6 +243,7 @@ export function OpenAccount({ state, onChange, onEdit }: { state: StudentState; 
     tabs.current[next]?.focus();
   }
 
+  const asking = confirmSubmit ? banks.find((b) => b.id === confirmSubmit) : undefined;
   return (
     <>
       <AppHead title="Mở tài khoản" />
@@ -209,16 +266,17 @@ export function OpenAccount({ state, onChange, onEdit }: { state: StudentState; 
             className={clsx(
               "relative w-[104px] flex-none rounded-xl border p-1.5 transition-colors duration-200",
               b.id === current.id ? "border-accent bg-accent-soft/40 ring-1 ring-accent" : "border-field-border bg-card",
+              !isOpen(b) && "opacity-80",
             )}
           >
             {b.logoUrl ? <BankLogo src={b.logoUrl} /> : <span aria-hidden className="line-clamp-2 min-h-9 text-[12px] leading-tight font-semibold">{b.name}</span>}
             <span className="sr-only">
               {b.name}
-              {complete(b) ? ", đủ ảnh" : ", chưa đủ ảnh"}
+              {!isOpen(b) ? ", đã gửi" : complete(b) ? ", đủ ảnh" : ", chưa đủ ảnh"}
             </span>
-            {complete(b) && (
-              <span aria-hidden className="anim-pop absolute -top-1.5 -right-1.5 grid size-5 place-items-center rounded-full bg-ok text-on-accent ring-2 ring-bg">
-                <Check size={12} strokeWidth={3} />
+            {(!isOpen(b) || complete(b)) && (
+              <span aria-hidden className={clsx("anim-pop absolute -top-1.5 -right-1.5 grid size-5 place-items-center rounded-full text-on-accent ring-2 ring-bg", isOpen(b) ? "bg-ok" : "bg-text-2")}>
+                {isOpen(b) ? <Check size={12} strokeWidth={3} /> : <Send size={10} strokeWidth={3} />}
               </span>
             )}
           </button>
@@ -227,7 +285,7 @@ export function OpenAccount({ state, onChange, onEdit }: { state: StudentState; 
       <p className="mb-3 text-[15px] leading-snug font-semibold">{current.name}</p>
       {banks.map((b) => (
         <div key={b.id} role="tabpanel" id={`panel-${b.id}`} aria-labelledby={`tab-${b.id}`} hidden={b.id !== current.id} className="anim-rise">
-          <BankPanel bank={b} onSaved={photoSaved} onBusy={markBusy} />
+          <BankPanel bank={b} busy={busyIn(b) || sending || leaving !== null} onSaved={photoSaved} onBusy={markBusy} onSubmit={() => setConfirmSubmit(b.id)} />
         </div>
       ))}
       {error && (
@@ -245,25 +303,52 @@ export function OpenAccount({ state, onChange, onEdit }: { state: StudentState; 
         </p>
       )}
       <Bottom>
-        {state.school.active && (
-          <Button variant="secondary" large block disabled={leaving !== null} onClick={() => askBack(2)}>
+        {state.school.active && open.length > 0 && (
+          <Button variant="secondary" large block disabled={leaving !== null || sending} onClick={() => askBack(2)}>
             Quay lại chọn ngân hàng
           </Button>
         )}
-        <Button large block disabled={!ready || sending || leaving !== null} onClick={submit}>
-          Gửi kiểm tra
-        </Button>
+        {sent.length > 0 && open.length > 0 && (
+          <Button variant="secondary" large block disabled={leaving !== null || sending} onClick={() => setConfirmStop(true)}>
+            Không mở thêm ngân hàng
+          </Button>
+        )}
       </Bottom>
       {/* Chỉ dựng hộp khi mở, như các trang quản lý: mở lại thì không còn câu lỗi của lần trước. */}
+      {asking && (
+        <ConfirmDialog
+          open
+          title="Gửi kiểm tra"
+          text={`Đã hoàn thành ${asking.name}?`}
+          confirmLabel="Gửi kiểm tra"
+          busy={sending}
+          onConfirm={async () => {
+            await submitBank(asking.id);
+            return null;
+          }}
+          onClose={() => setConfirmSubmit(null)}
+        />
+      )}
       {confirmBack && (
         <ConfirmDialog
           open
           title={confirmBack === 1 ? "Quay lại thông tin" : "Quay lại chọn ngân hàng"}
-          text={confirmBack === 1 ? "Xoá ảnh đã nộp và quay lại sửa thông tin?" : "Xoá ảnh đã nộp và quay lại chọn ngân hàng?"}
+          text={confirmBack === 1 ? "Xoá ảnh đã nộp và quay lại sửa thông tin?" : "Xoá ảnh đã nộp của ngân hàng chưa gửi và quay lại chọn ngân hàng?"}
           confirmLabel="Quay lại"
           danger
-          onConfirm={() => back(confirmBack)}
+          onConfirm={() => dropOpen(confirmBack)}
           onClose={() => setConfirmBack(null)}
+        />
+      )}
+      {confirmStop && (
+        <ConfirmDialog
+          open
+          title="Không mở thêm ngân hàng"
+          text="Bỏ các ngân hàng chưa gửi và xem kết quả?"
+          confirmLabel="Không mở thêm"
+          danger
+          onConfirm={() => dropOpen("stop")}
+          onClose={() => setConfirmStop(false)}
         />
       )}
     </>

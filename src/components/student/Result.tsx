@@ -2,6 +2,7 @@
 
 import { ChevronDown, ClipboardCheck, Clock, ExternalLink, HeartHandshake, ShieldCheck } from "lucide-react";
 import { QrPreview } from "@/components/settings/QrPreview";
+import { Button } from "@/components/ui/Button";
 import { StatusTag, type Tone } from "@/components/ui/StatusTag";
 import { formatDateTime } from "@/lib/dates";
 import type { CustomerBankStatus, StudentState } from "@/lib/studentState";
@@ -65,7 +66,7 @@ function Insurance({ list }: { list: StudentState["insurance"] }) {
   );
 }
 
-export function Result({ state }: { state: StudentState }) {
+export function Result({ state, onAddMore }: { state: StudentState; onAddMore?: () => void }) {
   return (
     <>
       <AppHead title={`${state.customer.fullName} - ${state.customer.className}`} />
@@ -98,6 +99,11 @@ export function Result({ state }: { state: StudentState }) {
         </p>
       )}
       <Bottom>
+        {onAddMore && (
+          <Button variant="secondary" large block onClick={onAddMore}>
+            Mở thêm ngân hàng
+          </Button>
+        )}
         <ZaloBox url={state.zaloUrl} text="Cần hỏi: kết bạn Zalo với nhân viên." />
       </Bottom>
     </>

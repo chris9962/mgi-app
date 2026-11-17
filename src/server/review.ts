@@ -5,6 +5,7 @@ import { writeAudit } from "./audit";
 import { queuePhotoChecks } from "./photoChecks";
 import { getSettings } from "./settings";
 import { deleteImage, putImage, type PutResult } from "./storage";
+import { syncCustomerStatus } from "./customerStatus";
 import { voucherCode, voucherSecret } from "./voucher";
 import { reviewsBank } from "@/lib/permissions";
 import { renderSms, SMS_KIND_VOUCHER, smsValues } from "@/lib/sms";
@@ -108,8 +109,7 @@ export async function reviewCustomerBank(actor: SessionUser, input: ReviewInput,
       await tx.execute(sql`select pg_notify('sms_messages', ${sms.id})`);
     }
 
-    const [left] = await tx.select({ n: count() }).from(customerBanks).where(and(eq(customerBanks.customerId, c.id), eq(customerBanks.status, "pending")));
-    if (left.n === 0 && c.status === "pending_review") await tx.update(customers).set({ status: "reviewed" }).where(eq(customers.id, c.id));
+    await syncCustomerStatus(tx, c.id);
     await writeAudit(tx, { userId: actor.id, action: "review_customer_bank", targetType: "customer_banks", targetId: input.customerBankId, detail: { from, to: input.result, voucher: code ?? null }, ip });
     return { ok: true as const };
   });

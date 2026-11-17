@@ -1,4 +1,5 @@
 import { and, eq, inArray, isNull } from "drizzle-orm";
+import { syncCustomerStatus } from "./customerStatus";
 import { db } from "./db/client";
 import { bankPhotoSlots, customerBanks, customers, proofPhotos, schools } from "./db/schema";
 import { deleteImage, presignGet, putImage, type PutResult } from "./storage";
@@ -20,6 +21,12 @@ const LOCKED = fail("Hồ sơ đã gửi kiểm tra.", 409);
 type Executor = Pick<typeof db, "select">;
 export type PhotoTarget = { customerBankId: string; slotId: string };
 
+// Còn dòng ngân hàng đang chọn thì hồ sơ còn ở bước 3, kể cả khi đã gửi kiểm tra ngân hàng khác.
+async function hasSelectedRows(ex: Executor, customerId: string): Promise<boolean> {
+  const rows = await ex.select({ id: customerBanks.id }).from(customerBanks).where(and(eq(customerBanks.customerId, customerId), eq(customerBanks.status, "selected"))).limit(1);
+  return rows.length > 0;
+}
+
 // Dòng ngân hàng phải là của học sinh và đang chọn; khung phải thuộc đúng ngân hàng đó và chưa bỏ. DB không ràng buộc được điều này.
 async function targetFound(ex: Executor, customerId: string, t: PhotoTarget): Promise<boolean> {
   const [row] = await ex
@@ -36,16 +43,15 @@ async function removeQuietly(store: PhotoStore, keys: string[]) {
 
 // Kiểm trước khi ghi S3 để request bị từ chối không để lại object; kiểm lại trong transaction vì hồ sơ có thể đổi lúc đang ghi.
 export async function uploadPhoto(customer: Customer, input: PhotoTarget, bytes: Uint8Array, store = s3PhotoStore): Promise<{ ok: true } | Fail> {
-  const [now] = await db.select({ status: customers.status }).from(customers).where(eq(customers.id, customer.id));
-  if (now?.status !== "banks_selected") return LOCKED;
+  if (!(await hasSelectedRows(db, customer.id))) return LOCKED;
   if (!(await targetFound(db, customer.id, input))) return fail("Không tìm thấy khung ảnh.", 404);
   const up = await store.put(bytes);
   if (!up.ok) return fail(up.message, 400, "file");
   const r = await db
     .transaction(async (tx) => {
       // Khoá hồ sơ: Gửi kiểm tra hay lần gửi khác cùng khung chạy cùng lúc thì một bên chờ, khung chỉ còn một ảnh.
-      const [current] = await tx.select({ status: customers.status }).from(customers).where(eq(customers.id, customer.id)).for("update");
-      if (current?.status !== "banks_selected") return LOCKED;
+      await tx.select({ id: customers.id }).from(customers).where(eq(customers.id, customer.id)).for("update");
+      if (!(await hasSelectedRows(tx, customer.id))) return LOCKED;
       if (!(await targetFound(tx, customer.id, input))) return fail("Không tìm thấy khung ảnh.", 404);
       const old = await tx
         .delete(proofPhotos)
@@ -71,18 +77,20 @@ export async function cancelBanks(customer: Customer, store = s3PhotoStore): Pro
       .innerJoin(schools, eq(schools.id, customers.schoolId))
       .where(eq(customers.id, customer.id))
       .for("update", { of: customers });
-    if (current?.status !== "banks_selected") return fail("Hồ sơ không ở bước mở tài khoản.", 409);
-    // Trường đã đóng thì bỏ chỗ là mất luôn, không chọn lại được.
-    if (!current.schoolActive) return fail("Trường đã đóng.", 409);
+    if (!current) return fail("Hồ sơ không ở bước mở tài khoản.", 409);
     const selected = await tx
       .select({ id: customerBanks.id })
       .from(customerBanks)
       .where(and(eq(customerBanks.customerId, customer.id), eq(customerBanks.status, "selected")));
+    // Chỉ bỏ dòng đang chọn; dòng đã gửi kiểm tra giữ nguyên.
+    if (!selected.length) return fail("Hồ sơ không ở bước mở tài khoản.", 409);
+    // Trường đã đóng thì bỏ chỗ là mất luôn, không chọn lại được.
+    if (!current.schoolActive) return fail("Trường đã đóng.", 409);
     const ids = selected.map((s) => s.id);
     // Đọc khoá ảnh trước khi xoá: xoá dòng ngân hàng thì cascade xoá luôn dòng ảnh.
     const keys = ids.length ? (await tx.select({ key: proofPhotos.s3Key }).from(proofPhotos).where(inArray(proofPhotos.customerBankId, ids))).map((p) => p.key) : [];
-    if (ids.length) await tx.delete(customerBanks).where(inArray(customerBanks.id, ids));
-    await tx.update(customers).set({ status: "new" }).where(eq(customers.id, customer.id));
+    await tx.delete(customerBanks).where(inArray(customerBanks.id, ids));
+    await syncCustomerStatus(tx, customer.id);
     return { ok: true as const, keys };
   });
   if (!r.ok) return r;

@@ -1,10 +1,11 @@
 import { randomBytes } from "node:crypto";
 import { isIP } from "node:net";
-import { and, asc, count, eq, inArray, isNull, max } from "drizzle-orm";
+import { and, asc, count, eq, inArray, isNull, max, ne, sql } from "drizzle-orm";
 import { db } from "./db/client";
 import { bankPhotoSlots, banks, customerBanks, customerExistingBanks, customers, proofPhotos, referralCodeMonths, referralCodeSchools, referralCodes, schools, smsMessages, vouchers } from "./db/schema";
 import { s3PhotoStore, type PhotoStore } from "./customerPhotos";
-import { queuePhotoChecks } from "./photoChecks";
+import { syncCustomerStatus } from "./customerStatus";
+import { queuePhotoChecks, type Tx } from "./photoChecks";
 import { hashToken } from "./auth/session";
 import { publicSchool } from "./schools";
 import { getSettings } from "./settings";
@@ -202,14 +203,18 @@ export async function reserveBanks(customer: Customer, bankIds: string[], month 
       .innerJoin(schools, eq(schools.id, customers.schoolId))
       .where(eq(customers.id, customer.id))
       .for("update", { of: customers });
-    if (current?.status !== "new") return fail("Hồ sơ đã chọn ngân hàng.", 409);
+    if (!current || current.status === "no_bank") return fail("Hồ sơ đã chọn ngân hàng.", 409);
+    // Mở thêm sau khi đã gửi hết ngân hàng đã chọn: còn dòng đang chọn thì phải xong bước 3 trước.
+    const taken = await tx.select({ bankId: customerBanks.bankId, status: customerBanks.status, slot: customerBanks.slot }).from(customerBanks).where(eq(customerBanks.customerId, customer.id));
+    if (taken.some((r) => r.status === "selected")) return fail("Hồ sơ đã chọn ngân hàng.", 409);
     // Trường đóng thì không giữ chỗ mới; học sinh đã giữ chỗ vẫn nộp ảnh và gửi kiểm tra.
     if (!current.schoolActive) return fail("Trường đã đóng.", 409);
     const candidates = await loadCandidates(tx, current.schoolId, month, true);
-    const existing = await existingBankIds(tx, customer.id);
+    const existing = new Set([...(await existingBankIds(tx, customer.id)), ...taken.map((r) => r.bankId)]);
     const open = openBanksOf(candidates, existing);
     if (!open.length) {
       if (!hasAllBanks(candidates, existing)) return fail("Ngân hàng đã hết lượt trong tháng này.", 409);
+      if (taken.length) return fail("Không còn ngân hàng nào để mở thêm.", 409);
       await tx.update(customers).set({ status: "no_bank" }).where(eq(customers.id, customer.id));
       return fail("Không còn ngân hàng nào phù hợp.", 409);
     }
@@ -218,26 +223,53 @@ export async function reserveBanks(customer: Customer, bankIds: string[], month 
     // Chọn từ 1 tới hết ngân hàng còn lượt (chủ dự án chốt 2026-11-17); lượt theo tháng của từng mã vẫn tính như cũ.
     if (!chosen.length) return fail("Chọn ngân hàng.", 400, "bankIds");
     if (chosen.length !== bankIds.length) return fail("Ngân hàng bị trùng.", 400, "bankIds");
+    const base = Math.max(0, ...taken.map((r) => r.slot));
     for (const [i, bankId] of chosen.entries()) {
       const code = pickCode(candidates, bankId);
       await tx.insert(referralCodeMonths).values({ referralCodeId: code.id, yearMonth: month, quota: code.quota }).onConflictDoNothing();
-      await tx.insert(customerBanks).values({ customerId: customer.id, bankId, slot: i + 1, referralCodeId: code.id, referralCode: code.code ?? "", yearMonth: month });
+      await tx.insert(customerBanks).values({ customerId: customer.id, bankId, slot: base + i + 1, referralCodeId: code.id, referralCode: code.code ?? "", yearMonth: month });
     }
-    await tx.update(customers).set({ status: "banks_selected" }).where(eq(customers.id, customer.id));
+    await syncCustomerStatus(tx, customer.id);
     return { ok: true as const };
   });
 }
 
+// Gửi mọi ngân hàng còn đang chọn trong một lần (route /submit cũ); từng ngân hàng thì submitBank.
 export async function submitForReview(customer: Customer): Promise<{ ok: true } | Fail> {
   return db.transaction(async (tx) => {
     // Khoá hồ sơ trước khi kiểm ảnh: ảnh ghi cùng lúc phải chờ, không lọt vào hồ sơ đã gửi.
     const [current] = await tx.select({ status: customers.status }).from(customers).where(eq(customers.id, customer.id)).for("update");
-    if (current?.status !== "banks_selected") return fail("Hồ sơ đã gửi kiểm tra.", 409);
+    if (!current) return fail("Không tìm thấy hồ sơ.", 404);
     const rows = await tx
       .select({ id: customerBanks.id, bankId: customerBanks.bankId })
       .from(customerBanks)
       .where(and(eq(customerBanks.customerId, customer.id), eq(customerBanks.status, "selected")));
-    if (!rows.length) return fail("Chưa chọn ngân hàng.", 409);
+    if (!rows.length) return fail("Hồ sơ đã gửi kiểm tra.", 409);
+    return submitRows(tx, customer.id, rows);
+  });
+}
+
+// Học sinh nộp đủ ảnh một ngân hàng thì gửi riêng ngân hàng đó (chủ dự án chốt 2026-11-17); ngân hàng khác vẫn nộp tiếp.
+export async function submitBank(customer: Customer, customerBankId: string): Promise<{ ok: true; submitted: number } | Fail> {
+  return db.transaction(async (tx) => {
+    const [current] = await tx.select({ status: customers.status }).from(customers).where(eq(customers.id, customer.id)).for("update");
+    if (!current) return fail("Không tìm thấy hồ sơ.", 404);
+    const [row] = await tx
+      .select({ id: customerBanks.id, bankId: customerBanks.bankId, status: customerBanks.status })
+      .from(customerBanks)
+      .where(and(eq(customerBanks.id, customerBankId), eq(customerBanks.customerId, customer.id)));
+    if (!row) return fail("Không tìm thấy ngân hàng.", 404);
+    if (row.status !== "selected") return fail("Ngân hàng đã gửi kiểm tra.", 409);
+    const r = await submitRows(tx, customer.id, [row]);
+    if (!r.ok) return r;
+    const [{ n }] = await tx.select({ n: count() }).from(customerBanks).where(and(eq(customerBanks.customerId, customer.id), ne(customerBanks.status, "selected")));
+    return { ok: true as const, submitted: n };
+  });
+}
+
+// Mọi khung chưa bỏ của từng ngân hàng phải có ảnh; giờ gửi của hồ sơ là lần gửi đầu tiên; xếp lượt kiểm ảnh cho ngân hàng có khung bật kiểm.
+async function submitRows(tx: Tx, customerId: string, rows: { id: string; bankId: string }[]): Promise<{ ok: true } | Fail> {
+  {
     const [slots, photos] = await Promise.all([
       tx
         .select({ id: bankPhotoSlots.id, bankId: bankPhotoSlots.bankId, checkName: bankPhotoSlots.checkName, checkCode: bankPhotoSlots.checkCode })
@@ -253,12 +285,13 @@ export async function submitForReview(customer: Customer): Promise<{ ok: true } 
     if (missing) return fail("Còn khung chưa có ảnh.", 400);
     const now = new Date();
     await tx.update(customerBanks).set({ status: "pending", submittedAt: now }).where(inArray(customerBanks.id, rows.map((r) => r.id)));
-    await tx.update(customers).set({ status: "pending_review", submittedAt: now }).where(eq(customers.id, customer.id));
+    await tx.update(customers).set({ submittedAt: sql`coalesce(${customers.submittedAt}, ${now})` }).where(eq(customers.id, customerId));
+    await syncCustomerStatus(tx, customerId);
     // Ngân hàng không có khung nào bật kiểm thì không xếp lượt kiểm ảnh.
     const checked = rows.filter((r) => slots.some((sl) => sl.bankId === r.bankId && (sl.checkName || sl.checkCode))).map((r) => r.id);
     await queuePhotoChecks(tx, checked);
     return { ok: true as const };
-  });
+  }
 }
 
 async function chosenBanks(customer: Customer, store: PhotoStore): Promise<StudentBank[]> {
@@ -280,8 +313,8 @@ async function chosenBanks(customer: Customer, store: PhotoStore): Promise<Stude
     .innerJoin(referralCodes, eq(referralCodes.id, customerBanks.referralCodeId))
     .where(eq(customerBanks.customerId, customer.id))
     .orderBy(asc(customerBanks.slot));
-  // Hướng dẫn, mã và khung ảnh chỉ cần ở B3; gửi kiểm tra xong web chỉ hiện trạng thái.
-  const guide = customer.status === "banks_selected" && rows.length > 0;
+  // Hướng dẫn, mã và khung ảnh chỉ cần cho dòng đang chọn ở B3; dòng đã gửi web chỉ hiện trạng thái.
+  const guide = rows.some((r) => r.status === "selected");
   const [slots, photos] = guide
     ? await Promise.all([
         db
@@ -304,13 +337,13 @@ async function chosenBanks(customer: Customer, store: PhotoStore): Promise<Stude
       logoUrl: await sign(r.logoKey),
       slot: r.slot,
       status: r.status,
-      referralCode: guide ? r.referralCode : "",
-      qrUrl: guide ? await sign(r.qrKey) : null,
-      openUrl: guide ? r.openUrl : null,
-      steps: guide && Array.isArray(r.guide) ? (r.guide as string[]) : [],
+      referralCode: r.status === "selected" ? r.referralCode : "",
+      qrUrl: r.status === "selected" ? await sign(r.qrKey) : null,
+      openUrl: r.status === "selected" ? r.openUrl : null,
+      steps: r.status === "selected" && Array.isArray(r.guide) ? (r.guide as string[]) : [],
       slots: await Promise.all(
         slots
-          .filter((s) => s.bankId === r.bankId)
+          .filter((s) => r.status === "selected" && s.bankId === r.bankId)
           .map(async (s) => {
             const photo = photos.find((p) => p.customerBankId === r.id && p.slotId === s.id);
             return { id: s.id, name: s.name, sampleUrl: await sign(s.sampleKey), photo: photo ? { url: await store.signGet(photo.s3Key), sizeBytes: photo.sizeBytes ?? 0 } : null };
@@ -325,11 +358,14 @@ export async function studentState(customer: Customer, month = currentYearMonth(
   const [existing, settings] = await Promise.all([existingBankIds(db, customer.id), getSettings()]);
   const existingBanks = existing.size ? (await db.select({ name: banks.name }).from(banks).where(inArray(banks.id, [...existing])).orderBy(asc(banks.sortOrder), asc(banks.name))).map((b) => b.name) : [];
   let status = customer.status;
+  const chosen = await chosenBanks(customer, store);
+  const hasSelected = chosen.some((b) => b.status === "selected");
   let eligibleBanks: StudentState["eligibleBanks"] = [];
-  if (status === "new") {
+  // Hồ sơ mới, hay đã gửi hết ngân hàng đã chọn: tính ngân hàng còn mở thêm được, bỏ ngân hàng đã có dòng.
+  if (status === "new" || (!hasSelected && (status === "pending_review" || status === "reviewed"))) {
     const candidates = await loadCandidates(db, customer.schoolId, month);
-    eligibleBanks = await withLogoUrls(openBanksOf(candidates, existing), store);
-    if (!eligibleBanks.length && hasAllBanks(candidates, existing)) {
+    eligibleBanks = await withLogoUrls(openBanksOf(candidates, new Set([...existing, ...chosen.map((b) => b.bankId)])), store);
+    if (status === "new" && !eligibleBanks.length && hasAllBanks(candidates, existing)) {
       await db.update(customers).set({ status: "no_bank" }).where(and(eq(customers.id, customer.id), eq(customers.status, "new")));
       status = "no_bank";
     }
@@ -352,7 +388,7 @@ export async function studentState(customer: Customer, month = currentYearMonth(
     voucher: voucher ? { smsSentAt: voucher.smsSentAt?.toISOString() ?? null } : null,
     eligibleBanks,
     existingBanks,
-    banks: await chosenBanks({ ...customer, status }, store),
+    banks: chosen,
     zaloUrl: settings.zaloUrl,
     pviAppUrl: settings.pviAppUrl,
     insurance: insuranceOf(settings),

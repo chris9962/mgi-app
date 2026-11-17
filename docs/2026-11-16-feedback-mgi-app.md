@@ -21,9 +21,9 @@ Web học sinh hiện có 3 bước: 1 Thông tin, 2 Chọn ngân hàng, 3 Mở 
 
 ## 3. Bước 3 Mở tài khoản
 
-- [ ] Học sinh nộp đủ ảnh của một ngân hàng thì hiện hộp thoại hỏi đã hoàn thành chưa.
+- [x] Học sinh nộp đủ ảnh của một ngân hàng thì hiện hộp thoại hỏi đã hoàn thành chưa. Làm 2026-11-17: hộp "Đã hoàn thành ...?" hiện ngay sau ảnh cuối, xác nhận thì gửi kiểm tra riêng ngân hàng đó (API POST /api/customers/me/banks/:id/submit). Trạng thái hồ sơ suy từ các dòng ngân hàng (`src/server/customerStatus.ts`).
   - Học sinh xác nhận thì app gửi kiểm tra ngân hàng đó ngay. App không chờ nộp đủ ảnh của mọi ngân hàng.
-  - Việc này trùng hướng sửa ở mục 2 của `docs/2026-11-13-van-de-ton-dong.md`. Ba điểm chưa chốt ở đó vẫn còn mở.
+  - Ba điểm chưa chốt ở mục 2 của `docs/2026-11-13-van-de-ton-dong.md` xử lý 2026-11-17: (1) có nút "Không mở thêm ngân hàng" ở bước 3 sau khi đã gửi ít nhất một ngân hàng; (2) họ tên, lớp, SĐT phụ huynh khoá từ lần gửi đầu; (3) không còn trần 2 ngân hàng. Thêm: màn Kết quả có nút "Mở thêm ngân hàng" khi trường còn ngân hàng chưa mở.
 - [ ] Từ ngân hàng thứ 2, hiện thông báo học sinh nhận được 20.000 đồng.
   - Sau thông báo, học sinh nhập thông tin nhận quà.
 - [ ] Viết hướng dẫn chi tiết hơn ở mỗi bước.

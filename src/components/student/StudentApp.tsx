@@ -34,7 +34,9 @@ const LATER = "Thử lại sau ít phút.";
 const loadFailed = (status: number, link?: string): Screen => ({ kind: "error", message: status === 0 ? NETWORK : LATER, link });
 
 const PROFILE_STEP = { new: 2, no_bank: 2, banks_selected: 3, pending_review: 4, reviewed: 4 };
-const stepOf = (s: Screen) => (s.kind === "form" || s.kind === "edit" ? 1 : s.kind === "profile" ? PROFILE_STEP[s.state.customer.status] : 0);
+// Còn ngân hàng đang chọn thì vẫn ở bước 3 dù đã gửi ngân hàng khác; đang mở thêm thì ở bước 2.
+const stepOf = (s: Screen, adding = false) =>
+  s.kind === "form" || s.kind === "edit" ? 1 : s.kind === "profile" ? (adding ? 2 : s.state.banks.some((b) => b.status === "selected") ? 3 : PROFILE_STEP[s.state.customer.status]) : 0;
 
 async function fetchSchool(id: string): Promise<StudentSchool | null | { failed: number }> {
   const r = await studentApi<StudentSchool>("GET", `/api/schools/${id}`);
@@ -89,6 +91,8 @@ export function StudentApp({ linkId }: { linkId?: string }) {
   const [headSlot, setHeadSlot] = useState<HTMLElement | null>(null);
   const [pendingStep, setPendingStep] = useState<1 | 2 | null>(null);
   const backHandle = useRef<((step: 1 | 2) => void) | null>(null);
+  // Màn Kết quả bấm Mở thêm ngân hàng: về bước 2 chọn trong số ngân hàng còn lại.
+  const [adding, setAdding] = useState(false);
 
   // Đồng bộ với localStorage và máy chủ lúc mở web: máy giữ trường và token, máy chủ giữ hồ sơ.
   useEffect(() => {
@@ -111,6 +115,7 @@ export function StudentApp({ linkId }: { linkId?: string }) {
     setBack(stepOf(next) < lastStep.current);
     lastStep.current = stepOf(next);
     setPendingStep(null);
+    setAdding(false);
     setScreen(next.kind === "profile" ? { ...next, notice } : next);
   };
 
@@ -145,7 +150,7 @@ export function StudentApp({ linkId }: { linkId?: string }) {
   }, [onProfile]);
 
   const hasHead = screen.kind === "closed" || screen.kind === "form" || screen.kind === "edit" || screen.kind === "profile";
-  const step = stepOf(screen);
+  const step = stepOf(screen, adding);
   const profile = screen.kind === "profile" ? screen.state : null;
   // Trường đóng lúc chưa chọn ngân hàng thì màn chỉ có tiêu đề "Trường đã đóng", không có thanh bước.
   const showSteps = step >= 1 && step <= 3 && (!profile || profile.school.active || step === 3);
@@ -239,14 +244,29 @@ export function StudentApp({ linkId }: { linkId?: string }) {
           </>
         );
       case "profile":
-        return <Profile state={screen.state} notice={screen.notice} onChange={(notice) => go(undefined, notice)} onEdit={() => editInfo(screen.state.school.id)} />;
+        return (
+          <Profile
+            state={screen.state}
+            notice={screen.notice}
+            adding={adding}
+            onAddMore={() => {
+              setBack(true);
+              lastStep.current = 2;
+              setAdding(true);
+            }}
+            onChange={(notice) => go(undefined, notice)}
+            onEdit={() => editInfo(screen.state.school.id)}
+          />
+        );
     }
   }
 }
 
-type ProfileProps = { state: StudentState; notice?: string; onChange: (notice?: string) => Promise<void>; onEdit: () => Promise<string | null> };
+type ProfileProps = { state: StudentState; notice?: string; adding: boolean; onAddMore: () => void; onChange: (notice?: string) => Promise<void>; onEdit: () => Promise<string | null> };
 
-function Profile({ state, notice, onChange, onEdit }: ProfileProps) {
+const INFO_LOCKED = "Đã gửi kiểm tra, không sửa được thông tin.";
+
+function Profile({ state, notice, adding, onAddMore, onChange, onEdit }: ProfileProps) {
   const { status } = state.customer;
   if (!state.school.active && (status === "new" || status === "no_bank")) return <AppHead title="Trường đã đóng" />;
   switch (status) {
@@ -259,7 +279,10 @@ function Profile({ state, notice, onChange, onEdit }: ProfileProps) {
       return <OpenAccount state={state} onChange={() => onChange()} onEdit={onEdit} />;
     case "pending_review":
     case "reviewed":
-      return <Result state={state} />;
+      // Gửi kiểm tra từng ngân hàng: còn ngân hàng đang chọn thì vẫn ở bước 3; đã gửi hết thì xem kết quả, mở thêm được nếu còn ngân hàng.
+      if (state.banks.some((b) => b.status === "selected")) return <OpenAccount state={state} onChange={() => onChange()} onEdit={onEdit} />;
+      if (adding) return <ChooseBanks key={state.eligibleBanks.map((b) => b.id).join()} state={state} notice={notice} onDone={onChange} onEdit={async () => INFO_LOCKED} />;
+      return <Result state={state} onAddMore={state.school.active && state.eligibleBanks.length > 0 ? onAddMore : undefined} />;
   }
 }
 

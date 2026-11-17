@@ -6,7 +6,7 @@ import { bankPhotoSlots, customerBanks, customers, photoChecks, smsMessages, vou
 import { createBank } from "../../src/server/banks";
 import { createSchool } from "../../src/server/schools";
 import { createCode } from "../../src/server/referralCodes";
-import { createCustomer, reserveBanks, studentState, submitForReview, type Customer } from "../../src/server/customers";
+import { createCustomer, reserveBanks, studentState, submitBank, submitForReview, type Customer } from "../../src/server/customers";
 import { cancelBanks, uploadPhoto } from "../../src/server/customerPhotos";
 import { BankForm } from "../../src/lib/bankForm";
 import { CodeForm } from "../../src/lib/codeForm";
@@ -108,6 +108,62 @@ describe("Gửi kiểm tra", () => {
     expect(fake.objects.size).toBe(0);
     expect(await cancelBanks(locked, fake.store)).toMatchObject({ ok: false, status: 409 });
     expect(await submitForReview(locked)).toMatchObject({ ok: false, status: 409 });
+  });
+});
+
+describe("Gửi kiểm tra từng ngân hàng (chốt 2026-11-17)", () => {
+  const statusOf = async (c: Customer) => (await db.select({ s: customers.status }).from(customers).where(eq(customers.id, c.id)))[0].s;
+
+  test("ngân hàng đủ ảnh gửi được dù ngân hàng kia chưa đủ; hồ sơ sang Chờ kiểm tra nhưng ngân hàng còn lại vẫn nộp ảnh; gửi nốt thì không còn dòng đang chọn", async () => {
+    const c = await student();
+    await put(c, "A", "A1");
+    await put(c, "A", "A2");
+    const b = await rowOf(c, "B");
+    expect(await submitBank(c, b.id)).toMatchObject({ ok: false, status: 400 });
+    const a = await rowOf(c, "A");
+    expect(await submitBank(c, a.id)).toEqual({ ok: true, submitted: 1 });
+    expect([(await rowOf(c, "A")).status, (await rowOf(c, "B")).status]).toEqual(["pending", "selected"]);
+    expect(await statusOf(c)).toBe("pending_review");
+    expect(await submitBank(c, a.id)).toMatchObject({ ok: false, status: 409 });
+    const [locked] = await db.select().from(customers).where(eq(customers.id, c.id));
+    expect(locked.submittedAt).toBeInstanceOf(Date);
+    // Ngân hàng B còn đang chọn: nộp ảnh, xem hướng dẫn, gửi riêng vẫn được.
+    await put(locked, "B", "B1");
+    const state = await studentState(locked, MONTH, fakeStore().store);
+    expect(state.banks.map((x) => [x.status, x.slots.length, x.referralCode !== ""])).toEqual([
+      ["pending", 0, false],
+      ["selected", 1, true],
+    ]);
+    expect(state.eligibleBanks).toEqual([]);
+    expect(await submitBank(locked, b.id)).toEqual({ ok: true, submitted: 2 });
+    expect(await statusOf(c)).toBe("pending_review");
+    // Giờ gửi của hồ sơ là lần gửi đầu tiên.
+    expect((await db.select().from(customers).where(eq(customers.id, c.id)))[0].submittedAt).toEqual(locked.submittedAt);
+    expect(await cancelBanks(locked, fakeStore().store)).toMatchObject({ ok: false, status: 409 });
+  });
+
+  test("không mở thêm: bỏ ngân hàng chưa gửi, giữ ngân hàng đã gửi, trả lượt; gửi hết rồi thì giữ chỗ thêm được ngân hàng còn lại", async () => {
+    const c = await student();
+    await put(c, "A", "A1");
+    await put(c, "A", "A2");
+    await put(c, "B", "B1");
+    expect(await submitBank(c, (await rowOf(c, "A")).id)).toEqual({ ok: true, submitted: 1 });
+    const fake = fakeStore();
+    expect(await cancelBanks(c, fake.store)).toEqual({ ok: true });
+    const rows = await db.select().from(customerBanks).where(eq(customerBanks.customerId, c.id));
+    expect(rows.map((r) => [r.bankId, r.status])).toEqual([[bank.A, "pending"]]);
+    expect(await statusOf(c)).toBe("pending_review");
+    const [after] = await db.select().from(customers).where(eq(customers.id, c.id));
+    // Đã gửi hết ngân hàng đã chọn: ngân hàng B còn lượt hiện lại để mở thêm, A thì không.
+    expect((await studentState(after, MONTH, fake.store)).eligibleBanks.map((x) => x.id)).toEqual([bank.B]);
+    expect(await reserveBanks(after, [bank.A], MONTH)).toMatchObject({ ok: false, status: 409 });
+    expect(await reserveBanks(after, [bank.B], MONTH)).toEqual({ ok: true });
+    const again = await db.select().from(customerBanks).where(eq(customerBanks.customerId, c.id)).orderBy(customerBanks.slot);
+    expect(again.map((r) => [r.bankId, r.slot, r.status])).toEqual([
+      [bank.A, 1, "pending"],
+      [bank.B, 2, "selected"],
+    ]);
+    expect(await statusOf(c)).toBe("pending_review");
   });
 });
 
