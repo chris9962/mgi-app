@@ -4,6 +4,7 @@ import { clsx } from "clsx";
 import { useId, useState, type ReactNode } from "react";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
+import { splitBankName } from "@/lib/bankName";
 import type { StudentBankInfo } from "@/lib/studentState";
 import { BankLogo } from "./parts";
 
@@ -12,12 +13,6 @@ const TABS = [
   { key: "guide", label: "Hướng dẫn" },
 ] as const;
 type Tab = (typeof TABS)[number]["key"];
-
-// Tên cấu hình dạng "Ngân hàng TMCP Quân đội (MB Bank)": tên ngắn trong ngoặc làm tiêu đề, tên dài làm dòng phụ.
-export function splitBankName(name: string): { short: string; long: string | null } {
-  const m = /^(.*\S)\s*\(([^()]+)\)\s*$/.exec(name);
-  return m ? { short: m[2], long: m[1] } : { short: name, long: null };
-}
 
 const hostOf = (url: string) => url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/.*$/, "");
 

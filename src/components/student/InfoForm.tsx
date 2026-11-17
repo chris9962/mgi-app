@@ -5,6 +5,7 @@ import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
 import { Dialog } from "@/components/ui/Dialog";
 import { TextField } from "@/components/ui/TextField";
+import { shortName } from "@/lib/bankName";
 import { CONSENT_SECTIONS, CONSENT_TITLE } from "@/lib/consent";
 import { CustomerForm, type CustomerSelfEditInput } from "@/lib/customerForm";
 import { studentApi } from "@/lib/studentApi";
@@ -85,7 +86,7 @@ export function InfoForm({ school, initial, onSaved }: { school: StudentSchool; 
                     checked={existing.includes(b.id)}
                     onChange={(e) => setExisting((list) => (e.target.checked ? [...list, b.id] : list.filter((id) => id !== b.id)))}
                   />
-                  <span className="min-w-0 wrap-anywhere">{b.name}</span>
+                  <span className="min-w-0 wrap-anywhere">{shortName(b.name)}</span>
                 </span>
               </label>
             ))}

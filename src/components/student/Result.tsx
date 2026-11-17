@@ -3,6 +3,7 @@
 import { ClipboardCheck, Clock, ExternalLink } from "lucide-react";
 import { QrPreview } from "@/components/settings/QrPreview";
 import { StatusTag, type Tone } from "@/components/ui/StatusTag";
+import { shortName } from "@/lib/bankName";
 import { formatDateTime } from "@/lib/dates";
 import type { CustomerBankStatus, StudentState } from "@/lib/studentState";
 import { AppHead, Bottom, ZaloBox } from "./parts";
@@ -51,7 +52,7 @@ export function Result({ state }: { state: StudentState }) {
       <ul aria-label="Ngân hàng đã gửi" className="anim-stagger my-4 flex flex-col divide-y divide-line rounded-2xl border border-line bg-card shadow-sm">
         {state.banks.map((b) => (
           <li key={b.id} className="flex items-center justify-between gap-3 px-4 py-3">
-            <strong className="text-[15px]">{b.name}</strong>
+            <strong className="text-[15px]">{shortName(b.name)}</strong>
             <StatusTag size="md" tone={STATUS[b.status].tone}>{STATUS[b.status].label}</StatusTag>
           </li>
         ))}
