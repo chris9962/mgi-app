@@ -107,7 +107,7 @@ export function ChooseBanks({ state, notice, onDone, onEdit }: { state: StudentS
           {message}
         </p>
       )}
-      {info && <BankInfoDialog bank={info} onClose={() => setInfo(null)} />}
+      {info && <BankInfoDialog bank={info} pick={need === 2 ? { picked: chosen.includes(info.id), full: chosen.length >= 2, onToggle: () => toggle(info.id) } : undefined} onClose={() => setInfo(null)} />}
       <Bottom sticky>
         <Button large block disabled={chosen.length !== need || pending || editing} onClick={submit}>
           Tiếp tục
