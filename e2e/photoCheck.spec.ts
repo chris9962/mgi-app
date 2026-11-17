@@ -29,7 +29,6 @@ async function submitWithScreens(browser: Browser) {
   await page.goto(`/t/${E2E_STUDENT_SCHOOL_ID}`);
   await page.getByLabel("Họ và tên", { exact: true }).fill(STUDENT);
   await page.getByLabel("Lớp").fill("10a4");
-  await page.getByLabel("SĐT", { exact: true }).fill("0977000111");
   await page.getByLabel("SĐT phụ huynh").fill("0977000222");
   await page.getByRole("checkbox", { name: "Đồng ý" }).check();
   await page.getByRole("button", { name: "Tiếp tục" }).click();

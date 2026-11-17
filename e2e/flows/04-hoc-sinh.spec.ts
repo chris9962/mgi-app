@@ -40,11 +40,7 @@ test("Flow 4: học sinh mở link QR, chọn 2 ngân hàng, nộp ảnh, gửi 
   await test.step("Khai thông tin học sinh và phụ huynh", async () => {
     await page.getByLabel("Họ và tên", { exact: true }).fill(NAME);
     await page.getByLabel("Lớp").fill("11a3");
-    await page.getByLabel("SĐT", { exact: true }).fill("0912 345 678");
-    await page.getByLabel("SĐT phụ huynh").fill("0912345678");
-    await page.getByLabel("SĐT phụ huynh").blur();
-    await expect(page.getByText("SĐT phụ huynh phải khác SĐT học sinh.")).toBeVisible();
-    await page.getByLabel("SĐT phụ huynh").fill("0987654321");
+    await page.getByLabel("SĐT phụ huynh").fill("0987 654 321");
     await page.getByRole("checkbox", { name: "Đồng ý" }).check();
     await page.getByRole("button", { name: "Tiếp tục" }).click();
   });

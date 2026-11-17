@@ -22,7 +22,6 @@ async function submittedStudent(browser: Browser): Promise<Page> {
   await page.goto(`/t/${E2E_STUDENT_SCHOOL_ID}`);
   await page.getByLabel("Họ và tên", { exact: true }).fill(STUDENT);
   await page.getByLabel("Lớp").fill("12c2");
-  await page.getByLabel("SĐT", { exact: true }).fill("0933222444");
   await page.getByLabel("SĐT phụ huynh").fill("0977123456");
   await page.getByRole("checkbox", { name: "Đồng ý" }).check();
   await page.getByRole("button", { name: "Tiếp tục" }).click();

@@ -2,8 +2,8 @@ import { apiReview, apiStudent, bankOf, chapter, expect, logLines, loginAs, note
 
 const VPB = "ZZE2E HS VPBank";
 const TPB = "ZZE2E HS TPBank";
-const SENT = { fullName: "Vũ Thị Gửi Được", className: "10a2", phone: "0933100200", parentPhone: "0977100200" };
-const REFUSED = { fullName: "Đặng Văn Lỗi Số", className: "10a2", phone: "0933300400", parentPhone: "0977300400" };
+const SENT = { fullName: "Vũ Thị Gửi Được", className: "10a2", parentPhone: "0977100200" };
+const REFUSED = { fullName: "Đặng Văn Lỗi Số", className: "10a2", parentPhone: "0977300400" };
 const FIXED_PHONE = "0977300499";
 
 test("Flow 6: worker gửi SMS ghi log; tin lỗi 3 lần hiện ở Tin SMS lỗi, sửa SĐT, Gửi lại", async ({ page }) => {

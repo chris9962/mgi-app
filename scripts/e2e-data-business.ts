@@ -27,7 +27,6 @@ export const B_USER4 = "zz_e2e_bien4";
 export const B_PAGE_COUNT = 16;
 export const bPageName = (n: number) => `Biên Phân Trang ${String(n).padStart(2, "0")}`;
 export const bPageId = (n: number) => id(300 + n);
-export const bPhone = (n: number) => `0966${String(n).padStart(6, "0")}`;
 export const bParentPhone = (n: number) => `0988${String(n).padStart(6, "0")}`;
 export const bPageVoucher = (n: number) => `ZZBIEN-BPT${String(n).padStart(2, "0")}-10A1-K7Q2`;
 

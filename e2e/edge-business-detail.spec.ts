@@ -92,7 +92,7 @@ test("Trang 4 URL sai: id không phải uuid, uuid không có trả 404 ở tran
   const headers = { Origin: ADMIN };
   for (const id of ["abc", missing]) {
     expect((await page.request.get(`/api/admin/customers/${id}`)).status()).toBe(404);
-    expect((await page.request.patch(`/api/admin/customers/${id}`, { headers, data: { fullName: "A", className: "1", phone: "0911111111", parentPhone: "0922222222" } })).status()).toBe(404);
+    expect((await page.request.patch(`/api/admin/customers/${id}`, { headers, data: { fullName: "A", className: "1", parentPhone: "0922222222" } })).status()).toBe(404);
     expect((await page.request.get(`/api/admin/photos/${id}`, { maxRedirects: 0 })).status()).toBe(404);
     expect((await page.request.post(`/api/admin/customer-banks/${id}/review`, { headers, data: { result: "passed", expected: "pending" } })).status()).toBe(404);
     expect((await page.request.put(`/api/admin/customer-banks/${id}/note`, { headers, data: { note: "x" } })).status()).toBe(404);
@@ -112,10 +112,10 @@ test("Trang 4 Sửa thông tin: ô trống, chỉ khoảng trắng, quá dài, S
     ["Họ tên", "a".repeat(101), "Tối đa 100 ký tự"],
     ["Lớp", "", "Nhập lớp"],
     ["Lớp", "1".repeat(21), "Tối đa 20 ký tự"],
-    ["SĐT", "+84912345678", "SĐT phải có 10 số, bắt đầu bằng 0."],
-    ["SĐT", "091234567", "SĐT phải có 10 số, bắt đầu bằng 0."],
-    ["SĐT", "09123abc56", "SĐT phải có 10 số, bắt đầu bằng 0."],
     ["SĐT phụ huynh", "", "SĐT phải có 10 số, bắt đầu bằng 0."],
+    ["SĐT phụ huynh", "+84912345678", "SĐT phải có 10 số, bắt đầu bằng 0."],
+    ["SĐT phụ huynh", "091234567", "SĐT phải có 10 số, bắt đầu bằng 0."],
+    ["SĐT phụ huynh", "09123abc56", "SĐT phải có 10 số, bắt đầu bằng 0."],
   ]) {
     await page.getByRole("button", { name: "Huỷ" }).click();
     await page.getByRole("button", { name: "Sửa thông tin" }).click();
@@ -128,16 +128,11 @@ test("Trang 4 Sửa thông tin: ô trống, chỉ khoảng trắng, quá dài, S
 
   await page.getByRole("button", { name: "Huỷ" }).click();
   await page.getByRole("button", { name: "Sửa thông tin" }).click();
-  await field("SĐT").fill(B.bParentPhone(217));
-  await save.click();
-  await expect(field("SĐT phụ huynh")).toHaveAttribute("aria-invalid", "true");
-  await expect(dialog.getByText("SĐT phụ huynh phải khác SĐT học sinh.")).toBeVisible();
-
   await field("Họ tên").fill("Chữ gõ dở");
   await dialog.getByRole("button", { name: "Huỷ" }).click();
   await page.getByRole("button", { name: "Sửa thông tin" }).click();
   await expect(field("Họ tên")).toHaveValue(B.B_NAMES.form);
-  await expect(field("SĐT")).toHaveValue(B.bPhone(217));
+  await expect(field("SĐT phụ huynh")).toHaveValue(B.bParentPhone(217));
   await expect(dialog.locator('[aria-invalid="true"]')).toHaveCount(0);
 
   const patches: string[] = [];
@@ -146,7 +141,7 @@ test("Trang 4 Sửa thông tin: ô trống, chỉ khoảng trắng, quá dài, S
   });
   await field("Họ tên").fill("  Biên   Sửa    Form   Mới  ");
   await field("Lớp").fill("12 a1");
-  await field("SĐT").fill("0912 345 678");
+  await field("SĐT phụ huynh").fill("0912 345 678");
   await field("Họ tên").press("Enter");
   await expect(dialog).toHaveCount(0);
   await expect(page.getByRole("heading", { level: 1 })).toHaveText("Biên Sửa Form Mới");
@@ -179,7 +174,7 @@ test("Trang 4 ghi chú: ô nhập chặn ở 1.000 ký tự, API từ chối 1.0
   // \ud83c là nửa đầu của một emoji: JSON gửi được, cột jsonb của audit_log thì từ chối.
   res = await put("nửa emoji \ud83c");
   expect([res.status(), (await res.json()).message]).toEqual([400, "Có ký tự không hợp lệ"]);
-  const edit = { fullName: "Biên Ghi Chú", className: "10A1", phone: "0912345678", parentPhone: "0987654321" };
+  const edit = { fullName: "Biên Ghi Chú", className: "10A1", parentPhone: "0987654321" };
   for (const field of ["fullName", "className"] as const) {
     const r = await a.request.patch(`/api/admin/customers/${B.B_IDS.note}`, { headers: { Origin: ADMIN }, data: { ...edit, [field]: `${edit[field]}\ud83c` } });
     expect([field, r.status(), await r.json()]).toEqual([field, 400, { message: "Có ký tự không hợp lệ", field }]);
@@ -603,7 +598,7 @@ test("Trang 4 phân quyền: Nhân viên mở hồ sơ ngoài phạm vi và gọ
   expect(await open(staff, detail(B.B_IDS.only2))).toBe(404);
   expect(await open(staff, detail(B.B_IDS.none))).toBe(404);
   expect((await staff.request.get(`/api/admin/customers/${B.B_IDS.only2}`)).status()).toBe(404);
-  expect((await staff.request.patch(`/api/admin/customers/${B.B_IDS.only2}`, { headers, data: { fullName: "Đổi Tên", className: "10A1", phone: B.bPhone(208), parentPhone: B.bParentPhone(208) } })).status()).toBe(404);
+  expect((await staff.request.patch(`/api/admin/customers/${B.B_IDS.only2}`, { headers, data: { fullName: "Đổi Tên", className: "10A1", parentPhone: B.bParentPhone(208) } })).status()).toBe(404);
   expect((await staff.request.post(`/api/admin/customer-banks/${only2Row}/review`, { headers, data: { result: "passed", expected: "pending" } })).status()).toBe(404);
   expect((await staff.request.put(`/api/admin/customer-banks/${only2Row}/note`, { headers, data: { note: "x" } })).status()).toBe(404);
   expect((await staff.request.post(`/api/admin/customer-banks/${only2Row}/photos`, { headers, multipart: { slotId: randomUUID(), file: { name: "a.jpg", mimeType: "image/jpeg", buffer: readFileSync(PHOTO) } } })).status()).toBe(404);

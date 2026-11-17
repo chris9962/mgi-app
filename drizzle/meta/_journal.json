@@ -92,6 +92,13 @@
       "when": 1794535683282,
       "tag": "0012_drop_parent_name",
       "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1794885421410,
+      "tag": "0013_drop_customer_phone",
+      "breakpoints": true
     }
   ]
 }

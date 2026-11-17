@@ -263,7 +263,6 @@ test.describe("B. B1 khai thông tin", () => {
     const fields = [
       ["Họ và tên", "Nhập họ và tên"],
       ["Lớp", "Nhập lớp"],
-      ["SĐT", PHONE_ERROR],
       ["SĐT phụ huynh", PHONE_ERROR],
     ];
     for (const [label, error] of fields) {
@@ -287,7 +286,7 @@ test.describe("B. B1 khai thông tin", () => {
     await expect(next(page)).toBeDisabled();
   });
 
-  test("B6 tới B9 lớp quá dài, SĐT sai dạng, SĐT có dấu chấm, hai SĐT trùng khác cách viết", async ({ page }) => {
+  test("B6 tới B8 lớp quá dài, SĐT phụ huynh sai dạng, SĐT phụ huynh có dấu chấm", async ({ page }) => {
     await fillInfo(page, info("Võ Thị Số Điện Thoại"));
     const cls = page.getByLabel("Lớp");
     await cls.fill("A".repeat(21));
@@ -295,7 +294,7 @@ test.describe("B. B1 khai thông tin", () => {
     await expect(cls).toHaveAccessibleDescription("Tối đa 20 ký tự");
     await cls.fill("11 a3");
 
-    const phone = page.getByLabel("SĐT", { exact: true });
+    const phone = page.getByLabel("SĐT phụ huynh");
     for (const bad of ["091234567", "09123456789", "1912345678", "+84912345678", "0912-345-678", "abcdefghij"]) {
       await phone.fill(bad);
       await phone.blur();
@@ -304,11 +303,7 @@ test.describe("B. B1 khai thông tin", () => {
     }
     await phone.fill("0912.345.678");
     await expect(phone).not.toHaveAccessibleDescription(PHONE_ERROR);
-    const parent = page.getByLabel("SĐT phụ huynh");
-    await parent.fill("0912 345 678");
-    await parent.blur();
-    await expect(parent).toHaveAccessibleDescription("SĐT phụ huynh phải khác SĐT học sinh.");
-    await expect(next(page)).toBeDisabled();
+    await expect(next(page)).toBeEnabled();
   });
 
   test("B10 Enter gửi form; Enter hai lần liền và bấm đúp chỉ tạo một hồ sơ", async ({ page }) => {

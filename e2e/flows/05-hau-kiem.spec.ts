@@ -8,7 +8,7 @@ test("Flow 5: hậu kiểm Đạt ngân hàng 1, Không đạt ngân hàng 2 r�
   let voucher = "";
 
   await test.step("Học sinh đã khai, chọn VPBank và TPBank, nộp ảnh, gửi kiểm tra", async () => {
-    const student = await apiStudent(page, { fullName: NAME, className: "12c2", phone: "0933222444", parentPhone: "0977123456" }, [VPB, TPB]);
+    const student = await apiStudent(page, { fullName: NAME, className: "12c2", parentPhone: "0977123456" }, [VPB, TPB]);
     await useStudentDevice(page, student);
   });
 

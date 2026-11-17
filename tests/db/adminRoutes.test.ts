@@ -36,7 +36,7 @@ beforeAll(async () => {
   const exporter = await makeActor("route_exporter", "staff", ["export_excel"], [p.bank.A]);
   const lonely = await makeActor("route_lonely", "staff", ["export_excel"], []);
   for (const [k, u] of Object.entries({ staff, exporter, lonely, manager: p.manager })) cookie[k] = (await createSession(u.id)).token;
-  const c = await insertCustomer(p, { fullName: "Routeds Trần Minh Anh", phone: "0912345678", parentPhone: "0987654321", status: "pending_review", submittedAt: new Date(), banks: [{ key: "A", status: "pending" }, { key: "B", status: "pending" }] });
+  const c = await insertCustomer(p, { fullName: "Routeds Trần Minh Anh", parentPhone: "0987654321", status: "pending_review", submittedAt: new Date(), banks: [{ key: "A", status: "pending" }, { key: "B", status: "pending" }] });
   await db.insert(vouchers).values({ customerId: c.id, code: "ZZROUTE-TMA-11A3-AAAA" });
   rowA = c.rows.A;
   const [ph] = await db.insert(proofPhotos).values({ customerBankId: c.rows.B, slotId: p.slot.B, s3Key: `proofs/2026-11-05/${randomUUID()}.webp` }).returning({ id: proofPhotos.id });

@@ -41,7 +41,6 @@ const form = (extra: Record<string, unknown> = {}) => ({
   schoolId,
   fullName: "  Trần   Minh Anh ",
   className: "11 a3",
-  phone: "0912 345 678",
   parentPhone: "0987654321",
   consent: true, existingBankIds: [],
   ...extra,
@@ -67,7 +66,7 @@ beforeAll(async () => {
   const full = await addCode("FULL", "B1-FULL", [schoolId], 1);
   const [holder] = await db
     .insert(customers)
-    .values({ schoolId, fullName: "HS", nameSearch: "hs", className: "10A1", phone: "0900000101", parentPhone: "0910000101", tokenHash: "zz-b1-full" })
+    .values({ schoolId, fullName: "HS", nameSearch: "hs", className: "10A1", parentPhone: "0910000101", tokenHash: "zz-b1-full" })
     .returning({ id: customers.id });
   await db.insert(customerBanks).values({ customerId: holder.id, bankId: bank.FULL, slot: 1, referralCodeId: full, referralCode: "B1-FULL", yearMonth: MONTH });
 });
@@ -90,10 +89,7 @@ describe("B1 khai thông tin", () => {
     const fails = (extra: Record<string, unknown>) => CustomerForm.safeParse(form(extra)).success === false;
     expect(fails({ fullName: " " })).toBe(true);
     expect(fails({ className: "  " })).toBe(true);
-    expect(fails({ phone: "091234567" })).toBe(true);
-    expect(fails({ phone: "1912345678" })).toBe(true);
     expect(fails({ parentPhone: "09876543210" })).toBe(true);
-    expect(fails({ parentPhone: "0912345678" })).toBe(true);
     expect(fails({ existingBankIds: ["x"] })).toBe(true);
     expect(fails({ schoolId: "abc" })).toBe(true);
   });
@@ -108,7 +104,7 @@ describe("B1 khai thông tin", () => {
     const r = await createCustomer(CustomerForm.parse(form({ existingBankIds: [bank.MB] })), "203.0.113.7");
     if (!r.ok) throw new Error(r.message);
     const [row] = await db.select().from(customers).where(eq(customers.id, r.id));
-    expect(row).toMatchObject({ fullName: "Trần Minh Anh", className: "11A3", nameSearch: "tran minh anh", phone: "0912345678", parentPhone: "0987654321", status: "new", createdIp: "203.0.113.7" });
+    expect(row).toMatchObject({ fullName: "Trần Minh Anh", className: "11A3", nameSearch: "tran minh anh", parentPhone: "0987654321", status: "new", createdIp: "203.0.113.7" });
     expect(row.consentVersion).toBe(CONSENT_VERSION);
     expect(row.consentAt).toBeInstanceOf(Date);
     expect((await db.select().from(customerExistingBanks).where(eq(customerExistingBanks.customerId, r.id))).map((x) => x.bankId)).toEqual([bank.MB]);

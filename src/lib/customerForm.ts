@@ -37,25 +37,17 @@ const info = {
         .max(20, "Tối đa 20 ký tự")
         .refine(noControlChar, CONTROL_CHAR_MESSAGE),
     ),
-  phone,
   parentPhone: phone,
 };
 
-const phonesDiffer = (v: { phone: string; parentPhone: string }) => v.phone !== v.parentPhone;
-const PHONES_DIFFER = { path: ["parentPhone"], message: "SĐT phụ huynh phải khác SĐT học sinh." };
-
-export const CustomerForm = z
-  .object({ schoolId: uuid(), ...info, existingBankIds: z.array(uuid(), { error: BAD }).max(50, BAD), consent: z.literal(true, { error: "Chưa đồng ý điều khoản xử lý dữ liệu cá nhân." }) }, { error: BAD })
-  .refine(phonesDiffer, PHONES_DIFFER);
+export const CustomerForm = z.object({ schoolId: uuid(), ...info, existingBankIds: z.array(uuid(), { error: BAD }).max(50, BAD), consent: z.literal(true, { error: "Chưa đồng ý điều khoản xử lý dữ liệu cá nhân." }) }, { error: BAD });
 
 // Người quản ngân hàng sửa thông tin khai ở B1; trường và ngân hàng đã có không đổi được.
-export const CustomerEditForm = z.object(info, { error: BAD }).refine(phonesDiffer, PHONES_DIFFER);
+export const CustomerEditForm = z.object(info, { error: BAD });
 export type CustomerEditValues = z.output<typeof CustomerEditForm>;
 
 // Học sinh tự sửa B1 trước khi gửi kiểm tra: đổi được cả ngân hàng đã có, trường thì không.
-export const CustomerSelfEditForm = z
-  .object({ ...info, existingBankIds: z.array(uuid(), { error: BAD }).max(50, BAD) }, { error: BAD })
-  .refine(phonesDiffer, PHONES_DIFFER);
+export const CustomerSelfEditForm = z.object({ ...info, existingBankIds: z.array(uuid(), { error: BAD }).max(50, BAD) }, { error: BAD });
 export type CustomerSelfEditValues = z.output<typeof CustomerSelfEditForm>;
 export type CustomerSelfEditInput = z.input<typeof CustomerSelfEditForm>;
 

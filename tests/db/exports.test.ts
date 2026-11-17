@@ -34,7 +34,7 @@ beforeAll(async () => {
   exporterA = await makeActor("export_staff_a", "staff", ["export_excel"], [p.bank.A]);
   viewerA = await makeActor("export_viewer_a", "staff", [], [p.bank.A]);
   voucherExporter = await makeActor("export_voucher", "staff", ["export_excel", "vouchers"]);
-  const anh = await insertCustomer(p, { fullName: "Xuatds Trần Minh Anh", phone: "0912345678", parentPhone: "0987654321", status: "reviewed", submittedAt: new Date("2026-11-03T02:48:00Z"), banks: [{ key: "A", status: "passed" }, { key: "B", status: "failed" }] });
+  const anh = await insertCustomer(p, { fullName: "Xuatds Trần Minh Anh", parentPhone: "0987654321", status: "reviewed", submittedAt: new Date("2026-11-03T02:48:00Z"), banks: [{ key: "A", status: "passed" }, { key: "B", status: "failed" }] });
   await addPhotoCheck(anh.rows.A, 1, 2);
   await db.insert(vouchers).values({ customerId: anh.id, code: "ZZXUAT-TMA-11A3-K7Q2", issuedAt: new Date("2026-11-04T07:05:00Z") });
   await insertCustomer(p, { fullName: "Xuatds Lê Hoàng Nam", status: "pending_review", submittedAt: new Date(), banks: [{ key: "B", status: "pending" }] });

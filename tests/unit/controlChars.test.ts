@@ -14,7 +14,7 @@ const UUID = "3f2b9c1e-8a4d-4f6b-9c2e-1a2b3c4d5e6f";
 // Nửa đầu của 🎓: JSON.stringify giữ nguyên dạng \ud83c, cột jsonb của Postgres từ chối.
 const HIGH = "\ud83c";
 const LOW = "\udf93";
-const INFO = { fullName: "Trần Minh Anh", className: "11A3", phone: "0912345678", parentPhone: "0987654321" };
+const INFO = { fullName: "Trần Minh Anh", className: "11A3", parentPhone: "0987654321" };
 
 const FORMS: [string, ZodType, Record<string, unknown>, string[]][] = [
   ["Trường", SchoolForm, { name: "THPT A", provinceCode: "80", wardCode: "25585", contactName: "Người liên hệ", contactPhone: "0903111222" }, ["name", "provinceCode", "wardCode", "contactName"]],

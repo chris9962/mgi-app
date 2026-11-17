@@ -232,7 +232,6 @@ export const customers = pgTable(
     fullName: text("full_name").notNull(),
     nameSearch: text("name_search").notNull(),
     className: text("class_name").notNull(),
-    phone: text("phone").notNull(),
     parentPhone: text("parent_phone").notNull(),
     status: customerStatus("status").notNull().default("new"),
     tokenHash: text("token_hash").notNull().unique(),
@@ -246,12 +245,9 @@ export const customers = pgTable(
   },
   (t) => [
     index("customers_school_created").on(t.schoolId, t.createdAt.desc()),
-    index("customers_phone").on(t.phone),
     index("customers_parent_phone").on(t.parentPhone),
     index("customers_name_search_trgm").using("gin", t.nameSearch.op("gin_trgm_ops")),
-    check("customers_phone_format", sql`${t.phone} ~ '^0[0-9]{9}$'`),
     check("customers_parent_phone_format", sql`${t.parentPhone} ~ '^0[0-9]{9}$'`),
-    check("customers_phone_differs", sql`${t.phone} <> ${t.parentPhone}`),
   ],
 );
 

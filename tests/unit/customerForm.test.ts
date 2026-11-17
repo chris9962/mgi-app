@@ -3,7 +3,7 @@ import type { ZodType } from "zod";
 import { BankChoiceForm, CustomerForm, PhotoTargetForm } from "../../src/lib/customerForm";
 
 const UUID = "3f2b9c1e-8a4d-4f6b-9c2e-1a2b3c4d5e6f";
-const VALID = { schoolId: UUID, fullName: "Trần Minh Anh", className: "11A3", phone: "0912345678", parentPhone: "0987654321", consent: true, existingBankIds: [] };
+const VALID = { schoolId: UUID, fullName: "Trần Minh Anh", className: "11A3", parentPhone: "0987654321", consent: true, existingBankIds: [] };
 // Câu báo lỗi tiếng Việt luôn có ít nhất một chữ có dấu; câu mặc định của zod ("Invalid input...") thì không.
 const VIETNAMESE = /[àáạảãâầấậẩẫăằắặẳẵèéẹẻẽêềếệểễìíịỉĩòóọỏõôồốộổỗơờớợởỡùúụủũưừứựửữỳýỵỷỹđ]/i;
 
@@ -15,7 +15,7 @@ describe("câu báo lỗi của form học sinh", () => {
     ["thiếu trường", CustomerForm, {}],
     ["id trường sai", CustomerForm, { ...VALID, schoolId: "abc" }],
     ["họ tên là số", CustomerForm, { ...VALID, fullName: 123 }],
-    ["SĐT là số", CustomerForm, { ...VALID, phone: 912345678 }],
+    ["SĐT phụ huynh là số", CustomerForm, { ...VALID, parentPhone: 987654321 }],
     ["ngân hàng đã có sai id", CustomerForm, { ...VALID, existingBankIds: ["x"] }],
     ["ngân hàng đã có không phải mảng", CustomerForm, { ...VALID, existingBankIds: "x" }],
     ["lớp quá dài", CustomerForm, { ...VALID, className: "A".repeat(30) }],

@@ -15,10 +15,10 @@ let staffNone: SessionUser;
 
 const key = () => `proofs/2026-11-05/${randomUUID()}.webp`;
 const edit = (v: Partial<Record<string, string>> = {}) =>
-  CustomerEditForm.parse({ fullName: "Detail Trần Minh Anh", className: "11a3", phone: "0912345678", parentPhone: "0987654321", ...v });
+  CustomerEditForm.parse({ fullName: "Detail Trần Minh Anh", className: "11a3", parentPhone: "0987654321", ...v });
 
 async function submitted(fullName = "Detail Trần Minh Anh") {
-  const c = await insertCustomer(p, { fullName, phone: "0912345678", status: "pending_review", submittedAt: new Date(), banks: [{ key: "A", status: "pending" }, { key: "B", status: "pending" }] });
+  const c = await insertCustomer(p, { fullName, parentPhone: "0987654321", status: "pending_review", submittedAt: new Date(), banks: [{ key: "A", status: "pending" }, { key: "B", status: "pending" }] });
   const [a] = await db.insert(proofPhotos).values({ customerBankId: c.rows.A, slotId: p.slot.A, s3Key: key(), sizeBytes: 1000 }).returning({ id: proofPhotos.id });
   const [b] = await db.insert(proofPhotos).values({ customerBankId: c.rows.B, slotId: p.slot.B, s3Key: key(), sizeBytes: 1000 }).returning({ id: proofPhotos.id });
   return { ...c, photoA: a.id, photoB: b.id };
@@ -64,7 +64,7 @@ describe("chi tiết hồ sơ", () => {
     expect([all.banks[1].note, all.banks[1].check?.total]).toEqual(["Ghi chú của ngân hàng B", 1]);
   });
 
-  test("hồ sơ trùng cùng tên và SĐT", async () => {
+  test("hồ sơ trùng cùng tên và SĐT phụ huynh", async () => {
     const first = await submitted("Detail Trùng Tên");
     const second = await submitted("Detail Trùng Tên");
     const d = (await getCustomerDetail(p.manager, second.id))!;
@@ -121,9 +121,8 @@ describe("sửa thông tin", () => {
     expect(row.fullName).toBe("Detail Trần Minh Anh");
   });
 
-  test("ngoài phạm vi trả 404, SĐT học sinh trùng SĐT phụ huynh bị từ chối ở form", async () => {
+  test("ngoài phạm vi trả 404", async () => {
     const c = await submitted();
     expect(await updateCustomerInfo(staffNone, c.id, edit(), null)).toMatchObject({ ok: false, status: 404 });
-    expect(CustomerEditForm.safeParse({ fullName: "A", className: "1", phone: "0912345678", parentPhone: "0912345678" }).success).toBe(false);
   });
 });

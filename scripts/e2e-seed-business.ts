@@ -17,8 +17,7 @@ type Spec = {
   n: number;
   schoolId?: string;
   className?: string;
-  
-  phone?: string;
+  parentPhone?: string;
   createdAt?: Date;
   banks?: { bank: 1 | 2; status: BankStatus; note?: string }[];
   voucher?: { code: string; issuedAt: Date };
@@ -102,8 +101,8 @@ export async function seedBusiness(adminId: string) {
     { id: B.B_IDS.only2, fullName: B.B_NAMES.only2, n: 208, banks: [{ bank: 2, status: "pending" }], sms: { status: "failed", at: new Date("2026-10-25T03:00:00Z") } },
     { id: B.B_IDS.both, fullName: B.B_NAMES.both, n: 209, banks: [{ bank: 1, status: "pending" }, { bank: 2, status: "pending" }] },
     { id: B.B_IDS.none, fullName: B.B_NAMES.none, n: 210 },
-    { id: B.B_IDS.dup1, fullName: B.B_NAMES.dup1, n: 211, phone: B.bPhone(211), banks: [{ bank: 1, status: "selected" }] },
-    { id: B.B_IDS.dup2, fullName: B.B_NAMES.dup2, n: 212, phone: B.bPhone(211), schoolId: B.B_SCHOOL2_ID, banks: [{ bank: 1, status: "selected" }] },
+    { id: B.B_IDS.dup1, fullName: B.B_NAMES.dup1, n: 211, banks: [{ bank: 1, status: "selected" }] },
+    { id: B.B_IDS.dup2, fullName: B.B_NAMES.dup2, n: 212, parentPhone: B.bParentPhone(211), schoolId: B.B_SCHOOL2_ID, banks: [{ bank: 1, status: "selected" }] },
     { id: B.B_IDS.twoTabs, fullName: B.B_NAMES.twoTabs, n: 213, banks: [{ bank: 1, status: "pending" }] },
     { id: B.B_IDS.editTabs, fullName: B.B_NAMES.editTabs, n: 214, banks: [{ bank: 1, status: "pending" }] },
     { id: B.B_IDS.replace, fullName: B.B_NAMES.replace, n: 215, banks: [{ bank: 1, status: "pending" }] },
@@ -143,8 +142,7 @@ export async function seedBusiness(adminId: string) {
       fullName: s.fullName,
       nameSearch: plain(s.fullName),
       className: s.className ?? "10A1",
-      phone: s.phone ?? B.bPhone(s.n),
-      parentPhone: B.bParentPhone(s.n),
+      parentPhone: s.parentPhone ?? B.bParentPhone(s.n),
       status: customerStatus(rows),
       tokenHash: newCustomerToken().tokenHash,
       submittedAt: rows.some((r) => r.status !== "selected") ? (s.createdAt ?? new Date()) : null,

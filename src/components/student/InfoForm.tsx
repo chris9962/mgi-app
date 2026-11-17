@@ -12,12 +12,12 @@ import { saveProfile } from "@/lib/studentDevice";
 import type { StudentSchool } from "@/lib/studentState";
 import { BankLogo, Bottom } from "./parts";
 
-const EMPTY = { fullName: "", className: "", phone: "", parentPhone: "" };
+const EMPTY = { fullName: "", className: "", parentPhone: "" };
 type Key = keyof typeof EMPTY;
 
 // initial: học sinh quay lại sửa hồ sơ đã có; không có thì tạo hồ sơ mới.
 export function InfoForm({ school, initial, onSaved }: { school: StudentSchool; initial?: CustomerSelfEditInput; onSaved: () => void }) {
-  const [values, setValues] = useState(() => (initial ? { fullName: initial.fullName, className: initial.className, phone: initial.phone, parentPhone: initial.parentPhone } : EMPTY));
+  const [values, setValues] = useState(() => (initial ? { fullName: initial.fullName, className: initial.className, parentPhone: initial.parentPhone } : EMPTY));
   const [existing, setExisting] = useState<string[]>(initial?.existingBankIds ?? []);
   const [touched, setTouched] = useState<Set<Key>>(new Set());
   const [serverError, setServerError] = useState<{ field?: string; message: string } | null>(null);
@@ -69,14 +69,7 @@ export function InfoForm({ school, initial, onSaved }: { school: StudentSchool; 
   return (
     <form onSubmit={submit} noValidate className="flex flex-1 flex-col gap-4">
       <TextField label="Họ và tên" autoComplete="name" {...field("fullName")} />
-      <div className="flex gap-2">
-        <div className="min-w-0 flex-1">
-          <TextField label="Lớp" placeholder="11A3" autoComplete="off" autoCapitalize="characters" {...field("className")} />
-        </div>
-        <div className="min-w-0 flex-[2]">
-          <TextField label="SĐT" type="tel" inputMode="numeric" autoComplete="tel" {...field("phone")} />
-        </div>
-      </div>
+      <TextField label="Lớp" placeholder="11A3" autoComplete="off" autoCapitalize="characters" {...field("className")} />
       <TextField label="SĐT phụ huynh" type="tel" inputMode="numeric" autoComplete="off" {...field("parentPhone")} />
       {school.banks.length > 0 && (
         <fieldset className="flex flex-col gap-1.5">

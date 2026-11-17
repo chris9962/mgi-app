@@ -66,7 +66,6 @@ async function main() {
     fullName: E2E_MOBILE_CUSTOMER,
     nameSearch: plain(E2E_MOBILE_CUSTOMER),
     className: "10A3",
-    phone: "0911222333",
     parentPhone: "0922333444",
     tokenHash: newCustomerToken().tokenHash,
   });

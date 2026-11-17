@@ -23,7 +23,6 @@ export type CustomerBankRow = {
   fullName: string;
   className: string;
   schoolName: string;
-  phone: string;
   parentPhone: string;
   createdAt: Date;
   reviewer: string | null;
@@ -68,7 +67,6 @@ const rowColumns = {
   fullName: customers.fullName,
   className: customers.className,
   schoolName: schools.name,
-  phone: customers.phone,
   parentPhone: customers.parentPhone,
   createdAt: customers.createdAt,
   reviewer: users.fullName,

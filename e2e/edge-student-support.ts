@@ -20,14 +20,14 @@ export function withEdgeData() {
   test.afterAll(() => void dbOp("clean"));
 }
 
-export type Info = { fullName: string; className: string; phone: string; parentPhone: string };
+export type Info = { fullName: string; className: string; parentPhone: string };
 
 let phoneSeq = 0;
-// Mỗi hồ sơ một cặp SĐT riêng để tìm lại được và không trùng SĐT phụ huynh.
+// Mỗi hồ sơ một SĐT phụ huynh riêng để tìm lại được.
 export function info(fullName: string, extra: Partial<Info> = {}): Info {
   phoneSeq += 1;
   const n = String((Date.now() % 100000) * 10 + (phoneSeq % 10)).padStart(6, "0").slice(-6);
-  return { fullName, className: "10A1", phone: `0911${n}`, parentPhone: `0922${n}`, ...extra };
+  return { fullName, className: "10A1", parentPhone: `0922${n}`, ...extra };
 }
 
 export type ApiStudent = { id: string; token: string; auth: Record<string, string>; me: () => Promise<StudentMe> };
@@ -89,7 +89,6 @@ export const device = (schoolId: string, s?: ApiStudent) => ({ "mgi.schoolId": s
 export async function fillInfo(page: Page, who: Info) {
   await page.getByLabel("Họ và tên", { exact: true }).fill(who.fullName);
   await page.getByLabel("Lớp").fill(who.className);
-  await page.getByLabel("SĐT", { exact: true }).fill(who.phone);
   await page.getByLabel("SĐT phụ huynh").fill(who.parentPhone);
   await page.getByRole("checkbox", { name: "Đồng ý" }).check();
 }

@@ -23,7 +23,6 @@ async function studentWithTwoBanks(browser: Browser) {
   await page.goto(`/t/${E2E_STUDENT_SCHOOL_ID}`);
   await page.getByLabel("Họ và tên", { exact: true }).fill(STUDENT);
   await page.getByLabel("Lớp").fill("10a1");
-  await page.getByLabel("SĐT", { exact: true }).fill("0933555777");
   await page.getByLabel("SĐT phụ huynh").fill("0977555777");
   await page.getByRole("checkbox", { name: "Đồng ý" }).check();
   await page.getByRole("button", { name: "Tiếp tục" }).click();

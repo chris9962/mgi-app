@@ -27,7 +27,7 @@ async function realProfile() {
   [{ id: ids.slot }] = await db.insert(bankPhotoSlots).values({ bankId: ids.bank, name: "Ảnh" }).returning({ id: bankPhotoSlots.id });
   [{ id: ids.customer }] = await db
     .insert(customers)
-    .values({ schoolId: ids.school, fullName: "Kiểm Dọn", nameSearch: "kiem don", className: "10A1", phone: "0900000999", parentPhone: "0910000999", status: "banks_selected", tokenHash: hashToken(randomUUID()) })
+    .values({ schoolId: ids.school, fullName: "Kiểm Dọn", nameSearch: "kiem don", className: "10A1", parentPhone: "0910000999", status: "banks_selected", tokenHash: hashToken(randomUUID()) })
     .returning({ id: customers.id });
   [{ id: ids.customerBank }] = await db
     .insert(customerBanks)

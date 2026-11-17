@@ -34,7 +34,7 @@ describe("token của học sinh", () => {
     const { token, tokenHash } = newCustomerToken();
     const [row] = await db
       .insert(customers)
-      .values({ schoolId, fullName: "HS", nameSearch: "hs", className: "11A1", phone: "0900000001", parentPhone: "0910000001", tokenHash })
+      .values({ schoolId, fullName: "HS", nameSearch: "hs", className: "11A1", parentPhone: "0910000001", tokenHash })
       .returning({ id: customers.id });
     expect((await customerFromRequest(bearer(token)))?.id).toBe(row.id);
     expect(await customerFromRequest(bearer(token + "x"))).toBeNull();
@@ -46,7 +46,7 @@ describe("token của học sinh", () => {
     const { tokenHash } = newCustomerToken();
     const [row] = await db
       .insert(customers)
-      .values({ schoolId, fullName: "HS", nameSearch: "hs", className: "11A1", phone: "0900000002", parentPhone: "0910000002", tokenHash })
+      .values({ schoolId, fullName: "HS", nameSearch: "hs", className: "11A1", parentPhone: "0910000002", tokenHash })
       .returning({ id: customers.id });
     const before = Date.now();
     await touchCustomer(row.id);

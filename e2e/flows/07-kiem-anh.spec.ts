@@ -15,10 +15,10 @@ test("Flow 7: ảnh lưu WebP, worker kiểm ảnh một vòng, Trang 4 hiện k
   test.skip(!ocrReady, "Thiếu OCR_PYTHON trong .env.local");
   await loginAs(page, "zz_e2e_admin");
   // Ảnh TPBank của học sinh thứ nhất có mã dư một số (HS-TPBANK-010) nên phải không đạt.
-  await apiStudent(page, { fullName: WRONG, className: "10a4", phone: "0977000111", parentPhone: "0977000222" }, [VPB, TPB], {
+  await apiStudent(page, { fullName: WRONG, className: "10a4", parentPhone: "0977000222" }, [VPB, TPB], {
     screens: { [VPB]: await screen("LÝ THỊ KIỂM ẢNH", "HS-VPBANK-01"), [TPB]: await screen("LÝ THỊ KIỂM ẢNH", "HS-TPBANK-010") },
   });
-  await apiStudent(page, { fullName: RIGHT, className: "10a4", phone: "0977000333", parentPhone: "0977000444" }, [VPB, TPB], {
+  await apiStudent(page, { fullName: RIGHT, className: "10a4", parentPhone: "0977000444" }, [VPB, TPB], {
     screens: { [VPB]: await screen("LÂM VĂN KIỂM ẢNH", "HS-VPBANK-01"), [TPB]: await screen("LÂM VĂN KIỂM ẢNH", "HS-TPBANK-01") },
   });
 

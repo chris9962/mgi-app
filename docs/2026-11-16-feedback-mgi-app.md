@@ -6,7 +6,7 @@ Web học sinh hiện có 3 bước: 1 Thông tin, 2 Chọn ngân hàng, 3 Mở 
 
 ## 1. Bước 1 Thông tin
 
-- [ ] Bỏ ô "SĐT" của học sinh. Màn này chỉ giữ "SĐT phụ huynh".
+- [x] Bỏ ô "SĐT" của học sinh. Màn này chỉ giữ "SĐT phụ huynh". Làm 2026-11-17, migration 0013 xoá cột `customers.phone`.
   - Trang quản lý, tìm kiếm và file Excel đang dùng SĐT học sinh. Phải sửa cả các chỗ đó.
 
 ## 2. Bước 2 Chọn ngân hàng

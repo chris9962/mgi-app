@@ -272,7 +272,7 @@ test("Trang 3 xuất Excel: đúng bộ lọc, không có dòng nào vẫn tải
   expect(empty.rows[2][0]).toBe("STT");
 
   const sheet = await readExport(page, `/api/admin/customers/export?${q("bien")}`);
-  const [name, cls, phone] = ["HỌ TÊN", "LỚP", "SĐT"].map((h) => column(sheet, h));
+  const [name, cls, phone] = ["HỌ TÊN", "LỚP", "SĐT PHỤ HUYNH"].map((h) => column(sheet, h));
   const at = (text: string) => sheet.rows.findIndex((r) => r[name] === text);
   const cell = (row: number, col: number) => ({ value: sheet.rows[row][col], type: sheet.types[row][col] });
   const formula = at("=1+2 BIEN CONG THUC");
@@ -289,7 +289,7 @@ test("Trang 3 xuất Excel: đúng bộ lọc, không có dòng nào vẫn tải
   expect(long).toBeGreaterThan(2);
   expect(sheet.rows[long][name].length).toBe(100);
   expect(sheet.rows[long][cls]).toBe(B.B_LONG_CLASS);
-  expect(cell(long, phone)).toEqual({ value: B.bPhone(201), type: text });
+  expect(cell(long, phone)).toEqual({ value: B.bParentPhone(201), type: text });
 
   expect((await page.request.get("/api/admin/customers/export?q=bien%00")).status()).toBe(200);
 });

@@ -1,4 +1,4 @@
-import { and, asc, count, desc, eq, gte, inArray, like, lt, or, sql, type SQL } from "drizzle-orm";
+import { and, asc, count, desc, eq, gte, inArray, like, lt, sql, type SQL } from "drizzle-orm";
 import { db } from "./db/client";
 import { banks, customerBanks, customers, schools, users } from "./db/schema";
 import { containsPattern, likeEachTerm, phoneDigits } from "./search";
@@ -16,7 +16,6 @@ export type CustomerListRow = {
   fullName: string;
   className: string;
   schoolName: string;
-  phone: string;
   parentPhone: string;
   status: CustomerStatus;
   submittedAt: Date | null;
@@ -50,7 +49,7 @@ export const latestCheck = (cbId: SQL) => sql`(select pc.status, pc.passed, pc.t
 export function customerSearch(q: string): SQL | undefined {
   if (!q) return undefined;
   const digits = phoneDigits(q);
-  return digits ? or(like(customers.phone, containsPattern(digits)), like(customers.parentPhone, containsPattern(digits))) : likeEachTerm(customers.nameSearch, q);
+  return digits ? like(customers.parentPhone, containsPattern(digits)) : likeEachTerm(customers.nameSearch, q);
 }
 
 export function customerWhere(actor: SessionUser, f: CustomerFilters): SQL | undefined {
@@ -78,7 +77,6 @@ const rowColumns = {
   fullName: customers.fullName,
   className: customers.className,
   schoolName: schools.name,
-  phone: customers.phone,
   parentPhone: customers.parentPhone,
   status: customers.status,
   submittedAt: customers.submittedAt,

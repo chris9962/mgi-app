@@ -72,7 +72,7 @@ export async function search(page: Page, placeholder: string, text: string) {
   await page.waitForLoadState("networkidle");
 }
 
-type StudentInfo = { fullName: string; className: string; phone: string; parentPhone: string };
+type StudentInfo = { fullName: string; className: string; parentPhone: string };
 type StudentBank = { id: string; name: string; slots: { id: string; name: string }[] };
 export type Student = { id: string; token: string; info: StudentInfo; banks: StudentBank[] };
 export type Screen = { name: string; mimeType: string; buffer: Buffer };
