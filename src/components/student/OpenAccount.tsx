@@ -134,9 +134,10 @@ function BankPanel({ bank, onSaved, onBusy }: PanelProps) {
   );
 }
 
-type Props = { state: StudentState; onChange: () => Promise<void>; onEdit: () => Promise<string | null>; onSubmitted?: (submitted: number) => void };
+// onBackToBanks: đã gửi ít nhất một ngân hàng mà quay lại bước 2 thì chọn thêm trong số ngân hàng còn lại, không rơi về màn Kết quả.
+type Props = { state: StudentState; onChange: () => Promise<void>; onEdit: () => Promise<string | null>; onSubmitted?: (submitted: number) => void; onBackToBanks?: () => Promise<void> };
 
-export function OpenAccount({ state, onChange, onEdit, onSubmitted }: Props) {
+export function OpenAccount({ state, onChange, onEdit, onSubmitted, onBackToBanks }: Props) {
   const banks = state.banks;
   const open = banks.filter(isOpen);
   const sent = banks.filter((b) => !isOpen(b));
@@ -204,7 +205,8 @@ export function OpenAccount({ state, onChange, onEdit, onSubmitted }: Props) {
     const r = await studentApi("DELETE", "/api/customers/me/banks");
     if (r.ok) {
       // Máy chủ xoá xong mới chuyển màn. Không mở được màn sửa thông tin thì về bước chọn ngân hàng.
-      if (target !== 1 || (await onEdit())) await onChange();
+      if (target === 2 && sent.length && onBackToBanks) await onBackToBanks();
+      else if (target !== 1 || (await onEdit())) await onChange();
       return null;
     }
     // Hồ sơ đã đổi ở máy chủ (trường vừa đóng, tab khác đã gửi kiểm tra): tải lại để màn khớp máy chủ, báo lỗi ở màn chứ không ở hộp hỏi.

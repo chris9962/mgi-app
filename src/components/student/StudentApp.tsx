@@ -300,11 +300,20 @@ function Profile({ state, notice, adding, onAddMore, giftOpen, onGift, onChange,
       if (state.banks.some((b) => b.status === "selected"))
         return (
           <>
-            <OpenAccount state={state} onChange={() => onChange()} onEdit={onEdit} onSubmitted={onSubmitted} />
+            <OpenAccount
+              state={state}
+              onChange={() => onChange()}
+              onEdit={onEdit}
+              onSubmitted={onSubmitted}
+              onBackToBanks={async () => {
+                await onChange();
+                onAddMore();
+              }}
+            />
             {gift}
           </>
         );
-      if (adding) return <ChooseBanks key={state.eligibleBanks.map((b) => b.id).join()} state={state} notice={notice} onDone={onChange} onEdit={async () => INFO_LOCKED} />;
+      if (adding && state.eligibleBanks.length) return <ChooseBanks key={state.eligibleBanks.map((b) => b.id).join()} state={state} notice={notice} onDone={onChange} onEdit={async () => INFO_LOCKED} />;
       return (
         <>
           <Result state={state} onAddMore={state.school.active && state.eligibleBanks.length > 0 ? onAddMore : undefined} onGift={() => onGift(true)} />
