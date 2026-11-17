@@ -58,6 +58,17 @@ describe("ảnh học sinh", () => {
     expect(bank({ logoKey: "/banks/mb.webp" }).success).toBe(false);
     expect(bank({ logoKey: "" }).success).toBe(false);
   });
+  test("số tổng đài và thông tin tổng quan: trống thì null, không gửi thì để trống, tổng đài chỉ gồm số, tổng quan giữ xuống dòng", () => {
+    const bank = (extra: object) => BankForm.safeParse({ code: "MB", name: "MB Bank", sortOrder: "1", managerIds: [], ...extra });
+    expect(bank({ hotline: " 1900 545426 ", overview: "Dòng 1\r\nDòng 2 " }).data).toMatchObject({ hotline: "1900 545426", overview: "Dòng 1\nDòng 2" });
+    expect(bank({ hotline: "  ", overview: " " }).data).toMatchObject({ hotline: null, overview: null });
+    expect(bank({}).data?.hotline).toBeUndefined();
+    expect(bank({}).data?.overview).toBeUndefined();
+    expect(bank({ hotline: "tổng đài" }).success).toBe(false);
+    expect(bank({ hotline: "1".repeat(21) }).success).toBe(false);
+    expect(bank({ overview: "x\u0000" }).success).toBe(false);
+    expect(bank({ overview: "x".repeat(2001) }).success).toBe(false);
+  });
   test("trang quản lý không tải ảnh vào thư mục proofs", () => {
     expect(ADMIN_FOLDERS).not.toContain("proofs");
   });

@@ -80,6 +80,7 @@ describe("ngân hàng mở ở trường", () => {
 
   test("B1 hỏi ngân hàng đã có trên mọi ngân hàng của chương trình ở trường, kể cả ngân hàng hết lượt", async () => {
     expect((await programBanksAtSchool(schoolId, MONTH)).map((b) => b.id)).toEqual([bank.MB, bank.VPB, bank.FULL]);
+    expect((await programBanksAtSchool(schoolId, MONTH))[0]).toMatchObject({ hotline: null, overview: null, steps: [] });
     expect(await programBanksAtSchool(emptySchoolId, MONTH)).toEqual([]);
   });
 });

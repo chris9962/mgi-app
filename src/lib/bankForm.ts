@@ -1,7 +1,10 @@
 import { z } from "zod";
 import { isImageKey } from "./imageKey";
 import { blankAsNaN } from "./numberField";
-import { CONTROL_CHAR_MESSAGE, noControlChar } from "./controlChars";
+import { CONTROL_CHAR_MESSAGE, noControlChar, wellFormed } from "./controlChars";
+
+// Thông tin tổng quan nhiều dòng: chỉ cấm ký tự điều khiển khác xuống dòng.
+const noControlCharExceptNewline = (v: string) => !/[\u0000-\u0009\u000b-\u001f\u007f]/.test(v) && wellFormed(v);
 
 export const BankForm = z.object({
   code: z
@@ -14,6 +17,20 @@ export const BankForm = z.object({
   managerIds: z.array(z.uuid()).max(50),
   // Gọi API không kèm logo thì giữ logo đang có; null là bỏ logo.
   logoKey: z.string().refine((k) => isImageKey(k, "logos"), "Logo không hợp lệ").nullable().optional(),
+  // Không gửi thì giữ giá trị đang có; gửi chuỗi trống là bỏ.
+  hotline: z
+    .string()
+    .trim()
+    .max(20, "Tối đa 20 ký tự")
+    .regex(/^[0-9 .+()*#-]*$/, "Số tổng đài chỉ gồm số, dấu cách, dấu chấm")
+    .transform((v) => v || null)
+    .optional(),
+  overview: z
+    .string()
+    .transform((v) => v.replace(/\r\n?/g, "\n").trim())
+    .pipe(z.string().max(2000, "Tối đa 2000 ký tự").refine(noControlCharExceptNewline, CONTROL_CHAR_MESSAGE))
+    .transform((v) => v || null)
+    .optional(),
 });
 export type BankFormValues = z.output<typeof BankForm>;
 

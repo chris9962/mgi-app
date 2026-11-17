@@ -66,6 +66,21 @@ describe("ngân hàng", () => {
     expect(await logoOf()).toBeNull();
   });
 
+  test("số tổng đài và thông tin tổng quan: lưu, không gửi thì giữ, gửi trống thì bỏ; danh sách trả về", async () => {
+    const withInfo = (extra: object) => BankForm.parse({ code: "ZZTK", name: TEST_NAME + "K", sortOrder: "1", managerIds: [], ...extra });
+    const bank = await createBank(manager, withInfo({ hotline: "1900 1234", overview: "Tổng quan" }));
+    if (!bank.ok) throw new Error(bank.message);
+    const infoOf = async () => {
+      const b = (await listBanks(manager)).find((x) => x.id === bank.id)!;
+      return [b.hotline, b.overview];
+    };
+    expect(await infoOf()).toEqual(["1900 1234", "Tổng quan"]);
+    expect((await updateBank(manager, bank.id, withInfo({}))).ok).toBe(true);
+    expect(await infoOf()).toEqual(["1900 1234", "Tổng quan"]);
+    expect((await updateBank(manager, bank.id, withInfo({ hotline: "", overview: "" }))).ok).toBe(true);
+    expect(await infoOf()).toEqual([null, null]);
+  });
+
   test("bỏ khung ảnh thì ghi removed_at, không xoá dòng", async () => {
     const bank = await createBank(manager, form("ZZTG", "G"));
     if (!bank.ok) throw new Error(bank.message);

@@ -1,12 +1,14 @@
 "use client";
 
+import { clsx } from "clsx";
 import { ChevronDown, X } from "lucide-react";
 import { useCallback, useEffect, useId, useLayoutEffect, useRef, useState, type ReactNode } from "react";
 
 // Như mgst-app: dismissible={false} ẩn nút Đóng và bỏ qua Esc, cho hộp đang gửi vì request đã đi thì đóng hộp không huỷ được.
-type Props = { open: boolean; title: string; onClose: () => void; footer?: ReactNode; children: ReactNode; width?: number; dismissible?: boolean };
+// fullscreen: hộp phủ kín màn hình điện thoại cho nội dung dài (thông tin ngân hàng).
+type Props = { open: boolean; title: string; onClose: () => void; footer?: ReactNode; children: ReactNode; width?: number; dismissible?: boolean; fullscreen?: boolean };
 
-export function Dialog({ open, title, onClose, footer, children, width = 560, dismissible = true }: Props) {
+export function Dialog({ open, title, onClose, footer, children, width = 560, dismissible = true, fullscreen = false }: Props) {
   const ref = useRef<HTMLDialogElement>(null);
   const bodyRef = useRef<HTMLDivElement>(null);
   const contentRef = useRef<HTMLDivElement>(null);
@@ -67,11 +69,14 @@ export function Dialog({ open, title, onClose, footer, children, width = 560, di
         // Chrome tự đóng ở lần Esc thứ ba liền hay khi bấm Back trên Android mà không phát cancel: mở lại cho khớp state của React.
         else e.currentTarget.showModal();
       }}
-      style={{ width }}
+      style={fullscreen ? undefined : { width }}
       data-panel
       // Tên trường, tên ngân hàng liền một chữ dài hơn hộp: cho xuống hàng ở bất kỳ ký tự nào, không đẩy nút Đóng ra ngoài.
       // open:flex chứ không flex: đặt display thẳng lên thẻ thì đè display none lúc đóng.
-      className="m-auto max-h-[calc(100dvh-64px)] max-w-[calc(100vw-32px)] flex-col overflow-hidden rounded-[14px] bg-bg p-0 text-text shadow-(--elev-lg) [overflow-wrap:anywhere] backdrop:bg-(--backdrop) open:flex"
+      className={clsx(
+        "flex-col overflow-hidden bg-bg p-0 text-text shadow-(--elev-lg) [overflow-wrap:anywhere] backdrop:bg-(--backdrop) open:flex",
+        fullscreen ? "m-0 h-dvh max-h-dvh w-screen max-w-none rounded-none" : "m-auto max-h-[calc(100dvh-64px)] max-w-[calc(100vw-32px)] rounded-[14px]",
+      )}
     >
       <div className="flex flex-none items-center gap-3 px-5 pt-[18px] pb-3">
         <h2 id={titleId} className="min-w-0 flex-1 text-[19px] leading-[1.12] font-semibold tracking-[-0.015em]">

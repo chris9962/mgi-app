@@ -28,7 +28,7 @@ async function seedAddress(): Promise<string> {
 
 // 12 ngân hàng chép từ mgst-app 2026-11-05, logo từ bộ logo VietQR. Ngân hàng đã có thì không đè tên, thứ tự, trạng thái Quản trị đã sửa.
 async function seedBanks(): Promise<string> {
-  const rows = bankList.map((b) => ({ code: b.code, name: b.name, sortOrder: b.sortOrder, active: b.active }));
+  const rows = bankList.map((b) => ({ code: b.code, name: b.name, sortOrder: b.sortOrder, active: b.active, hotline: b.hotline }));
   const added = await db.insert(banks).values(rows).onConflictDoNothing({ target: banks.code }).returning({ code: banks.code });
   // Logo ở đây chỉ để khởi đầu: ngân hàng đã có logo do Quản trị tải lên thì giữ nguyên.
   const missing = await db.select({ code: banks.code }).from(banks).where(and(inArray(banks.code, bankList.map((b) => b.code)), isNull(banks.logoKey)));
@@ -38,6 +38,8 @@ async function seedBanks(): Promise<string> {
     if (!put.ok) throw new Error(`Logo ${code}: ${put.message}`);
     await db.update(banks).set({ logoKey: put.key }).where(and(eq(banks.code, code), isNull(banks.logoKey)));
   }
+  // Số tổng đài chỉ điền khi còn trống: Quản trị đã sửa thì giữ.
+  for (const b of bankList) await db.update(banks).set({ hotline: b.hotline }).where(and(eq(banks.code, b.code), isNull(banks.hotline)));
   return `Thêm ${added.length} ngân hàng, tải logo cho ${missing.length} ngân hàng.`;
 }
 

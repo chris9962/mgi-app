@@ -1,11 +1,12 @@
 "use client";
 
 import { clsx } from "clsx";
-import { Check } from "lucide-react";
+import { Check, Info } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { studentApi } from "@/lib/studentApi";
-import type { StudentState } from "@/lib/studentState";
+import type { StudentBankInfo, StudentState } from "@/lib/studentState";
+import { BankInfoDialog } from "./BankInfoDialog";
 import { AppHead, BankLogo, Bottom, EndBlock, useStepBack, useStepNav, ZaloBox } from "./parts";
 
 const pickedMark = (
@@ -41,6 +42,7 @@ export function ChooseBanks({ state, notice, onDone, onEdit }: { state: StudentS
   const banks = state.eligibleBanks;
   const need = Math.min(2, banks.length);
   const [picked, setPicked] = useState<string[]>([]);
+  const [info, setInfo] = useState<StudentBankInfo | null>(null);
   const [pending, setPending] = useState(false);
   const [error, setError] = useState("");
   const nav = useStepNav();
@@ -75,21 +77,26 @@ export function ChooseBanks({ state, notice, onDone, onEdit }: { state: StudentS
         {banks.map((b) => {
           const slot = chosen.indexOf(b.id) + 1;
           const box = clsx("relative flex h-full w-full flex-col items-center gap-2 rounded-2xl border p-2.5 pb-3 text-center text-[15px] leading-tight font-semibold", slot ? "border-accent bg-accent-soft/40 shadow-md ring-1 ring-accent" : "border-field-border bg-card shadow-sm");
+          const nameId = `bank-name-${b.id}`;
           return (
-            <li key={b.id}>
+            <li key={b.id} className="relative">
               {need === 1 ? (
                 <div className={box}>
                   <BankLogo src={b.logoUrl} />
-                  {b.name}
+                  <span id={nameId}>{b.name}</span>
                   {pickedMark}
                 </div>
               ) : (
                 <button type="button" aria-pressed={slot > 0} disabled={!slot && chosen.length >= 2} onClick={() => toggle(b.id)} className={clsx(box, "text-text disabled:opacity-50")}>
                   <BankLogo src={b.logoUrl} />
-                  {b.name}
+                  <span id={nameId}>{b.name}</span>
                   {slot > 0 && pickedMark}
                 </button>
               )}
+              {/* Tên nút không chứa tên ngân hàng để không lẫn với nút chọn; tên ngân hàng đi theo aria-describedby. */}
+              <button type="button" aria-label="Thông tin" aria-describedby={nameId} onClick={() => setInfo(b)} className="absolute top-1.5 left-1.5 z-10 grid size-9 place-items-center rounded-full bg-card/90 text-text-2 shadow-sm ring-1 ring-line hover:text-accent-ink">
+                <Info size={17} aria-hidden />
+              </button>
             </li>
           );
         })}
@@ -100,6 +107,7 @@ export function ChooseBanks({ state, notice, onDone, onEdit }: { state: StudentS
           {message}
         </p>
       )}
+      {info && <BankInfoDialog bank={info} onClose={() => setInfo(null)} />}
       <Bottom sticky>
         <Button large block disabled={chosen.length !== need || pending || editing} onClick={submit}>
           Tiếp tục

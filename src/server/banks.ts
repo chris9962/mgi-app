@@ -14,6 +14,8 @@ export type BankRow = {
   code: string;
   name: string;
   logoKey: string | null;
+  hotline: string | null;
+  overview: string | null;
   sortOrder: number;
   active: boolean;
   slotCount: number;
@@ -51,6 +53,8 @@ export async function listBanks(actor: SessionUser): Promise<BankRow[]> {
       code: banks.code,
       name: banks.name,
       logoKey: banks.logoKey,
+      hotline: banks.hotline,
+      overview: banks.overview,
       sortOrder: banks.sortOrder,
       active: banks.active,
       slotCount: sql<number>`(select count(*)::int from ${bankPhotoSlots} s where s.bank_id = ${BANK_ID} and s.removed_at is null)`,
@@ -88,7 +92,7 @@ export async function createBank(actor: SessionUser, values: BankFormValues, ip?
   if (!(await validManagers(values.managerIds))) return fail("Người quản phải là Nhân viên đang hoạt động.", 400, "managerIds");
   return db
     .transaction(async (tx) => {
-      const [row] = await tx.insert(banks).values({ code: values.code, name: values.name, sortOrder: values.sortOrder, logoKey: values.logoKey }).returning({ id: banks.id });
+      const [row] = await tx.insert(banks).values({ code: values.code, name: values.name, sortOrder: values.sortOrder, logoKey: values.logoKey, hotline: values.hotline, overview: values.overview }).returning({ id: banks.id });
       if (values.managerIds.length) await tx.insert(userManagedBanks).values([...new Set(values.managerIds)].map((userId) => ({ userId, bankId: row.id })));
       await writeAudit(tx, { userId: actor.id, action: "create_bank", targetType: "banks", targetId: row.id, detail: values, ip });
       return { ok: true as const, id: row.id };
@@ -108,7 +112,7 @@ export async function updateBank(actor: SessionUser, id: string, values: BankFor
   if (assign && !(await validManagers(values.managerIds.filter((m) => !assigned.has(m))))) return fail("Người quản phải là Nhân viên đang hoạt động.", 400, "managerIds");
   return db
     .transaction(async (tx) => {
-      await tx.update(banks).set({ code: values.code, name: values.name, sortOrder: values.sortOrder, logoKey: values.logoKey }).where(eq(banks.id, id));
+      await tx.update(banks).set({ code: values.code, name: values.name, sortOrder: values.sortOrder, logoKey: values.logoKey, hotline: values.hotline, overview: values.overview }).where(eq(banks.id, id));
       if (assign) {
         await tx.delete(userManagedBanks).where(eq(userManagedBanks.bankId, id));
         if (values.managerIds.length) await tx.insert(userManagedBanks).values([...new Set(values.managerIds)].map((userId) => ({ userId, bankId: id })));

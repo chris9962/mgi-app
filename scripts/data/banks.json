@@ -1,14 +1,14 @@
 [
-  {"code": "MB", "name": "MB Bank", "sortOrder": 1, "active": true, "logo": "mb.webp"},
-  {"code": "TPB", "name": "TPBank", "sortOrder": 2, "active": true, "logo": "tpb.webp"},
-  {"code": "BIDV", "name": "BIDV", "sortOrder": 10, "active": false, "logo": "bidv.webp"},
-  {"code": "LPB", "name": "LPBank", "sortOrder": 10, "active": true, "logo": "lpb.webp"},
-  {"code": "MBV", "name": "MBV", "sortOrder": 10, "active": true, "logo": "mbv.webp"},
-  {"code": "MSBA", "name": "MSB (a)", "sortOrder": 10, "active": false, "logo": "msb.webp"},
-  {"code": "MSBB", "name": "MSB (b)", "sortOrder": 10, "active": true, "logo": "msb.webp"},
-  {"code": "SHB", "name": "SHB", "sortOrder": 10, "active": true, "logo": "shb.webp"},
-  {"code": "TCB", "name": "Techcombank", "sortOrder": 10, "active": false, "logo": "tcb.webp"},
-  {"code": "VIB", "name": "VIB", "sortOrder": 10, "active": false, "logo": "vib.webp"},
-  {"code": "VPA", "name": "VPBank", "sortOrder": 10, "active": true, "logo": "vpb.webp"},
-  {"code": "VPB", "name": "VPBank NEO", "sortOrder": 10, "active": true, "logo": "vpb.webp"}
+  {"code": "MB", "name": "Ngân hàng TMCP Quân đội (MB Bank)", "hotline": "1900 545426", "sortOrder": 1, "active": true, "logo": "mb.webp"},
+  {"code": "TPB", "name": "Ngân hàng TMCP Tiên Phong (TPBank)", "hotline": "1900 585885", "sortOrder": 2, "active": true, "logo": "tpb.webp"},
+  {"code": "BIDV", "name": "Ngân hàng TMCP Đầu tư và Phát triển Việt Nam (BIDV)", "hotline": "1900 9247", "sortOrder": 10, "active": false, "logo": "bidv.webp"},
+  {"code": "LPB", "name": "Ngân hàng TMCP Lộc Phát Việt Nam (LPBank)", "hotline": "1800 577758", "sortOrder": 10, "active": true, "logo": "lpb.webp"},
+  {"code": "MBV", "name": "Ngân hàng TNHH MTV Việt Nam Hiện Đại (MBV)", "hotline": "1800 588815", "sortOrder": 10, "active": true, "logo": "mbv.webp"},
+  {"code": "MSBA", "name": "Ngân hàng TMCP Hàng Hải Việt Nam (MSB a)", "hotline": "1900 6083", "sortOrder": 10, "active": false, "logo": "msb.webp"},
+  {"code": "MSBB", "name": "Ngân hàng TMCP Hàng Hải Việt Nam (MSB b)", "hotline": "1900 6083", "sortOrder": 10, "active": true, "logo": "msb.webp"},
+  {"code": "SHB", "name": "Ngân hàng TMCP Sài Gòn - Hà Nội (SHB)", "hotline": "1800 588856", "sortOrder": 10, "active": true, "logo": "shb.webp"},
+  {"code": "TCB", "name": "Ngân hàng TMCP Kỹ thương Việt Nam (Techcombank)", "hotline": "1800 588822", "sortOrder": 10, "active": false, "logo": "tcb.webp"},
+  {"code": "VIB", "name": "Ngân hàng TMCP Quốc tế Việt Nam (VIB)", "hotline": "1800 8180", "sortOrder": 10, "active": false, "logo": "vib.webp"},
+  {"code": "VPA", "name": "Ngân hàng TMCP Việt Nam Thịnh Vượng (VPBank)", "hotline": "1900 545415", "sortOrder": 10, "active": true, "logo": "vpb.webp"},
+  {"code": "VPB", "name": "Ngân hàng TMCP Việt Nam Thịnh Vượng (VPBank NEO)", "hotline": "1900 545415", "sortOrder": 10, "active": true, "logo": "vpb.webp"}
 ]

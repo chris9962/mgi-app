@@ -5,13 +5,14 @@ import { useRouter } from "next/navigation";
 import { useId, useRef, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { Dialog } from "@/components/ui/Dialog";
+import { Field, inputClass } from "@/components/ui/Field";
 import { MultiSelect, type Option } from "@/components/ui/MultiSelect";
 import { TextField } from "@/components/ui/TextField";
 import { apiSend } from "@/lib/api";
 import { BankForm } from "@/lib/bankForm";
 import { MAX_IMAGE_BYTES } from "@/lib/imageKey";
 
-export type BankDefaults = { id?: string; code: string; name: string; sortOrder: number; logoKey: string | null; managers: Option[] };
+export type BankDefaults = { id?: string; code: string; name: string; sortOrder: number; logoKey: string | null; hotline: string | null; overview: string | null; managers: Option[] };
 
 const TOO_LARGE = "Ảnh lớn hơn 20 MB.";
 
@@ -22,12 +23,13 @@ const searchManagers = async (q: string): Promise<Option[]> => {
 
 export function BankFormDialog({ initial, canAssign, onClose }: { initial?: BankDefaults; canAssign: boolean; onClose: () => void }) {
   const router = useRouter();
-  const start = initial ?? { code: "", name: "", sortOrder: 0, logoKey: null, managers: [] };
+  const start = initial ?? { code: "", name: "", sortOrder: 0, logoKey: null, hotline: null, overview: null, managers: [] };
   const [managers, setManagers] = useState<Option[]>(start.managers);
   const [logoKey, setLogoKey] = useState(start.logoKey);
   const [uploading, setUploading] = useState(false);
   const [logoError, setLogoError] = useState("");
   const logoErrorId = `${useId()}-logo-error`;
+  const overviewId = `${useId()}-overview`;
   const fileInput = useRef<HTMLInputElement>(null);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [formError, setFormError] = useState("");
@@ -50,7 +52,7 @@ export function BankFormDialog({ initial, canAssign, onClose }: { initial?: Bank
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const f = new FormData(event.currentTarget);
-    const raw = { code: f.get("code"), name: f.get("name"), sortOrder: f.get("sortOrder"), managerIds: managers.map((m) => m.id), logoKey };
+    const raw = { code: f.get("code"), name: f.get("name"), sortOrder: f.get("sortOrder"), hotline: f.get("hotline"), overview: f.get("overview"), managerIds: managers.map((m) => m.id), logoKey };
     const parsed = BankForm.safeParse(raw);
     if (!parsed.success) return setErrors(Object.fromEntries(parsed.error.issues.map((i) => [String(i.path[0]), i.message])));
     setErrors({});
@@ -86,6 +88,10 @@ export function BankFormDialog({ initial, canAssign, onClose }: { initial?: Bank
           <TextField name="sortOrder" label="Độ ưu tiên" inputMode="numeric" defaultValue={String(start.sortOrder)} error={errors.sortOrder} />
         </div>
         <TextField name="name" label="Tên ngân hàng" defaultValue={start.name} error={errors.name} />
+        <TextField name="hotline" label="Số tổng đài" inputMode="tel" defaultValue={start.hotline ?? ""} error={errors.hotline} />
+        <Field id={overviewId} label="Thông tin tổng quan" error={errors.overview} hint="Học sinh xem ở bước Chọn ngân hàng">
+          <textarea id={overviewId} name="overview" rows={4} defaultValue={start.overview ?? ""} aria-invalid={errors.overview ? true : undefined} aria-describedby={errors.overview ? `${overviewId}-error` : undefined} className={`${inputClass} leading-6`} />
+        </Field>
         <div className="flex flex-col gap-1.5">
           <span className="text-[13px] text-text-2">Logo</span>
           <input

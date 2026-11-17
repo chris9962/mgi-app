@@ -122,6 +122,8 @@ export const banks = pgTable("banks", {
   sortOrder: smallint("sort_order").notNull().default(0),
   active: boolean("active").notNull().default(true),
   logoKey: text("logo_key"),
+  hotline: text("hotline"),
+  overview: text("overview"),
 });
 
 export const userManagedBanks = pgTable(
