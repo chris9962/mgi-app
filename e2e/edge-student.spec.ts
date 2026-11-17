@@ -81,7 +81,7 @@ test.describe("A. Mở link và chọn trường", () => {
     await expect(ask).toContainText(`Máy này đang dùng ${NAME.schoolLong}. Link vừa mở là của ${NAME.schoolPhoto}.`);
     await expectNoSideScroll(page);
     await page.getByRole("button", { name: "Giữ trường cũ" }).click();
-    await expect(page.getByRole("heading", { name: "Chọn 2 ngân hàng" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Chọn ngân hàng" })).toBeVisible();
     await expect(page.getByText(NAME.schoolLong, { exact: true })).toBeVisible();
     await expectNoSideScroll(page);
 
@@ -118,7 +118,7 @@ test.describe("A. Mở link và chọn trường", () => {
     await expect(page.getByText(/Không lưu được/)).toHaveCount(0);
     await page.unroute("**/api/customers/me");
     await page.getByRole("button", { name: "Thử lại" }).click();
-    await expect(page.getByRole("heading", { name: "Chọn 2 ngân hàng" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Chọn ngân hàng" })).toBeVisible();
   });
 
   test("A9 mất mạng lúc mở web: báo không kết nối được, Thử lại khi có mạng", async ({ page }) => {
@@ -192,11 +192,11 @@ test.describe("A. Mở link và chọn trường", () => {
     await page.goto(`${STUDENT}/t/${SCHOOL.photo}`);
     await fillInfo(page, info("Lê Văn Quay Lại"));
     await next(page).click();
-    await expect(page.getByRole("heading", { name: "Chọn 2 ngân hàng" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Chọn ngân hàng" })).toBeVisible();
     await page.goBack();
     await expect(page).toHaveURL("about:blank");
     await page.goForward();
-    await expect(page.getByRole("heading", { name: "Chọn 2 ngân hàng" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Chọn ngân hàng" })).toBeVisible();
   });
 
   test("A12 tải lại trang: B1 gõ dở thì trống, B2 chưa chọn, B3 giữ ảnh đã nộp", async ({ page }) => {
@@ -210,9 +210,9 @@ test.describe("A. Mở link và chọn trường", () => {
     await fillInfo(page, info("Phạm Tải Lại"));
     await next(page).click();
     await page.getByRole("button", { name: NAME.p1 }).click();
-    await expect(page.getByText("Đã chọn 1/2.")).toBeVisible();
+    await expect(page.getByText("Đã chọn 1.")).toBeVisible();
     await page.reload();
-    await expect(page.getByText("Đã chọn 0/2.")).toBeVisible();
+    await expect(page.getByText("Đã chọn 0.")).toBeVisible();
 
     await page.getByRole("button", { name: NAME.p1 }).click();
     await page.getByRole("button", { name: NAME.p3 }).click();
@@ -315,14 +315,14 @@ test.describe("B. B1 khai thông tin", () => {
     await page.getByLabel("SĐT phụ huynh").focus();
     await page.keyboard.press("Enter");
     await page.keyboard.press("Enter");
-    await expect(page.getByRole("heading", { name: "Chọn 2 ngân hàng" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Chọn ngân hàng" })).toBeVisible();
     expect(posts).toBe(1);
 
     await page.evaluate(() => localStorage.removeItem("mgi.token"));
     await page.reload();
     await fillInfo(page, info("Đỗ Bấm Đúp"));
     await next(page).dblclick();
-    await expect(page.getByRole("heading", { name: "Chọn 2 ngân hàng" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Chọn ngân hàng" })).toBeVisible();
     expect(posts).toBe(2);
   });
 
@@ -334,7 +334,7 @@ test.describe("B. B1 khai thông tin", () => {
     await expect(next(page)).toBeEnabled();
     await page.unroute("**/api/customers");
     await next(page).click();
-    await expect(page.getByRole("heading", { name: "Chọn 2 ngân hàng" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Chọn ngân hàng" })).toBeVisible();
   });
 
   test("B12 trường đóng sau khi mở form: bấm Tiếp tục báo Trường đã đóng., không tạo hồ sơ", async ({ page }) => {

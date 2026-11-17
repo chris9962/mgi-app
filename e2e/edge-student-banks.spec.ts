@@ -42,18 +42,20 @@ async function uploadIn(page: Page, slot: string) {
 }
 
 test.describe("C. B2 chọn ngân hàng", () => {
-  test("C1 chọn 2 thì ngân hàng thứ 3 khoá, bỏ chọn một thì mở lại", async ({ page, request }) => {
+  test("C1 chọn được cả 3 ngân hàng, bỏ chọn một thì còn 2; chưa chọn thì nút Tiếp tục khoá", async ({ page, request }) => {
     await openAt(page, SCHOOL.photo, await apiCreate(request, SCHOOL.photo, info("Chọn Ba Ngân Hàng")));
+    await expect(next(page)).toBeDisabled();
     await page.getByRole("button", { name: NAME.p1 }).click();
     await page.getByRole("button", { name: NAME.p3 }).click();
-    await expect(page.getByRole("button", { name: NAME.p4 })).toBeDisabled();
+    await page.getByRole("button", { name: NAME.p4 }).click();
+    await expect(page.getByText("Đã chọn 3.")).toBeVisible();
+    await expect(next(page)).toBeEnabled();
     await page.getByRole("button", { name: NAME.p1 }).click();
     await expect(page.getByRole("button", { name: NAME.p1 })).toHaveAttribute("aria-pressed", "false");
-    await expect(page.getByRole("button", { name: NAME.p4 })).toBeEnabled();
-    await expect(page.getByText("Đã chọn 1/2.")).toBeVisible();
+    await expect(page.getByText("Đã chọn 2.")).toBeVisible();
   });
 
-  test("C2, C5 còn 1 ngân hàng thì chọn sẵn; lượt được trả lại nên còn 2 thì bấm Tiếp tục tải lại danh sách 2 ngân hàng, câu Chọn đúng 2 ngân hàng hiện một lần", async ({ page, request }) => {
+  test("C2, C5 còn 1 ngân hàng thì chọn sẵn; lượt được trả lại nên còn 2 thì bấm Tiếp tục tải lại danh sách 2 ngân hàng, câu gợi ý hiện một lần", async ({ page, request }) => {
     dbOp("reset", SCHOOL.quota);
     const other = await apiCreate(request, SCHOOL.quota, info("Lấy Lượt Cuối"));
     await apiPick(request, other, [BANK.q1, BANK.q2]);
@@ -66,8 +68,7 @@ test.describe("C. B2 chọn ngân hàng", () => {
 
     expect((await request.delete(`${STUDENT}/api/customers/me/banks`, { headers: other.auth })).status()).toBe(204);
     await next(page).click();
-    await expect(page.getByRole("heading", { name: "Chọn 2 ngân hàng" })).toBeVisible();
-    await expect(page.getByText(/Chọn đúng 2 ngân hàng/)).toHaveCount(1);
+    await expect(page.getByText(/Chọn 1 tới 2 ngân hàng/)).toHaveCount(1);
     await expect(alertIn(page)).toHaveCount(0);
     await expect(page.getByRole("button", { name: NAME.q1 })).toBeEnabled();
     await expect(page.getByRole("button", { name: NAME.q2 })).toBeEnabled();
@@ -107,7 +108,7 @@ test.describe("C. B2 chọn ngân hàng", () => {
     await expect(buttons).toHaveCount(2);
     await buttons.nth(0).click();
     await buttons.nth(1).click();
-    await expect(page.getByText("Đã chọn 2/2.")).toBeVisible();
+    await expect(page.getByText("Đã chọn 2.")).toBeVisible();
     await expectNoSideScroll(page);
     await expectInsideScreen(page, buttons);
     await expectInsideBox(buttons, ":scope > span[aria-hidden], :scope > img");
@@ -277,7 +278,7 @@ test.describe("D. B3 mở tài khoản", () => {
     await apiPick(request, s, [BANK.p1, BANK.p3]);
     await openAt(page, SCHOOL.photo, s);
     await page.getByRole("button", { name: "Quay lại chọn ngân hàng" }).click();
-    await expect(page.getByRole("heading", { name: "Chọn 2 ngân hàng" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Chọn ngân hàng" })).toBeVisible();
     await expect(page.getByRole("dialog")).toHaveCount(0);
 
     await page.getByRole("button", { name: NAME.p1 }).click();
@@ -368,7 +369,7 @@ test.describe("D. B3 mở tài khoản", () => {
     await page.keyboard.press("Escape");
     await expect(confirm).toBeVisible();
     release();
-    await expect(page.getByRole("heading", { name: "Chọn 2 ngân hàng" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Chọn ngân hàng" })).toBeVisible();
     await expect(confirm).toHaveCount(0);
   });
 
@@ -390,7 +391,7 @@ test.describe("D. B3 mở tài khoản", () => {
     await expect(confirm).toBeVisible();
     await expect(confirm.getByRole("alert")).toHaveCount(0);
     await confirm.getByRole("button", { name: "Quay lại", exact: true }).click();
-    await expect(page.getByRole("heading", { name: "Chọn 2 ngân hàng" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Chọn ngân hàng" })).toBeVisible();
   });
 
   test("D22 tab kia bấm Quay lại nên hồ sơ về B2: tab này nộp ảnh thì web tải lại sang B2, không báo Hồ sơ đã gửi kiểm tra", async ({ page, request }) => {
@@ -400,7 +401,7 @@ test.describe("D. B3 mở tài khoản", () => {
     await expect(page.getByRole("heading", { name: "Mở tài khoản" })).toBeVisible();
     expect((await request.delete(`${STUDENT}/api/customers/me/banks`, { headers: s.auth })).status()).toBe(204);
     await page.getByRole("tabpanel").getByLabel("Ảnh màn hình chính: chọn ảnh").setInputFiles(PHOTO);
-    await expect(page.getByRole("heading", { name: "Chọn 2 ngân hàng" })).toBeVisible({ timeout: 30_000 });
+    await expect(page.getByRole("heading", { name: "Chọn ngân hàng" })).toBeVisible({ timeout: 30_000 });
     await expect(page.getByText("Hồ sơ đã gửi kiểm tra.")).toHaveCount(0);
     await expect(alertIn(page)).toHaveCount(0);
     expect((await s.me()).banks).toEqual([]);
@@ -439,7 +440,7 @@ test.describe("D. B3 mở tài khoản", () => {
     await back.dblclick();
     await expect(back).toBeDisabled();
     release();
-    await expect(page.getByRole("heading", { name: "Chọn 2 ngân hàng" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Chọn ngân hàng" })).toBeVisible();
     await expect(alertIn(page)).toHaveCount(0);
     expect(deletes).toBe(1);
   });

@@ -11,7 +11,7 @@ Web học sinh hiện có 3 bước: 1 Thông tin, 2 Chọn ngân hàng, 3 Mở 
 
 ## 2. Bước 2 Chọn ngân hàng
 
-- [ ] Bỏ giới hạn số ngân hàng học sinh mở.
+- [x] Bỏ giới hạn số ngân hàng học sinh mở. Chốt 2026-11-17: chọn từ 1 tới hết ngân hàng còn lượt của trường, lượt theo tháng của mã giới thiệu giữ nguyên. Migration 0016 bỏ trần slot.
   - Code hiện tại bắt chọn đúng 2 ở `ChooseBanks.tsx` và `src/server/customers.ts`.
 - [x] Học sinh chọn một ngân hàng thì hiện thông tin tổng quan của ngân hàng đó. Làm 2026-11-17: nút Thông tin trên mỗi thẻ mở hộp toàn màn hình, tab Thông tin.
 - [x] Đưa hướng dẫn mở tài khoản vào bước 2. Làm 2026-11-17: tab Hướng dẫn mở tài khoản trong hộp đó, lấy từ hướng dẫn đã cài ở cấu hình ngân hàng.

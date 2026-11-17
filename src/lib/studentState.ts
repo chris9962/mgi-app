@@ -24,6 +24,7 @@ export type StudentBank = {
   id: string;
   bankId: string;
   name: string;
+  logoUrl: string | null;
   slot: number;
   status: CustomerBankStatus;
   referralCode: string;

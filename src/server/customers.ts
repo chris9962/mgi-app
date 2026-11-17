@@ -214,8 +214,9 @@ export async function reserveBanks(customer: Customer, bankIds: string[], month 
     }
     const chosen = [...new Set(bankIds)];
     if (chosen.some((id) => !open.some((b) => b.id === id))) return fail("Ngân hàng vừa hết lượt. Chọn lại.", 409, "bankIds");
-    const need = Math.min(2, open.length);
-    if (chosen.length !== need || chosen.length !== bankIds.length) return fail(need === 2 ? "Chọn đúng 2 ngân hàng." : "Chọn 1 ngân hàng.", 400, "bankIds");
+    // Chọn từ 1 tới hết ngân hàng còn lượt (chủ dự án chốt 2026-11-17); lượt theo tháng của từng mã vẫn tính như cũ.
+    if (!chosen.length) return fail("Chọn ngân hàng.", 400, "bankIds");
+    if (chosen.length !== bankIds.length) return fail("Ngân hàng bị trùng.", 400, "bankIds");
     for (const [i, bankId] of chosen.entries()) {
       const code = pickCode(candidates, bankId);
       await tx.insert(referralCodeMonths).values({ referralCodeId: code.id, yearMonth: month, quota: code.quota }).onConflictDoNothing();
@@ -265,6 +266,7 @@ async function chosenBanks(customer: Customer, store: PhotoStore): Promise<Stude
       id: customerBanks.id,
       bankId: customerBanks.bankId,
       name: banks.name,
+      logoKey: banks.logoKey,
       slot: customerBanks.slot,
       status: customerBanks.status,
       referralCode: customerBanks.referralCode,
@@ -298,6 +300,7 @@ async function chosenBanks(customer: Customer, store: PhotoStore): Promise<Stude
       id: r.id,
       bankId: r.bankId,
       name: r.name,
+      logoUrl: await sign(r.logoKey),
       slot: r.slot,
       status: r.status,
       referralCode: guide ? r.referralCode : "",

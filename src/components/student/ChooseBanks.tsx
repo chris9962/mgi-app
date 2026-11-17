@@ -40,7 +40,8 @@ function EditHead({ onEdit }: { onEdit: Edit }) {
 
 export function ChooseBanks({ state, notice, onDone, onEdit }: { state: StudentState; notice?: string; onDone: (notice?: string) => void; onEdit: Edit }) {
   const banks = state.eligibleBanks;
-  const need = Math.min(2, banks.length);
+  // Còn đúng 1 ngân hàng thì chọn sẵn; còn nhiều thì chọn từ 1 tới hết.
+  const single = banks.length === 1;
   const [picked, setPicked] = useState<string[]>([]);
   const [info, setInfo] = useState<StudentBankInfo | null>(null);
   const [pending, setPending] = useState(false);
@@ -52,16 +53,16 @@ export function ChooseBanks({ state, notice, onDone, onEdit }: { state: StudentS
     setError((await onEdit()) ?? "");
     nav.setPending(null);
   });
-  const chosen = need === 1 ? [banks[0].id] : picked;
+  const chosen = single ? [banks[0].id] : picked;
 
-  const toggle = (id: string) => setPicked((list) => (list.includes(id) ? list.filter((x) => x !== id) : list.length < 2 ? [...list, id] : list));
+  const toggle = (id: string) => setPicked((list) => (list.includes(id) ? list.filter((x) => x !== id) : [...list, id]));
 
   async function submit() {
     setPending(true);
     const r = await studentApi("POST", "/api/customers/me/banks", { bankIds: chosen });
     if (r.ok) return onDone();
     setPending(false);
-    // Số ngân hàng còn lượt đổi giữa chừng (hết lượt, hay được trả lượt nên phải chọn 2): tải lại danh sách để chọn lại; câu 400 đã có ở dòng gợi ý nên không nhắc lại.
+    // Số ngân hàng còn lượt đổi giữa chừng (hết lượt, hay được trả lượt): tải lại danh sách để chọn lại; câu 400 đã có ở dòng gợi ý nên không nhắc lại.
     if (r.status === 409 || r.field === "bankIds") return onDone(r.status === 409 ? r.message : undefined);
     setError(r.message);
   }
@@ -69,9 +70,9 @@ export function ChooseBanks({ state, notice, onDone, onEdit }: { state: StudentS
   const message = error || notice;
   return (
     <>
-      <AppHead title={need === 2 ? "Chọn 2 ngân hàng" : "Chọn ngân hàng"} />
+      <AppHead title="Chọn ngân hàng" />
       <p className="text-sm text-text-2" aria-live="polite">
-        {need === 2 ? `Chọn đúng 2 ngân hàng. Đã chọn ${chosen.length}/2.` : "Chỉ còn 1 ngân hàng chưa có tài khoản."}
+        {single ? "Chỉ còn 1 ngân hàng chưa có tài khoản." : `Chọn 1 tới ${banks.length} ngân hàng. Đã chọn ${chosen.length}.`}
       </p>
       <ul className="anim-stagger mt-3 grid grid-cols-2 gap-3">
         {banks.map((b) => {
@@ -80,14 +81,14 @@ export function ChooseBanks({ state, notice, onDone, onEdit }: { state: StudentS
           const nameId = `bank-name-${b.id}`;
           return (
             <li key={b.id} className="relative">
-              {need === 1 ? (
+              {single ? (
                 <div className={box}>
                   <BankLogo src={b.logoUrl} />
                   <span id={nameId}>{b.name}</span>
                   {pickedMark}
                 </div>
               ) : (
-                <button type="button" aria-pressed={slot > 0} disabled={!slot && chosen.length >= 2} onClick={() => toggle(b.id)} className={clsx(box, "text-text disabled:opacity-50")}>
+                <button type="button" aria-pressed={slot > 0} onClick={() => toggle(b.id)} className={clsx(box, "text-text")}>
                   <BankLogo src={b.logoUrl} />
                   <span id={nameId}>{b.name}</span>
                   {slot > 0 && pickedMark}
@@ -101,15 +102,15 @@ export function ChooseBanks({ state, notice, onDone, onEdit }: { state: StudentS
           );
         })}
       </ul>
-      {need === 1 && state.existingBanks.length > 0 && <p className="mt-3 text-sm text-text-2">Đã có: {state.existingBanks.join(", ")}.</p>}
+      {single && state.existingBanks.length > 0 && <p className="mt-3 text-sm text-text-2">Đã có: {state.existingBanks.join(", ")}.</p>}
       {message && (
         <p role="alert" className="mt-3 text-sm text-danger">
           {message}
         </p>
       )}
-      {info && <BankInfoDialog bank={info} pick={need === 2 ? { picked: chosen.includes(info.id), full: chosen.length >= 2, onToggle: () => toggle(info.id) } : undefined} onClose={() => setInfo(null)} />}
+      {info && <BankInfoDialog bank={info} pick={single ? undefined : { picked: chosen.includes(info.id), onToggle: () => toggle(info.id) }} onClose={() => setInfo(null)} />}
       <Bottom sticky>
-        <Button large block disabled={chosen.length !== need || pending || editing} onClick={submit}>
+        <Button large block disabled={!chosen.length || pending || editing} onClick={submit}>
           Tiếp tục
         </Button>
       </Bottom>

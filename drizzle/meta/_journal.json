@@ -113,6 +113,13 @@
       "when": 1794895147300,
       "tag": "0015_bank_profile",
       "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1794900231703,
+      "tag": "0016_customer_bank_slot_any",
+      "breakpoints": true
     }
   ]
 }

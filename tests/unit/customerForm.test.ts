@@ -23,7 +23,7 @@ describe("câu báo lỗi của form học sinh", () => {
     ["đồng ý là false", CustomerForm, { ...VALID, consent: false }],
     ["chọn ngân hàng: body rỗng", BankChoiceForm, null],
     ["chọn ngân hàng: id sai", BankChoiceForm, { bankIds: ["x"] }],
-    ["chọn ngân hàng: 3 ngân hàng", BankChoiceForm, { bankIds: [UUID, UUID, UUID] }],
+    ["chọn ngân hàng: 51 ngân hàng", BankChoiceForm, { bankIds: Array(51).fill(UUID) }],
     ["nộp ảnh: thiếu hết", PhotoTargetForm, {}],
     ["nộp ảnh: khung sai", PhotoTargetForm, { customerBankId: UUID, slotId: "y" }],
     ["nộp ảnh: không phải chuỗi", PhotoTargetForm, { customerBankId: null, slotId: 5 }],

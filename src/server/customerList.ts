@@ -60,7 +60,8 @@ export function customerWhere(actor: SessionUser, f: CustomerFilters): SQL | und
     f.status ? eq(customers.status, f.status) : undefined,
     start ? gte(customers.createdAt, start) : undefined,
     end ? lt(customers.createdAt, end) : undefined,
-    f.passed ? sql`(select count(*) from ${customerBanks} cb where cb.customer_id = ${CUSTOMER_ID} and cb.status = 'passed') = ${Number(f.passed)}` : undefined,
+    // Mốc 3 là "từ 3 trở lên": học sinh chọn được nhiều ngân hàng, không liệt kê từng số.
+    f.passed ? sql`(select count(*) from ${customerBanks} cb where cb.customer_id = ${CUSTOMER_ID} and cb.status = 'passed') ${f.passed === "3" ? sql`>=` : sql`=`} ${Number(f.passed)}` : undefined,
     f.check
       ? sql`exists (select 1 from ${customerBanks} cb cross join lateral ${latestCheck(sql`cb.id`)} pc
           where cb.customer_id = ${CUSTOMER_ID} and ${inBanks(ids)} and pc.status = 'done'

@@ -297,7 +297,7 @@ export const customerBanks = pgTable(
     uniqueIndex("customer_banks_customer_slot").on(t.customerId, t.slot),
     index("customer_banks_queue").on(t.bankId, t.status, t.submittedAt),
     index("customer_banks_code_month").on(t.referralCodeId, t.yearMonth),
-    check("customer_banks_slot_range", sql`${t.slot} in (1, 2)`),
+    check("customer_banks_slot_range", sql`${t.slot} >= 1`),
     check("customer_banks_year_month_format", sql`${t.yearMonth} ~ '^[0-9]{4}-[0-9]{2}$'`),
   ],
 );

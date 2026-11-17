@@ -1,0 +1,2 @@
+ALTER TABLE "customer_banks" DROP CONSTRAINT "customer_banks_slot_range";--> statement-breakpoint
+ALTER TABLE "customer_banks" ADD CONSTRAINT "customer_banks_slot_range" CHECK ("customer_banks"."slot" >= 1);

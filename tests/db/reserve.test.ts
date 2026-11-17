@@ -108,12 +108,16 @@ describe("B2 danh sách đủ điều kiện", () => {
 });
 
 describe("B2 giữ chỗ", () => {
-  test("còn từ 2 thì phải chọn đúng 2", async () => {
+  test("chọn từ 1 tới hết ngân hàng còn lượt; rỗng hay trùng thì từ chối (chủ dự án chốt 2026-11-17)", async () => {
     const c = await student("S");
-    expect(await reserveBanks(c, [bank.A], MONTH)).toMatchObject({ ok: false, field: "bankIds" });
-    expect(await reserveBanks(c, [bank.A, bank.B, bank.C], MONTH)).toMatchObject({ ok: false, field: "bankIds" });
-    expect(await reserveBanks(c, [bank.A, bank.A], MONTH)).toMatchObject({ ok: false, field: "bankIds" });
+    expect(await reserveBanks(c, [], MONTH)).toMatchObject({ ok: false, field: "bankIds", message: "Chọn ngân hàng." });
+    expect(await reserveBanks(c, [bank.A, bank.A], MONTH)).toMatchObject({ ok: false, field: "bankIds", message: "Ngân hàng bị trùng." });
     expect(await rowsOf(c.id)).toEqual([]);
+    expect(await reserveBanks(c, [bank.A, bank.B, bank.C], MONTH)).toEqual({ ok: true });
+    expect((await rowsOf(c.id)).map((r) => r.slot)).toEqual([1, 2, 3]);
+    const one = await student("S");
+    expect(await reserveBanks(one, [bank.B], MONTH)).toEqual({ ok: true });
+    expect((await rowsOf(one.id)).map((r) => r.slot)).toEqual([1]);
   });
 
   test("chọn trước là vị trí 1; mã ưu tiên cao nhất; chép mã; tạo dòng tháng; học sinh sang banks_selected", async () => {

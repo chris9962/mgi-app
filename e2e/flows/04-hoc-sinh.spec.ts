@@ -10,13 +10,13 @@ test("Flow 4: học sinh mở link QR, chọn 2 ngân hàng, nộp ảnh, gửi 
   const panel = page.getByRole("tabpanel");
   const tab = (name: string) => page.getByRole("tab", { name: new RegExp(name) });
   const pick = async (...names: string[]) => {
-    await expect(page.getByRole("heading", { name: "Chọn 2 ngân hàng" })).toBeVisible();
+    await expect(page.getByRole("heading", { name: "Chọn ngân hàng" })).toBeVisible();
     for (const name of names) await page.getByRole("button", { name: new RegExp(name) }).click();
     for (const name of names) {
       await expect(page.getByRole("button", { name: new RegExp(name) })).toHaveAttribute("aria-pressed", "true");
       await expect(page.getByRole("button", { name: new RegExp(name) }).locator("svg")).toBeVisible();
     }
-    await expect(page.getByText("Đã chọn 2/2.")).toBeVisible();
+    await expect(page.getByText("Đã chọn 2.")).toBeVisible();
     await expect(page.getByText(/Ngân hàng \d/)).toHaveCount(0);
     await page.getByRole("button", { name: "Tiếp tục" }).click();
     await expect(page.getByRole("heading", { name: "Mở tài khoản" })).toBeVisible();

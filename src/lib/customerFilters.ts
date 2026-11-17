@@ -13,7 +13,7 @@ export const CUSTOMER_STATUS_LABEL: Record<CustomerStatus, string> = {
   no_bank: "Không có ngân hàng",
 };
 
-export const PASSED_LABEL = { "1": "Đạt 1 ngân hàng", "2": "Đạt 2 ngân hàng" } as const;
+export const PASSED_LABEL = { "1": "Đạt 1 ngân hàng", "2": "Đạt 2 ngân hàng", "3": "Đạt từ 3 ngân hàng" } as const;
 export const CHECK_LABEL = { full: "Đủ khung đạt", missing: "Có khung không đạt" } as const;
 
 export type CustomerFilters = {
@@ -32,7 +32,7 @@ export function parseCustomerFilters(sp: Params): CustomerFilters {
     status: pickParam(readParam(sp, "status"), CUSTOMER_STATUSES),
     from: readDay(sp, "from"),
     to: readDay(sp, "to"),
-    passed: pickParam(readParam(sp, "passed"), ["1", "2"] as const),
+    passed: pickParam(readParam(sp, "passed"), ["1", "2", "3"] as const),
     check: pickParam(readParam(sp, "check"), ["full", "missing"] as const),
   };
 }

@@ -24,14 +24,14 @@ test("Học sinh quét link trường, khai thông tin, chọn 2 ngân hàng, n�
   await page.getByRole("checkbox", { name: "ZZE2E HS MB" }).check();
   await page.getByRole("button", { name: "Tiếp tục" }).click();
 
-  await expect(page.getByRole("heading", { name: "Chọn 2 ngân hàng" })).toBeVisible();
+  await expect(page.getByRole("heading", { name: "Chọn ngân hàng" })).toBeVisible();
   await expect(page.getByRole("button", { name: /ZZE2E HS MB/ })).toHaveCount(0);
   await expect.poll(() => page.getByRole("button", { name: /ZZE2E HS VPBank/ }).locator("img").evaluate((img: HTMLImageElement) => img.naturalWidth)).toBeGreaterThan(0);
   await page.getByRole("button", { name: /ZZE2E HS TPBank/ }).click();
   await page.getByRole("button", { name: /ZZE2E HS VPBank/ }).click();
   await expect(page.getByRole("button", { name: /ZZE2E HS TPBank/ })).toHaveAttribute("aria-pressed", "true");
   await expect(page.getByText(/Ngân hàng \d/)).toHaveCount(0);
-  await expect(page.getByText("Đã chọn 2/2.")).toBeVisible();
+  await expect(page.getByText("Đã chọn 2.")).toBeVisible();
   await page.getByRole("button", { name: "Tiếp tục" }).click();
 
   await expect(page.getByRole("heading", { name: "Mở tài khoản" })).toBeVisible();

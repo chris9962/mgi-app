@@ -8,7 +8,7 @@ import { ImageLightbox } from "@/components/ui/ImageLightbox";
 import { ConfirmDialog } from "@/components/users/ConfirmDialog";
 import { studentApi } from "@/lib/studentApi";
 import type { StudentBank, StudentState } from "@/lib/studentState";
-import { AppHead, Bottom, useStepBack, useStepNav } from "./parts";
+import { AppHead, BankLogo, Bottom, useStepBack, useStepNav } from "./parts";
 import { PhotoSlot } from "./PhotoSlot";
 
 const complete = (b: StudentBank) => b.slots.every((s) => s.photo);
@@ -190,8 +190,8 @@ export function OpenAccount({ state, onChange, onEdit }: { state: StudentState; 
   return (
     <>
       <AppHead title="Mở tài khoản" />
-      {/* Grid chia chỗ đều tới khi tab ngắn đủ chỗ, phần còn lại cho tab dài; flex bóp hai tab theo độ dài nên tên ngắn vỡ từng chữ. */}
-      <div role="tablist" aria-label="Ngân hàng đã chọn" className="sticky top-0 z-10 -mx-4 mb-4 grid grid-flow-col justify-start gap-2 border-b border-line bg-bg px-4">
+      {/* Tên đầy đủ dài và có thể nhiều ngân hàng: tab là thẻ logo cuộn ngang, tên hiện ở dòng dưới thanh tab; không có logo thì tab ghi tên. */}
+      <div role="tablist" aria-label="Ngân hàng đã chọn" className="sticky top-0 z-10 -mx-4 flex gap-2 overflow-x-auto bg-bg px-4 pt-1 pb-2.5 [scrollbar-width:none]">
         {banks.map((b, i) => (
           <button
             key={b.id}
@@ -206,16 +206,25 @@ export function OpenAccount({ state, onChange, onEdit }: { state: StudentState; 
             tabIndex={b.id === current.id ? 0 : -1}
             onClick={() => setActive(b.id)}
             onKeyDown={(e) => onTabKey(e, i)}
-            className={clsx("-mb-px flex items-center gap-2 border-b-2 px-3 py-2.5 text-[15px] font-semibold", b.id === current.id ? "border-accent text-text" : "border-transparent text-text-2")}
+            className={clsx(
+              "relative w-[104px] flex-none rounded-xl border p-1.5 transition-colors duration-200",
+              b.id === current.id ? "border-accent bg-accent-soft/40 ring-1 ring-accent" : "border-field-border bg-card",
+            )}
           >
-            <span aria-hidden className={clsx("grid size-4 flex-none place-items-center rounded-full text-[10px] leading-none transition-colors duration-300", complete(b) ? "border border-ok bg-ok-soft text-ok-ink" : "border border-field-border")}>
-              {complete(b) ? "✓" : ""}
+            {b.logoUrl ? <BankLogo src={b.logoUrl} /> : <span aria-hidden className="line-clamp-2 min-h-9 text-[12px] leading-tight font-semibold">{b.name}</span>}
+            <span className="sr-only">
+              {b.name}
+              {complete(b) ? ", đủ ảnh" : ", chưa đủ ảnh"}
             </span>
-            {b.name}
-            <span className="sr-only">{complete(b) ? ", đủ ảnh" : ", chưa đủ ảnh"}</span>
+            {complete(b) && (
+              <span aria-hidden className="anim-pop absolute -top-1.5 -right-1.5 grid size-5 place-items-center rounded-full bg-ok text-on-accent ring-2 ring-bg">
+                <Check size={12} strokeWidth={3} />
+              </span>
+            )}
           </button>
         ))}
       </div>
+      <p className="mb-3 text-[15px] leading-snug font-semibold">{current.name}</p>
       {banks.map((b) => (
         <div key={b.id} role="tabpanel" id={`panel-${b.id}`} aria-labelledby={`tab-${b.id}`} hidden={b.id !== current.id} className="anim-rise">
           <BankPanel bank={b} onSaved={photoSaved} onBusy={markBusy} />

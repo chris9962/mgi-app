@@ -95,7 +95,7 @@ test("G6 đọc hồ sơ thiếu token, token sai dạng, token 43 ký tự lạ
 test("G7 giữ chỗ hai lần cùng ngân hàng, ngân hàng không ở trường, giữ chỗ lần hai: 400, 409, 409", async ({ request }) => {
   const s = await apiCreate(request, SCHOOL.photo, info("Giữ Chỗ Lạ"));
   const pick = (bankIds: string[]) => request.post(`${STUDENT}/api/customers/me/banks`, { headers: s.auth, data: { bankIds } });
-  expect(await vietnamese400(await pick([BANK.p1, BANK.p1]))).toBe("Chọn đúng 2 ngân hàng.");
+  expect(await vietnamese400(await pick([BANK.p1, BANK.p1]))).toBe("Ngân hàng bị trùng.");
   expect((await pick([BANK.p1, BANK.longSpace])).status()).toBe(409);
   expect((await pick([BANK.p1, BANK.p3])).status()).toBe(204);
   expect((await pick([BANK.p1, BANK.p4])).status()).toBe(409);

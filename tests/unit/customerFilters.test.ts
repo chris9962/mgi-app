@@ -11,7 +11,7 @@ describe("bộ lọc hồ sơ trên URL", () => {
       passed: "2",
       check: "missing",
     });
-    expect(parseCustomerFilters({ status: "deleted", from: "2026-02-30", to: "04/11/2026", passed: "3", check: "x" })).toEqual({ q: "", status: "", from: "", to: "", passed: "", check: "" });
+    expect(parseCustomerFilters({ status: "deleted", from: "2026-02-30", to: "04/11/2026", passed: "9", check: "x" })).toEqual({ q: "", status: "", from: "", to: "", passed: "", check: "" });
   });
 
   test("nhận URLSearchParams và mảng giá trị", () => {

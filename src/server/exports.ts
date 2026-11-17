@@ -50,8 +50,8 @@ async function customerRows(actor: SessionUser, f: CustomerFilters) {
   return joinCustomerRows(rows, bankRows, codes);
 }
 
-const bankColumns = (slot: 1 | 2): ExcelColumn<CustomerExportRow>[] => {
-  const g = { group: `NGÂN HÀNG ${slot}`, groupColor: slot === 1 ? EXCEL_GROUP_COLORS.account : EXCEL_GROUP_COLORS.app };
+const bankColumns = (slot: number): ExcelColumn<CustomerExportRow>[] => {
+  const g = { group: `NGÂN HÀNG ${slot}`, groupColor: slot % 2 ? EXCEL_GROUP_COLORS.account : EXCEL_GROUP_COLORS.app };
   const bank = (r: CustomerExportRow) => r.banks.find((b) => b.slot === slot);
   return [
     { ...g, header: "NGÂN HÀNG", width: 16, value: (r) => bank(r)?.name ?? "" },
@@ -62,7 +62,8 @@ const bankColumns = (slot: 1 | 2): ExcelColumn<CustomerExportRow>[] => {
   ];
 };
 
-const CUSTOMER_COLUMNS: ExcelColumn<CustomerExportRow>[] = [
+// Học sinh chọn được nhiều ngân hàng: số nhóm cột theo hồ sơ nhiều ngân hàng nhất, tối thiểu 2 để file giữ dạng quen.
+const customerColumns = (maxSlot: number): ExcelColumn<CustomerExportRow>[] => [
   { ...STUDENT, header: "STT", width: 6, value: (_, i) => i + 1, total: (rows) => rows.length },
   { ...STUDENT, header: "HỌ TÊN", width: 24, transform: "name", value: (r) => r.fullName },
   { ...STUDENT, header: "LỚP", width: 8, value: (r) => r.className },
@@ -70,8 +71,7 @@ const CUSTOMER_COLUMNS: ExcelColumn<CustomerExportRow>[] = [
   { ...STUDENT, header: "SĐT PHỤ HUYNH", width: 14, type: "text", value: (r) => r.parentPhone },
   { ...STUDENT, header: "TRẠNG THÁI", width: 16, value: (r) => CUSTOMER_STATUS_LABEL[r.status] },
   { ...STUDENT, header: "GỬI LÚC", width: 17, value: (r) => (r.submittedAt ? formatDateTime(r.submittedAt) : "") },
-  ...bankColumns(1),
-  ...bankColumns(2),
+  ...Array.from({ length: Math.max(2, maxSlot) }, (_, i) => bankColumns(i + 1)).flat(),
   { group: "VOUCHER", groupColor: EXCEL_GROUP_COLORS.gift, header: "MÃ VOUCHER", width: 24, type: "text", value: (r) => r.voucher?.code ?? "", total: (rows) => rows.filter((r) => r.voucher).length },
   { group: "VOUCHER", groupColor: EXCEL_GROUP_COLORS.gift, header: "NGÀY CẤP", width: 17, value: (r) => (r.voucher ? formatDateTime(r.voucher.issuedAt) : "") },
 ];
@@ -81,7 +81,8 @@ export async function exportCustomers(actor: SessionUser, f: CustomerFilters, ip
   const [{ n }] = await db.select({ n: count() }).from(customers).where(customerWhere(actor, f));
   if (n > EXPORT_LIMIT) return tooMany(n);
   const rows = await customerRows(actor, f);
-  const bytes = await buildExcel({ sheetName: "Hồ sơ học sinh", columns: CUSTOMER_COLUMNS, rows });
+  const maxSlot = Math.max(0, ...rows.flatMap((r) => r.banks.map((b) => b.slot)));
+  const bytes = await buildExcel({ sheetName: "Hồ sơ học sinh", columns: customerColumns(maxSlot), rows });
   await writeAudit(db, { userId: actor.id, action: "export_excel", targetType: "customers", targetId: "list", detail: { filters: f, rows: rows.length }, ip });
   return { ok: true, bytes, fileName: `ho-so-hoc-sinh-${today()}.xlsx` };
 }

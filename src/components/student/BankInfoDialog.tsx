@@ -22,7 +22,7 @@ export function splitBankName(name: string): { short: string; long: string | nul
 const hostOf = (url: string) => url.replace(/^https?:\/\/(www\.)?/, "").replace(/\/.*$/, "");
 
 // pick: nút chọn ở đáy hộp; không truyền khi màn chỉ còn một ngân hàng.
-export type BankPick = { picked: boolean; full: boolean; onToggle: () => void };
+export type BankPick = { picked: boolean; onToggle: () => void };
 
 export function BankInfoDialog({ bank, pick, onClose }: { bank: StudentBankInfo; pick?: BankPick; onClose: () => void }) {
   const [tab, setTab] = useState<Tab>("about");
@@ -35,7 +35,7 @@ export function BankInfoDialog({ bank, pick, onClose }: { bank: StudentBankInfo;
           Đóng
         </Button>
       ) : (
-        <Button large block disabled={pick.full} onClick={() => (pick.onToggle(), onClose())}>
+        <Button large block onClick={() => (pick.onToggle(), onClose())}>
           Chọn ngân hàng này
         </Button>
       )}

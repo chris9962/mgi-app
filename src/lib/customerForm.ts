@@ -55,7 +55,7 @@ export type CustomerFormInput = z.input<typeof CustomerForm>;
 export type CustomerFormValues = z.output<typeof CustomerForm>;
 
 export const BankChoiceForm = z.object(
-  { bankIds: z.array(uuid(), { error: "Chọn ngân hàng" }).min(1, "Chọn ngân hàng").max(2, "Chọn tối đa 2 ngân hàng") },
+  { bankIds: z.array(uuid(), { error: "Chọn ngân hàng" }).min(1, "Chọn ngân hàng").max(50, BAD) },
   { error: BAD },
 );
 
