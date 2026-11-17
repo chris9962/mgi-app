@@ -4,6 +4,7 @@ import { db } from "./db/client";
 import { bankPhotoSlots, banks, customerBanks, customerExistingBanks, customers, photoChecks, proofPhotos, schools, smsMessages, userManagedBanks, users, vouchers } from "./db/schema";
 import { writeAudit } from "./audit";
 import { customerWhere } from "./customerList";
+import { giftDetail, type GiftDetail } from "./gift";
 import { queuePhotoChecks, type Tx } from "./photoChecks";
 import { customerScope, reviewsBank } from "@/lib/permissions";
 import { parseCustomerFilters } from "@/lib/customerFilters";
@@ -49,6 +50,7 @@ export type CustomerDetail = {
   duplicates: { id: string; fullName: string; schoolName: string }[];
   voucher: { code: string; issuedAt: Date } | null;
   sms: { status: "queued" | "sent" | "failed"; toPhone: string; sentAt: Date | null; attempts: number; error: string } | null;
+  gift: { eligible: boolean; claim: GiftDetail };
   canEdit: boolean;
   banks: DetailBank[];
 };
@@ -146,6 +148,7 @@ export async function getCustomerDetail(actor: SessionUser, id: string): Promise
     duplicates,
     voucher: voucher ?? null,
     sms: sms ?? null,
+    gift: await giftDetail(id),
     canEdit: !voucher,
     banks: rows.map((r) => {
       const managed = mineIds.includes(r.id);

@@ -24,8 +24,8 @@ Web học sinh hiện có 3 bước: 1 Thông tin, 2 Chọn ngân hàng, 3 Mở 
 - [x] Học sinh nộp đủ ảnh của một ngân hàng thì hiện hộp thoại hỏi đã hoàn thành chưa. Làm 2026-11-17: hộp "Đã hoàn thành ...?" hiện ngay sau ảnh cuối, xác nhận thì gửi kiểm tra riêng ngân hàng đó (API POST /api/customers/me/banks/:id/submit). Trạng thái hồ sơ suy từ các dòng ngân hàng (`src/server/customerStatus.ts`).
   - Học sinh xác nhận thì app gửi kiểm tra ngân hàng đó ngay. App không chờ nộp đủ ảnh của mọi ngân hàng.
   - Ba điểm chưa chốt ở mục 2 của `docs/2026-11-13-van-de-ton-dong.md` xử lý 2026-11-17: (1) có nút "Không mở thêm ngân hàng" ở bước 3 sau khi đã gửi ít nhất một ngân hàng; (2) họ tên, lớp, SĐT phụ huynh khoá từ lần gửi đầu; (3) không còn trần 2 ngân hàng. Thêm: màn Kết quả có nút "Mở thêm ngân hàng" khi trường còn ngân hàng chưa mở.
-- [ ] Từ ngân hàng thứ 2, hiện thông báo học sinh nhận được 20.000 đồng.
-  - Sau thông báo, học sinh nhập thông tin nhận quà.
+- [x] Từ ngân hàng thứ 2, hiện thông báo học sinh nhận được 20.000 đồng. Làm 2026-11-17 theo giả định (câu hỏi 4 chưa có trả lời): gửi kiểm tra xong ngân hàng thứ 2 thì hộp "Nhận 20.000 đồng" hiện ngay; màn Kết quả có thẻ Quà với nút Nhận quà.
+  - Sau thông báo, học sinh nhập thông tin nhận quà. Giả định 2026-11-17: nhập ngân hàng nhận (một trong các ngân hàng đã gửi), số tài khoản, tên chủ tài khoản; bảng `gift_claims`, migration 0017. Trang quản lý: chi tiết hồ sơ có thẻ Quà 20.000 đồng, người có quyền Quản lý voucher bấm "Đã chuyển quà"; Excel hồ sơ thêm hai cột TK NHẬN QUÀ, CHUYỂN QUÀ. Chưa có màn theo dõi riêng, chưa ràng buộc phải Đạt mới được nhận.
 - [ ] Viết hướng dẫn chi tiết hơn ở mỗi bước.
 - [ ] Làm clip hướng dẫn chi tiết. Clip gồm các phần:
   - Ảnh nhập mã giới thiệu.

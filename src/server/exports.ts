@@ -1,6 +1,6 @@
 import { count, desc, eq, inArray } from "drizzle-orm";
 import { db } from "./db/client";
-import { customers, schools, vouchers } from "./db/schema";
+import { banks, customers, giftClaims, schools, vouchers } from "./db/schema";
 import { writeAudit } from "./audit";
 import { allCustomerBanks, countCustomerBanks, type CustomerBankRow } from "./customerBankList";
 import { banksOf, customerOrder, customerWhere } from "./customerList";
@@ -46,8 +46,13 @@ async function customerRows(actor: SessionUser, f: CustomerFilters) {
     .where(customerWhere(actor, f))
     .orderBy(...customerOrder);
   const ids = rows.map((r) => r.id);
-  const [bankRows, codes] = await Promise.all([banksOf(actor, ids), ids.length ? db.select({ customerId: vouchers.customerId, code: vouchers.code, issuedAt: vouchers.issuedAt }).from(vouchers).where(inArray(vouchers.customerId, ids)) : []]);
-  return joinCustomerRows(rows, bankRows, codes);
+  const [bankRows, codes, gifts] = await Promise.all([
+    banksOf(actor, ids),
+    ids.length ? db.select({ customerId: vouchers.customerId, code: vouchers.code, issuedAt: vouchers.issuedAt }).from(vouchers).where(inArray(vouchers.customerId, ids)) : [],
+    ids.length ? db.select({ customerId: giftClaims.customerId, bankName: banks.name, accountNumber: giftClaims.accountNumber, paidAt: giftClaims.paidAt }).from(giftClaims).innerJoin(banks, eq(banks.id, giftClaims.bankId)).where(inArray(giftClaims.customerId, ids)) : [],
+  ]);
+  const giftOf = new Map(gifts.map((g) => [g.customerId, g]));
+  return joinCustomerRows(rows, bankRows, codes).map((r) => ({ ...r, gift: giftOf.get(r.id) ?? null }));
 }
 
 const bankColumns = (slot: number): ExcelColumn<CustomerExportRow>[] => {
@@ -74,6 +79,8 @@ const customerColumns = (maxSlot: number): ExcelColumn<CustomerExportRow>[] => [
   ...Array.from({ length: Math.max(2, maxSlot) }, (_, i) => bankColumns(i + 1)).flat(),
   { group: "VOUCHER", groupColor: EXCEL_GROUP_COLORS.gift, header: "MÃ VOUCHER", width: 24, type: "text", value: (r) => r.voucher?.code ?? "", total: (rows) => rows.filter((r) => r.voucher).length },
   { group: "VOUCHER", groupColor: EXCEL_GROUP_COLORS.gift, header: "NGÀY CẤP", width: 17, value: (r) => (r.voucher ? formatDateTime(r.voucher.issuedAt) : "") },
+  { group: "QUÀ 20K", groupColor: EXCEL_GROUP_COLORS.points, header: "TK NHẬN QUÀ", width: 28, type: "text", value: (r) => (r.gift ? `${r.gift.bankName} ${r.gift.accountNumber}` : "") },
+  { group: "QUÀ 20K", groupColor: EXCEL_GROUP_COLORS.points, header: "CHUYỂN QUÀ", width: 17, value: (r) => (r.gift ? (r.gift.paidAt ? formatDateTime(r.gift.paidAt) : "Chờ chuyển") : ""), total: (rows) => rows.filter((r) => r.gift?.paidAt).length },
 ];
 
 export async function exportCustomers(actor: SessionUser, f: CustomerFilters, ip: string | null): Promise<ExportResult> {

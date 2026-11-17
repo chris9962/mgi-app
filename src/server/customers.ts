@@ -9,6 +9,7 @@ import { queuePhotoChecks, type Tx } from "./photoChecks";
 import { hashToken } from "./auth/session";
 import { publicSchool } from "./schools";
 import { getSettings } from "./settings";
+import { giftState } from "./gift";
 import { INSURANCE_PRODUCTS, type StudentInsurance } from "@/lib/insurance";
 import { CONSENT_VERSION } from "@/lib/consent";
 import { currentYearMonth, isYearMonth } from "@/lib/month";
@@ -393,6 +394,7 @@ export async function studentState(customer: Customer, month = currentYearMonth(
     pviAppUrl: settings.pviAppUrl,
     insurance: insuranceOf(settings),
     thanksText: settings.thanksText,
+    gift: await giftState(customer.id),
   };
 }
 

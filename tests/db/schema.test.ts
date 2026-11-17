@@ -7,13 +7,13 @@ afterAll(() => pool.end());
 
 const TABLES = [
   "audit_log", "bank_photo_slots", "banks", "customer_banks", "customer_existing_banks", "customers",
-  "host_metrics", "photo_checks", "proof_photos", "provinces", "referral_code_months", "referral_code_schools",
+  "gift_claims", "host_metrics", "photo_checks", "proof_photos", "provinces", "referral_code_months", "referral_code_schools",
   "referral_codes", "review_events", "schools", "sessions", "settings", "sms_messages", "user_managed_banks",
   "user_permissions", "users", "vouchers", "wards",
 ];
 
 describe("schema", () => {
-  test("có đúng 23 bảng trong public", async () => {
+  test("có đúng 24 bảng trong public", async () => {
     const { rows } = await pool.query(
       "select table_name from information_schema.tables where table_schema = 'public' and table_type = 'BASE TABLE' order by 1",
     );

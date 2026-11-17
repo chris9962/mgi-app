@@ -50,4 +50,12 @@ export type StudentState = {
   pviAppUrl: string;
   insurance: StudentInsurance[];
   thanksText: string;
+  gift: StudentGift;
+};
+
+// Quà 20.000 đồng: đủ điều kiện khi đã gửi kiểm tra từ 2 ngân hàng; claim là tài khoản học sinh đã khai.
+export type StudentGift = {
+  eligible: boolean;
+  banks: { id: string; name: string }[];
+  claim: { bankName: string; accountNumber: string; accountName: string; paidAt: string | null } | null;
 };

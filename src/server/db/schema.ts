@@ -438,3 +438,25 @@ export const hostMetrics = pgTable(
   },
   (t) => [index("host_metrics_at").on(t.at.desc())],
 );
+
+/* Quà 20.000 đồng từ ngân hàng thứ hai: học sinh khai tài khoản nhận, nhân viên đánh dấu đã chuyển */
+
+export const giftClaims = pgTable(
+  "gift_claims",
+  {
+    id: id(),
+    customerId: uuid("customer_id")
+      .notNull()
+      .unique()
+      .references(() => customers.id, { onDelete: "cascade" }),
+    bankId: uuid("bank_id")
+      .notNull()
+      .references(() => banks.id),
+    accountNumber: text("account_number").notNull(),
+    accountName: text("account_name").notNull(),
+    createdAt: createdAt(),
+    paidAt: at("paid_at"),
+    paidBy: uuid("paid_by").references(() => users.id),
+  },
+  (t) => [check("gift_claims_account_number_format", sql`${t.accountNumber} ~ '^[0-9]{6,20}$'`)],
+);

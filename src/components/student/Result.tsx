@@ -1,11 +1,12 @@
 "use client";
 
-import { ChevronDown, ClipboardCheck, Clock, ExternalLink, HeartHandshake, ShieldCheck } from "lucide-react";
+import { ChevronDown, ClipboardCheck, Clock, ExternalLink, Gift, HeartHandshake, ShieldCheck } from "lucide-react";
 import { QrPreview } from "@/components/settings/QrPreview";
 import { Button } from "@/components/ui/Button";
 import { StatusTag, type Tone } from "@/components/ui/StatusTag";
 import { formatDateTime } from "@/lib/dates";
 import type { CustomerBankStatus, StudentState } from "@/lib/studentState";
+import { GIFT_LABEL } from "./GiftDialog";
 import { AppHead, Bottom, ZaloBox } from "./parts";
 
 const STATUS: Record<CustomerBankStatus, { label: string; tone: Tone }> = {
@@ -66,7 +67,37 @@ function Insurance({ list }: { list: StudentState["insurance"] }) {
   );
 }
 
-export function Result({ state, onAddMore }: { state: StudentState; onAddMore?: () => void }) {
+// Quà 20.000 đồng: đã khai tài khoản thì hiện nơi nhận và trạng thái chuyển; đủ điều kiện mà chưa khai thì có nút nhập.
+function GiftCard({ gift, onGift }: { gift: StudentState["gift"]; onGift: () => void }) {
+  if (!gift.eligible) return null;
+  return (
+    <section aria-label={`Quà ${GIFT_LABEL}`} className="mt-4 flex items-center gap-3 rounded-2xl border border-line bg-card p-4 shadow-sm">
+      <span aria-hidden className="grid size-10 flex-none place-items-center rounded-full bg-accent-soft text-accent-ink">
+        <Gift size={20} />
+      </span>
+      <div className="flex min-w-0 flex-1 flex-col gap-0.5 text-sm">
+        <strong className="text-[15px]">Quà {GIFT_LABEL}</strong>
+        {gift.claim ? (
+          <>
+            <span className="text-text-2 wrap-anywhere">
+              {gift.claim.bankName} <span className="font-mono text-text">{gift.claim.accountNumber}</span>
+            </span>
+            <span className="text-text-2">{gift.claim.paidAt ? `Đã chuyển ${formatDateTime(gift.claim.paidAt)}` : "Chờ chuyển"}</span>
+          </>
+        ) : (
+          <span className="text-text-2">Mở từ ngân hàng thứ hai.</span>
+        )}
+      </div>
+      {!gift.claim && (
+        <Button variant="secondary" onClick={onGift}>
+          Nhận quà
+        </Button>
+      )}
+    </section>
+  );
+}
+
+export function Result({ state, onAddMore, onGift }: { state: StudentState; onAddMore?: () => void; onGift: () => void }) {
   return (
     <>
       <AppHead title={`${state.customer.fullName} - ${state.customer.className}`} />
@@ -90,6 +121,7 @@ export function Result({ state, onAddMore }: { state: StudentState; onAddMore?: 
           </li>
         ))}
       </ul>
+      <GiftCard gift={state.gift} onGift={onGift} />
       <PviQr state={state} />
       <Insurance list={state.insurance} />
       {state.thanksText && (

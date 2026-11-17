@@ -12,6 +12,7 @@ import { studentApi } from "@/lib/studentApi";
 import type { StudentSchool, StudentState } from "@/lib/studentState";
 import { AppHead, Bottom, EndBlock, HeadSlotContext, StepNavContext, Steps } from "./parts";
 import { BanksFull, ChooseBanks, NoBank } from "./ChooseBanks";
+import { GiftDialog } from "./GiftDialog";
 import { InfoForm } from "./InfoForm";
 import { OpenAccount } from "./OpenAccount";
 import { Result } from "./Result";
@@ -93,6 +94,8 @@ export function StudentApp({ linkId }: { linkId?: string }) {
   const backHandle = useRef<((step: 1 | 2) => void) | null>(null);
   // Màn Kết quả bấm Mở thêm ngân hàng: về bước 2 chọn trong số ngân hàng còn lại.
   const [adding, setAdding] = useState(false);
+  // Hộp khai tài khoản nhận quà 20.000 đồng: mở ngay sau khi gửi ngân hàng thứ hai, hay từ màn Kết quả.
+  const [giftOpen, setGiftOpen] = useState(false);
 
   // Đồng bộ với localStorage và máy chủ lúc mở web: máy giữ trường và token, máy chủ giữ hồ sơ.
   useEffect(() => {
@@ -254,6 +257,8 @@ export function StudentApp({ linkId }: { linkId?: string }) {
               lastStep.current = 2;
               setAdding(true);
             }}
+            giftOpen={giftOpen}
+            onGift={setGiftOpen}
             onChange={(notice) => go(undefined, notice)}
             onEdit={() => editInfo(screen.state.school.id)}
           />
@@ -262,13 +267,25 @@ export function StudentApp({ linkId }: { linkId?: string }) {
   }
 }
 
-type ProfileProps = { state: StudentState; notice?: string; adding: boolean; onAddMore: () => void; onChange: (notice?: string) => Promise<void>; onEdit: () => Promise<string | null> };
+type ProfileProps = {
+  state: StudentState;
+  notice?: string;
+  adding: boolean;
+  onAddMore: () => void;
+  giftOpen: boolean;
+  onGift: (open: boolean) => void;
+  onChange: (notice?: string) => Promise<void>;
+  onEdit: () => Promise<string | null>;
+};
 
 const INFO_LOCKED = "Đã gửi kiểm tra, không sửa được thông tin.";
 
-function Profile({ state, notice, adding, onAddMore, onChange, onEdit }: ProfileProps) {
+function Profile({ state, notice, adding, onAddMore, giftOpen, onGift, onChange, onEdit }: ProfileProps) {
   const { status } = state.customer;
   if (!state.school.active && (status === "new" || status === "no_bank")) return <AppHead title="Trường đã đóng" />;
+  const gift = giftOpen && state.gift.eligible && !state.gift.claim && <GiftDialog gift={state.gift} fullName={state.customer.fullName} onClose={() => onGift(false)} onSaved={() => onChange()} />;
+  // Gửi xong ngân hàng thứ hai thì hỏi tài khoản nhận quà ngay.
+  const onSubmitted = (submitted: number) => submitted >= 2 && onGift(true);
   switch (status) {
     case "new":
       if (!state.eligibleBanks.length) return <BanksFull state={state} onEdit={onEdit} />;
@@ -276,13 +293,24 @@ function Profile({ state, notice, adding, onAddMore, onChange, onEdit }: Profile
     case "no_bank":
       return <NoBank state={state} onEdit={onEdit} />;
     case "banks_selected":
-      return <OpenAccount state={state} onChange={() => onChange()} onEdit={onEdit} />;
+      return <OpenAccount state={state} onChange={() => onChange()} onEdit={onEdit} onSubmitted={onSubmitted} />;
     case "pending_review":
     case "reviewed":
       // Gửi kiểm tra từng ngân hàng: còn ngân hàng đang chọn thì vẫn ở bước 3; đã gửi hết thì xem kết quả, mở thêm được nếu còn ngân hàng.
-      if (state.banks.some((b) => b.status === "selected")) return <OpenAccount state={state} onChange={() => onChange()} onEdit={onEdit} />;
+      if (state.banks.some((b) => b.status === "selected"))
+        return (
+          <>
+            <OpenAccount state={state} onChange={() => onChange()} onEdit={onEdit} onSubmitted={onSubmitted} />
+            {gift}
+          </>
+        );
       if (adding) return <ChooseBanks key={state.eligibleBanks.map((b) => b.id).join()} state={state} notice={notice} onDone={onChange} onEdit={async () => INFO_LOCKED} />;
-      return <Result state={state} onAddMore={state.school.active && state.eligibleBanks.length > 0 ? onAddMore : undefined} />;
+      return (
+        <>
+          <Result state={state} onAddMore={state.school.active && state.eligibleBanks.length > 0 ? onAddMore : undefined} onGift={() => onGift(true)} />
+          {gift}
+        </>
+      );
   }
 }
 

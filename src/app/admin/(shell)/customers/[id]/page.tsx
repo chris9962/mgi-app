@@ -1,7 +1,8 @@
-import { Landmark, MessageSquareText, ScanText, UserRound } from "lucide-react";
+import { Gift, Landmark, MessageSquareText, ScanText, UserRound } from "lucide-react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CustomerEditButton } from "@/components/customers/CustomerEditButton";
+import { GiftPaidButton } from "@/components/customers/GiftPaidButton";
 import { NoteButton, ReviewActions } from "@/components/customers/ReviewActions";
 import { bankTag, customerTag } from "@/components/customers/customerView";
 import { TopBar } from "@/components/shell/TopBar";
@@ -9,6 +10,7 @@ import { BackLink } from "@/components/ui/BackLink";
 import { Card } from "@/components/ui/Card";
 import { StatusTag } from "@/components/ui/StatusTag";
 import { formatDateTime } from "@/lib/dates";
+import { can } from "@/lib/permissions";
 import { formatPhone } from "@/lib/text";
 import { requirePage } from "@/server/auth/current";
 import { getCustomerDetail, type CustomerDetail, type DetailBank } from "@/server/customerDetail";
@@ -168,6 +170,33 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
         {c.banks.map((b) => (
           <BankCard key={b.id} bank={b} customer={c} />
         ))}
+        <Card
+          title="Quà 20.000 đồng"
+          icon={<Gift size={17} aria-hidden />}
+          meta="Từ ngân hàng thứ hai"
+          action={
+            c.gift.claim?.paidAt ? <StatusTag tone="ok">Đã chuyển</StatusTag> : c.gift.claim ? <StatusTag tone="progress">Chờ chuyển</StatusTag> : c.gift.eligible ? <StatusTag tone="warn">Chưa nhập tài khoản</StatusTag> : <StatusTag tone="neutral">Chưa đủ 2 ngân hàng</StatusTag>
+          }
+        >
+          {c.gift.claim && (
+            <div className="flex flex-col gap-4">
+              <InfoList
+                items={[
+                  ["Ngân hàng nhận", c.gift.claim.bankName],
+                  ["Số tài khoản", <span key="n" className="font-mono font-semibold">{c.gift.claim.accountNumber}</span>],
+                  ["Chủ tài khoản", c.gift.claim.accountName],
+                  ["Khai lúc", formatDateTime(c.gift.claim.createdAt)],
+                  ...(c.gift.claim.paidAt ? ([["Chuyển lúc", `${formatDateTime(c.gift.claim.paidAt)}${c.gift.claim.paidBy ? ` bởi ${c.gift.claim.paidBy}` : ""}`]] as [string, React.ReactNode][]) : []),
+                ]}
+              />
+              {!c.gift.claim.paidAt && can(user, "vouchers") && (
+                <div className="flex justify-end">
+                  <GiftPaidButton customerId={c.id} fullName={c.fullName} />
+                </div>
+              )}
+            </div>
+          )}
+        </Card>
         <Card title="SMS cho phụ huynh" icon={<MessageSquareText size={17} aria-hidden />} action={c.sms ? SMS_TAG[c.sms.status] : <StatusTag tone="neutral">Chưa gửi</StatusTag>}>
           {(c.voucher || c.sms) && (
             <InfoList
