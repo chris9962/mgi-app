@@ -1,5 +1,6 @@
 "use client";
 
+import { Check } from "lucide-react";
 import { useId, useState, type FormEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { Checkbox } from "@/components/ui/Checkbox";
@@ -77,17 +78,14 @@ export function InfoForm({ school, initial, onSaved }: { school: StudentSchool; 
           {/* Mỗi ngân hàng một hàng: tên đầy đủ dài, xếp ba cột thì gãy bốn dòng. */}
           <div className="flex flex-col gap-2">
             {school.banks.map((b) => (
-              <label key={b.id} className="flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border border-field-border bg-card py-2 pr-3 pl-3.5 transition-colors duration-200 has-[:checked]:border-accent has-[:checked]:bg-accent-soft/40">
-                <input
-                  type="checkbox"
-                  className="size-[18px] shrink-0 accent-[var(--accent)]"
-                  checked={existing.includes(b.id)}
-                  onChange={(e) => setExisting((list) => (e.target.checked ? [...list, b.id] : list.filter((id) => id !== b.id)))}
-                />
+              <label key={b.id} className="group relative flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border border-field-border bg-card px-3 py-2 transition-colors duration-200 has-checked:border-accent has-checked:bg-accent-soft/40 has-checked:ring-1 has-checked:ring-accent has-focus-visible:outline-2 has-focus-visible:outline-accent">
+                {/* Ô tick trong suốt phủ cả hàng: viền nổi và dấu tick bên phải báo đã chọn; bàn phím, trợ năng và test vẫn thấy ô tick. */}
+                <input type="checkbox" className="absolute inset-0 cursor-pointer opacity-0" checked={existing.includes(b.id)} onChange={(e) => setExisting((list) => (e.target.checked ? [...list, b.id] : list.filter((id) => id !== b.id)))} />
                 <span className="w-[72px] flex-none">
                   <BankLogo src={b.logoUrl} />
                 </span>
                 <span className="min-w-0 flex-1 text-[14px] leading-snug wrap-anywhere">{b.name}</span>
+                <Check size={18} strokeWidth={3} aria-hidden className="flex-none text-accent-ink opacity-0 transition-opacity duration-200 group-has-checked:opacity-100" />
               </label>
             ))}
           </div>
