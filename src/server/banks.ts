@@ -16,6 +16,10 @@ export type BankRow = {
   logoKey: string | null;
   hotline: string | null;
   overview: string | null;
+  website: string | null;
+  appName: string | null;
+  foundedYear: number | null;
+  headquarters: string | null;
   sortOrder: number;
   active: boolean;
   slotCount: number;
@@ -55,6 +59,10 @@ export async function listBanks(actor: SessionUser): Promise<BankRow[]> {
       logoKey: banks.logoKey,
       hotline: banks.hotline,
       overview: banks.overview,
+      website: banks.website,
+      appName: banks.appName,
+      foundedYear: banks.foundedYear,
+      headquarters: banks.headquarters,
       sortOrder: banks.sortOrder,
       active: banks.active,
       slotCount: sql<number>`(select count(*)::int from ${bankPhotoSlots} s where s.bank_id = ${BANK_ID} and s.removed_at is null)`,
@@ -86,13 +94,16 @@ async function validManagers(ids: string[]): Promise<boolean> {
   return rows.length === new Set(ids).size;
 }
 
+// Các ô hồ sơ ngân hàng: không gửi thì undefined, Drizzle bỏ qua nên giá trị đang có được giữ.
+const profileOf = (v: BankFormValues) => ({ hotline: v.hotline, overview: v.overview, website: v.website, appName: v.appName, foundedYear: v.foundedYear, headquarters: v.headquarters });
+
 export async function createBank(actor: SessionUser, values: BankFormValues, ip?: string | null): Promise<{ ok: true; id: string } | Fail> {
   if (!can(actor, "manage_banks")) return fail("Không có quyền tạo ngân hàng.", 403);
   if (await codeTaken(values.code)) return CODE_TAKEN;
   if (!(await validManagers(values.managerIds))) return fail("Người quản phải là Nhân viên đang hoạt động.", 400, "managerIds");
   return db
     .transaction(async (tx) => {
-      const [row] = await tx.insert(banks).values({ code: values.code, name: values.name, sortOrder: values.sortOrder, logoKey: values.logoKey, hotline: values.hotline, overview: values.overview }).returning({ id: banks.id });
+      const [row] = await tx.insert(banks).values({ code: values.code, name: values.name, sortOrder: values.sortOrder, logoKey: values.logoKey, ...profileOf(values) }).returning({ id: banks.id });
       if (values.managerIds.length) await tx.insert(userManagedBanks).values([...new Set(values.managerIds)].map((userId) => ({ userId, bankId: row.id })));
       await writeAudit(tx, { userId: actor.id, action: "create_bank", targetType: "banks", targetId: row.id, detail: values, ip });
       return { ok: true as const, id: row.id };
@@ -112,7 +123,7 @@ export async function updateBank(actor: SessionUser, id: string, values: BankFor
   if (assign && !(await validManagers(values.managerIds.filter((m) => !assigned.has(m))))) return fail("Người quản phải là Nhân viên đang hoạt động.", 400, "managerIds");
   return db
     .transaction(async (tx) => {
-      await tx.update(banks).set({ code: values.code, name: values.name, sortOrder: values.sortOrder, logoKey: values.logoKey, hotline: values.hotline, overview: values.overview }).where(eq(banks.id, id));
+      await tx.update(banks).set({ code: values.code, name: values.name, sortOrder: values.sortOrder, logoKey: values.logoKey, ...profileOf(values) }).where(eq(banks.id, id));
       if (assign) {
         await tx.delete(userManagedBanks).where(eq(userManagedBanks.bankId, id));
         if (values.managerIds.length) await tx.insert(userManagedBanks).values([...new Set(values.managerIds)].map((userId) => ({ userId, bankId: id })));

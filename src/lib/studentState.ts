@@ -3,7 +3,18 @@ export type CustomerStatus = "new" | "banks_selected" | "pending_review" | "revi
 export type StudentSchool = { id: string; name: string; active: boolean; banks: { id: string; name: string; logoUrl: string | null }[] };
 
 // Ngân hàng ở bước 2: thông tin và hướng dẫn hiện trong hộp xem trước khi chọn.
-export type StudentBankInfo = { id: string; name: string; logoUrl: string | null; hotline: string | null; overview: string | null; steps: string[] };
+export type StudentBankInfo = {
+  id: string;
+  name: string;
+  logoUrl: string | null;
+  hotline: string | null;
+  overview: string | null;
+  website: string | null;
+  appName: string | null;
+  foundedYear: number | null;
+  headquarters: string | null;
+  steps: string[];
+};
 
 export type CustomerBankStatus = "selected" | "pending" | "passed" | "failed";
 

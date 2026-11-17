@@ -12,7 +12,7 @@ import { CONSENT_VERSION } from "@/lib/consent";
 import { currentYearMonth, isYearMonth } from "@/lib/month";
 import { maskPhone, plain } from "@/lib/text";
 import type { CustomerFormValues, CustomerSelfEditInput, CustomerSelfEditValues } from "@/lib/customerForm";
-import type { StudentBank, StudentState } from "@/lib/studentState";
+import type { StudentBank, StudentBankInfo, StudentState } from "@/lib/studentState";
 
 export type Customer = typeof customers.$inferSelect;
 
@@ -21,7 +21,7 @@ const fail = (message: string, status: Fail["status"], field?: string): Fail => 
 
 type Executor = Pick<typeof db, "select">;
 
-type Candidate = { id: string; bankId: string; bankName: string; bankLogoKey: string | null; bankHotline: string | null; bankOverview: string | null; bankGuide: unknown; bankSort: number; code: string | null; priority: number; createdAt: Date; quota: number; used: number };
+type Candidate = { id: string; bankId: string; bankName: string; bankLogoKey: string | null; bankHotline: string | null; bankOverview: string | null; bankWebsite: string | null; bankAppName: string | null; bankFoundedYear: number | null; bankHeadquarters: string | null; bankGuide: unknown; bankSort: number; code: string | null; priority: number; createdAt: Date; quota: number; used: number };
 
 // Mã ứng viên của trường: mã đang dùng của ngân hàng đang mở, gắn cho trường. Giữ chỗ thì khoá các dòng mã trước khi đếm lượt.
 async function loadCandidates(ex: Executor, schoolId: string, month: string, lock = false): Promise<Candidate[]> {
@@ -33,6 +33,10 @@ async function loadCandidates(ex: Executor, schoolId: string, month: string, loc
       bankLogoKey: banks.logoKey,
       bankHotline: banks.hotline,
       bankOverview: banks.overview,
+      bankWebsite: banks.website,
+      bankAppName: banks.appName,
+      bankFoundedYear: banks.foundedYear,
+      bankHeadquarters: banks.headquarters,
       bankGuide: banks.guide,
       bankSort: banks.sortOrder,
       code: referralCodes.code,
@@ -62,12 +66,12 @@ async function loadCandidates(ex: Executor, schoolId: string, month: string, loc
   return codes.map(({ monthlyQuota, ...c }) => ({ ...c, quota: quotaOf.get(c.id) ?? monthlyQuota, used: usedOf.get(c.id) ?? 0 }));
 }
 
-type ProgramBank = { id: string; name: string; logoKey: string | null; hotline: string | null; overview: string | null; steps: string[] };
+type ProgramBank = Omit<StudentBankInfo, "logoUrl"> & { logoKey: string | null };
 
 function banksOf(candidates: Candidate[]): ProgramBank[] {
   const unique = new Map<string, Candidate>();
   for (const c of candidates) unique.set(c.bankId, c);
-  return [...unique.values()].sort((a, b) => a.bankSort - b.bankSort || a.bankName.localeCompare(b.bankName, "vi")).map((c) => ({ id: c.bankId, name: c.bankName, logoKey: c.bankLogoKey, hotline: c.bankHotline, overview: c.bankOverview, steps: Array.isArray(c.bankGuide) ? (c.bankGuide as string[]) : [] }));
+  return [...unique.values()].sort((a, b) => a.bankSort - b.bankSort || a.bankName.localeCompare(b.bankName, "vi")).map((c) => ({ id: c.bankId, name: c.bankName, logoKey: c.bankLogoKey, hotline: c.bankHotline, overview: c.bankOverview, website: c.bankWebsite, appName: c.bankAppName, foundedYear: c.bankFoundedYear, headquarters: c.bankHeadquarters, steps: Array.isArray(c.bankGuide) ? (c.bankGuide as string[]) : [] }));
 }
 
 const openBanksOf = (candidates: Candidate[], exclude: Set<string>) => banksOf(candidates.filter((c) => c.used < c.quota && !exclude.has(c.bankId)));

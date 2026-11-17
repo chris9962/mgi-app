@@ -12,7 +12,7 @@ import { apiSend } from "@/lib/api";
 import { BankForm } from "@/lib/bankForm";
 import { MAX_IMAGE_BYTES } from "@/lib/imageKey";
 
-export type BankDefaults = { id?: string; code: string; name: string; sortOrder: number; logoKey: string | null; hotline: string | null; overview: string | null; managers: Option[] };
+export type BankDefaults = { id?: string; code: string; name: string; sortOrder: number; logoKey: string | null; hotline: string | null; overview: string | null; website: string | null; appName: string | null; foundedYear: number | null; headquarters: string | null; managers: Option[] };
 
 const TOO_LARGE = "Ảnh lớn hơn 20 MB.";
 
@@ -23,7 +23,7 @@ const searchManagers = async (q: string): Promise<Option[]> => {
 
 export function BankFormDialog({ initial, canAssign, onClose }: { initial?: BankDefaults; canAssign: boolean; onClose: () => void }) {
   const router = useRouter();
-  const start = initial ?? { code: "", name: "", sortOrder: 0, logoKey: null, hotline: null, overview: null, managers: [] };
+  const start = initial ?? { code: "", name: "", sortOrder: 0, logoKey: null, hotline: null, overview: null, website: null, appName: null, foundedYear: null, headquarters: null, managers: [] };
   const [managers, setManagers] = useState<Option[]>(start.managers);
   const [logoKey, setLogoKey] = useState(start.logoKey);
   const [uploading, setUploading] = useState(false);
@@ -52,7 +52,7 @@ export function BankFormDialog({ initial, canAssign, onClose }: { initial?: Bank
   async function submit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
     const f = new FormData(event.currentTarget);
-    const raw = { code: f.get("code"), name: f.get("name"), sortOrder: f.get("sortOrder"), hotline: f.get("hotline"), overview: f.get("overview"), managerIds: managers.map((m) => m.id), logoKey };
+    const raw = { code: f.get("code"), name: f.get("name"), sortOrder: f.get("sortOrder"), hotline: f.get("hotline"), overview: f.get("overview"), website: f.get("website"), appName: f.get("appName"), foundedYear: f.get("foundedYear"), headquarters: f.get("headquarters"), managerIds: managers.map((m) => m.id), logoKey };
     const parsed = BankForm.safeParse(raw);
     if (!parsed.success) return setErrors(Object.fromEntries(parsed.error.issues.map((i) => [String(i.path[0]), i.message])));
     setErrors({});
@@ -88,8 +88,14 @@ export function BankFormDialog({ initial, canAssign, onClose }: { initial?: Bank
           <TextField name="sortOrder" label="Độ ưu tiên" inputMode="numeric" defaultValue={String(start.sortOrder)} error={errors.sortOrder} />
         </div>
         <TextField name="name" label="Tên ngân hàng" defaultValue={start.name} error={errors.name} />
-        <TextField name="hotline" label="Số tổng đài" inputMode="tel" defaultValue={start.hotline ?? ""} error={errors.hotline} />
-        <Field id={overviewId} label="Thông tin tổng quan" error={errors.overview} hint="Học sinh xem ở bước Chọn ngân hàng">
+        <div className="grid grid-cols-2 items-start gap-3 narrow:grid-cols-1">
+          <TextField name="hotline" label="Số tổng đài" inputMode="tel" defaultValue={start.hotline ?? ""} error={errors.hotline} />
+          <TextField name="website" label="Website" inputMode="url" placeholder="https://" defaultValue={start.website ?? ""} error={errors.website} />
+          <TextField name="appName" label="Tên app" defaultValue={start.appName ?? ""} error={errors.appName} />
+          <TextField name="foundedYear" label="Năm thành lập" inputMode="numeric" defaultValue={start.foundedYear ? String(start.foundedYear) : ""} error={errors.foundedYear} />
+        </div>
+        <TextField name="headquarters" label="Trụ sở" defaultValue={start.headquarters ?? ""} error={errors.headquarters} />
+        <Field id={overviewId} label="Giới thiệu" error={errors.overview} hint="Học sinh xem ở bước Chọn ngân hàng. Dòng bắt đầu bằng gạch đầu dòng thành danh sách">
           <textarea id={overviewId} name="overview" rows={4} defaultValue={start.overview ?? ""} aria-invalid={errors.overview ? true : undefined} aria-describedby={errors.overview ? `${overviewId}-error` : undefined} className={`${inputClass} leading-6`} />
         </Field>
         <div className="flex flex-col gap-1.5">

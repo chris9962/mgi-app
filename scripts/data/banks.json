@@ -1,14 +1,62 @@
 [
-  {"code": "MB", "name": "Ngân hàng TMCP Quân đội (MB Bank)", "hotline": "1900 545426", "sortOrder": 1, "active": true, "logo": "mb.webp"},
-  {"code": "TPB", "name": "Ngân hàng TMCP Tiên Phong (TPBank)", "hotline": "1900 585885", "sortOrder": 2, "active": true, "logo": "tpb.webp"},
-  {"code": "BIDV", "name": "Ngân hàng TMCP Đầu tư và Phát triển Việt Nam (BIDV)", "hotline": "1900 9247", "sortOrder": 10, "active": false, "logo": "bidv.webp"},
-  {"code": "LPB", "name": "Ngân hàng TMCP Lộc Phát Việt Nam (LPBank)", "hotline": "1800 577758", "sortOrder": 10, "active": true, "logo": "lpb.webp"},
-  {"code": "MBV", "name": "Ngân hàng TNHH MTV Việt Nam Hiện Đại (MBV)", "hotline": "1800 588815", "sortOrder": 10, "active": true, "logo": "mbv.webp"},
-  {"code": "MSBA", "name": "Ngân hàng TMCP Hàng Hải Việt Nam (MSB a)", "hotline": "1900 6083", "sortOrder": 10, "active": false, "logo": "msb.webp"},
-  {"code": "MSBB", "name": "Ngân hàng TMCP Hàng Hải Việt Nam (MSB b)", "hotline": "1900 6083", "sortOrder": 10, "active": true, "logo": "msb.webp"},
-  {"code": "SHB", "name": "Ngân hàng TMCP Sài Gòn - Hà Nội (SHB)", "hotline": "1800 588856", "sortOrder": 10, "active": true, "logo": "shb.webp"},
-  {"code": "TCB", "name": "Ngân hàng TMCP Kỹ thương Việt Nam (Techcombank)", "hotline": "1800 588822", "sortOrder": 10, "active": false, "logo": "tcb.webp"},
-  {"code": "VIB", "name": "Ngân hàng TMCP Quốc tế Việt Nam (VIB)", "hotline": "1800 8180", "sortOrder": 10, "active": false, "logo": "vib.webp"},
-  {"code": "VPA", "name": "Ngân hàng TMCP Việt Nam Thịnh Vượng (VPBank)", "hotline": "1900 545415", "sortOrder": 10, "active": true, "logo": "vpb.webp"},
-  {"code": "VPB", "name": "Ngân hàng TMCP Việt Nam Thịnh Vượng (VPBank NEO)", "hotline": "1900 545415", "sortOrder": 10, "active": true, "logo": "vpb.webp"}
+  {
+    "code": "MB", "name": "Ngân hàng TMCP Quân đội (MB Bank)", "sortOrder": 1, "active": true, "logo": "mb.webp",
+    "hotline": "1900 545426", "website": "https://www.mbbank.com.vn", "appName": "MB Bank", "foundedYear": 1994, "headquarters": "Hà Nội",
+    "overview": "Ngân hàng TMCP Quân đội, thành lập năm 1994, trụ sở tại Hà Nội. Thuộc nhóm ngân hàng cổ phần lớn nhất Việt Nam về quy mô khách hàng và số người dùng app.\n\n- Mở tài khoản online trên app MB Bank bằng CCCD gắn chip\n- Chọn số tài khoản theo ý, có thể trùng số điện thoại\n- Miễn phí chuyển khoản và duy trì tài khoản"
+  },
+  {
+    "code": "TPB", "name": "Ngân hàng TMCP Tiên Phong (TPBank)", "sortOrder": 2, "active": true, "logo": "tpb.webp",
+    "hotline": "1900 585885", "website": "https://tpb.vn", "appName": "TPBank Mobile", "foundedYear": 2008, "headquarters": "Hà Nội",
+    "overview": "Ngân hàng TMCP Tiên Phong, thành lập năm 2008, trụ sở tại Hà Nội. Được biết tới với hệ thống LiveBank giao dịch tự động 24/7 và app TPBank Mobile.\n\n- Mở tài khoản online trên app TPBank Mobile\n- Chọn số tài khoản đẹp miễn phí\n- Rút tiền, nộp tiền tại LiveBank không cần thẻ"
+  },
+  {
+    "code": "BIDV", "name": "Ngân hàng TMCP Đầu tư và Phát triển Việt Nam (BIDV)", "sortOrder": 10, "active": false, "logo": "bidv.webp",
+    "hotline": "1900 9247", "website": "https://www.bidv.com.vn", "appName": "BIDV SmartBanking", "foundedYear": 1957, "headquarters": "Hà Nội",
+    "overview": "Ngân hàng TMCP Đầu tư và Phát triển Việt Nam, thành lập năm 1957, là ngân hàng thương mại lâu đời nhất Việt Nam. Nhà nước nắm cổ phần chi phối, mạng lưới chi nhánh phủ khắp các tỉnh.\n\n- Mở tài khoản online trên app BIDV SmartBanking\n- Mạng lưới ATM và phòng giao dịch rộng"
+  },
+  {
+    "code": "LPB", "name": "Ngân hàng TMCP Lộc Phát Việt Nam (LPBank)", "sortOrder": 10, "active": true, "logo": "lpb.webp",
+    "hotline": "1800 577758", "website": "https://lpbank.com.vn", "appName": "LPBank", "foundedYear": 2008, "headquarters": "Hà Nội",
+    "overview": "Ngân hàng TMCP Lộc Phát Việt Nam, tiền thân là LienVietPostBank, thành lập năm 2008, trụ sở tại Hà Nội. Có mạng lưới phòng giao dịch bưu điện tới tận cấp huyện, xã.\n\n- Mở tài khoản online trên app LPBank\n- Tổng đài miễn phí 1800"
+  },
+  {
+    "code": "MBV", "name": "Ngân hàng TNHH MTV Việt Nam Hiện Đại (MBV)", "sortOrder": 10, "active": true, "logo": "mbv.webp",
+    "hotline": "1800 588815", "website": null, "appName": null, "foundedYear": 1993, "headquarters": "Hà Nội",
+    "overview": "Ngân hàng TNHH MTV Việt Nam Hiện Đại, tiền thân là OceanBank thành lập năm 1993, được chuyển giao về MB từ tháng 10 năm 2024 và đổi tên thành MBV. Trụ sở tại Hà Nội."
+  },
+  {
+    "code": "MSBA", "name": "Ngân hàng TMCP Hàng Hải Việt Nam (MSB a)", "sortOrder": 10, "active": false, "logo": "msb.webp",
+    "hotline": "1900 6083", "website": "https://www.msb.com.vn", "appName": "MSB mBank", "foundedYear": 1991, "headquarters": "Hà Nội",
+    "overview": "Ngân hàng TMCP Hàng Hải Việt Nam, thành lập năm 1991 tại Hải Phòng, là một trong những ngân hàng cổ phần đầu tiên của Việt Nam. Trụ sở hiện tại ở Hà Nội.\n\n- Mở tài khoản online trên app MSB mBank\n- Miễn phí chuyển khoản"
+  },
+  {
+    "code": "MSBB", "name": "Ngân hàng TMCP Hàng Hải Việt Nam (MSB b)", "sortOrder": 10, "active": true, "logo": "msb.webp",
+    "hotline": "1900 6083", "website": "https://www.msb.com.vn", "appName": "MSB mBank", "foundedYear": 1991, "headquarters": "Hà Nội",
+    "overview": "Ngân hàng TMCP Hàng Hải Việt Nam, thành lập năm 1991 tại Hải Phòng, là một trong những ngân hàng cổ phần đầu tiên của Việt Nam. Trụ sở hiện tại ở Hà Nội.\n\n- Mở tài khoản online trên app MSB mBank\n- Miễn phí chuyển khoản"
+  },
+  {
+    "code": "SHB", "name": "Ngân hàng TMCP Sài Gòn - Hà Nội (SHB)", "sortOrder": 10, "active": true, "logo": "shb.webp",
+    "hotline": "1800 588856", "website": "https://www.shb.com.vn", "appName": "SHB SAHA", "foundedYear": 1993, "headquarters": "Hà Nội",
+    "overview": "Ngân hàng TMCP Sài Gòn - Hà Nội, thành lập năm 1993 tại Cần Thơ, trụ sở hiện tại ở Hà Nội. Thuộc nhóm ngân hàng cổ phần tư nhân lớn về tổng tài sản.\n\n- Mở tài khoản online trên app SHB SAHA\n- Tổng đài miễn phí 1800"
+  },
+  {
+    "code": "TCB", "name": "Ngân hàng TMCP Kỹ thương Việt Nam (Techcombank)", "sortOrder": 10, "active": false, "logo": "tcb.webp",
+    "hotline": "1800 588822", "website": "https://techcombank.com", "appName": "Techcombank Mobile", "foundedYear": 1993, "headquarters": "Hà Nội",
+    "overview": "Ngân hàng TMCP Kỹ thương Việt Nam, thành lập năm 1993, trụ sở tại Hà Nội. Là ngân hàng tư nhân có lợi nhuận thuộc nhóm đầu hệ thống.\n\n- Mở tài khoản online trên app Techcombank Mobile\n- Miễn phí chuyển khoản, tự động sinh lời số dư"
+  },
+  {
+    "code": "VIB", "name": "Ngân hàng TMCP Quốc tế Việt Nam (VIB)", "sortOrder": 10, "active": false, "logo": "vib.webp",
+    "hotline": "1800 8180", "website": "https://www.vib.com.vn", "appName": "MyVIB", "foundedYear": 1996, "headquarters": "TP. Hồ Chí Minh",
+    "overview": "Ngân hàng TMCP Quốc tế Việt Nam, thành lập năm 1996, trụ sở tại TP. Hồ Chí Minh. Mạnh về thẻ tín dụng và ngân hàng số với app MyVIB.\n\n- Mở tài khoản online trên app MyVIB\n- Tổng đài miễn phí 1800"
+  },
+  {
+    "code": "VPA", "name": "Ngân hàng TMCP Việt Nam Thịnh Vượng (VPBank)", "sortOrder": 10, "active": true, "logo": "vpb.webp",
+    "hotline": "1900 545415", "website": "https://www.vpbank.com.vn", "appName": "VPBank NEO", "foundedYear": 1993, "headquarters": "Hà Nội",
+    "overview": "Ngân hàng TMCP Việt Nam Thịnh Vượng, thành lập năm 1993, trụ sở tại Hà Nội. Thuộc nhóm ngân hàng cổ phần tư nhân có vốn điều lệ lớn nhất Việt Nam.\n\n- Mở tài khoản online trên app VPBank NEO\n- Chọn số tài khoản theo ý\n- Miễn phí chuyển khoản"
+  },
+  {
+    "code": "VPB", "name": "Ngân hàng TMCP Việt Nam Thịnh Vượng (VPBank NEO)", "sortOrder": 10, "active": true, "logo": "vpb.webp",
+    "hotline": "1900 545415", "website": "https://www.vpbank.com.vn", "appName": "VPBank NEO", "foundedYear": 1993, "headquarters": "Hà Nội",
+    "overview": "Ngân hàng TMCP Việt Nam Thịnh Vượng, thành lập năm 1993, trụ sở tại Hà Nội. VPBank NEO là app ngân hàng số của VPBank, mở tài khoản và giao dịch hoàn toàn trên điện thoại.\n\n- Mở tài khoản online trên app VPBank NEO\n- Chọn số tài khoản theo ý\n- Miễn phí chuyển khoản"
+  }
 ]

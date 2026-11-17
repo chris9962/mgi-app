@@ -69,6 +69,15 @@ describe("ảnh học sinh", () => {
     expect(bank({ overview: "x\u0000" }).success).toBe(false);
     expect(bank({ overview: "x".repeat(2001) }).success).toBe(false);
   });
+  test("hồ sơ ngân hàng: website phải có https, năm thành lập 4 chữ số trong 1900 tới 2100, trống thì null", () => {
+    const bank = (extra: object) => BankForm.safeParse({ code: "MB", name: "MB Bank", sortOrder: "1", managerIds: [], ...extra });
+    expect(bank({ website: "https://www.mbbank.com.vn", appName: " MB Bank ", foundedYear: "1994", headquarters: "Hà Nội" }).data).toMatchObject({ website: "https://www.mbbank.com.vn", appName: "MB Bank", foundedYear: 1994, headquarters: "Hà Nội" });
+    expect(bank({ website: "", appName: "", foundedYear: "", headquarters: "" }).data).toMatchObject({ website: null, appName: null, foundedYear: null, headquarters: null });
+    expect(bank({ website: "mbbank.com.vn" }).success).toBe(false);
+    expect(bank({ foundedYear: "94" }).success).toBe(false);
+    expect(bank({ foundedYear: "1850" }).success).toBe(false);
+    expect(bank({ appName: "x".repeat(101) }).success).toBe(false);
+  });
   test("trang quản lý không tải ảnh vào thư mục proofs", () => {
     expect(ADMIN_FOLDERS).not.toContain("proofs");
   });

@@ -6,6 +6,16 @@ import { CONTROL_CHAR_MESSAGE, noControlChar, wellFormed } from "./controlChars"
 // Thông tin tổng quan nhiều dòng: chỉ cấm ký tự điều khiển khác xuống dòng.
 const noControlCharExceptNewline = (v: string) => !/[\u0000-\u0009\u000b-\u001f\u007f]/.test(v) && wellFormed(v);
 
+// Ô chữ ngắn tuỳ chọn trong hồ sơ ngân hàng: trống thì null.
+const shortText = (label: string) =>
+  z
+    .string()
+    .trim()
+    .max(100, `${label} tối đa 100 ký tự`)
+    .refine(noControlChar, CONTROL_CHAR_MESSAGE)
+    .transform((v) => v || null)
+    .optional();
+
 export const BankForm = z.object({
   code: z
     .string()
@@ -30,6 +40,22 @@ export const BankForm = z.object({
     .transform((v) => v.replace(/\r\n?/g, "\n").trim())
     .pipe(z.string().max(2000, "Tối đa 2000 ký tự").refine(noControlCharExceptNewline, CONTROL_CHAR_MESSAGE))
     .transform((v) => v || null)
+    .optional(),
+  website: z
+    .string()
+    .trim()
+    .max(200, "Tối đa 200 ký tự")
+    .regex(/^(https?:\/\/[^\s]+)?$/, "Website bắt đầu bằng https://")
+    .transform((v) => v || null)
+    .optional(),
+  appName: shortText("Tên app"),
+  headquarters: shortText("Trụ sở"),
+  foundedYear: z
+    .string()
+    .trim()
+    .regex(/^(\d{4})?$/, "Năm thành lập là 4 chữ số")
+    .transform((v) => (v ? Number(v) : null))
+    .refine((v) => v === null || (v >= 1900 && v <= 2100), "Năm thành lập từ 1900 tới 2100")
     .optional(),
 });
 export type BankFormValues = z.output<typeof BankForm>;

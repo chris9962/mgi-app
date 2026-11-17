@@ -47,7 +47,7 @@ export default async function BanksPage() {
                     <BankActions
                       active={b.active}
                       canAssign={canAssign}
-                      bank={{ id: b.id, code: b.code, name: b.name, sortOrder: b.sortOrder, logoKey: b.logoKey, hotline: b.hotline, overview: b.overview, managers: b.managers.map((m) => ({ id: m.id, label: m.fullName })) }}
+                      bank={{ id: b.id, code: b.code, name: b.name, sortOrder: b.sortOrder, logoKey: b.logoKey, hotline: b.hotline, overview: b.overview, website: b.website, appName: b.appName, foundedYear: b.foundedYear, headquarters: b.headquarters, managers: b.managers.map((m) => ({ id: m.id, label: m.fullName })) }}
                     />
                   </td>
                 </tr>

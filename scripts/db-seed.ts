@@ -1,6 +1,6 @@
 import { readFileSync } from "node:fs";
 import { join } from "node:path";
-import { and, count, eq, inArray, isNull } from "drizzle-orm";
+import { and, count, eq, inArray, isNull, sql } from "drizzle-orm";
 import { db, pool } from "../src/server/db/client";
 import { banks, provinces, wards } from "../src/server/db/schema";
 import { putImage } from "../src/server/storage";
@@ -38,8 +38,20 @@ async function seedBanks(): Promise<string> {
     if (!put.ok) throw new Error(`Logo ${code}: ${put.message}`);
     await db.update(banks).set({ logoKey: put.key }).where(and(eq(banks.code, code), isNull(banks.logoKey)));
   }
-  // Số tổng đài chỉ điền khi còn trống: Quản trị đã sửa thì giữ.
-  for (const b of bankList) await db.update(banks).set({ hotline: b.hotline }).where(and(eq(banks.code, b.code), isNull(banks.hotline)));
+  // Hồ sơ ngân hàng chỉ điền vào ô còn trống: Quản trị đã sửa thì giữ.
+  for (const b of bankList) {
+    await db
+      .update(banks)
+      .set({
+        hotline: sql`coalesce(${banks.hotline}, ${b.hotline})`,
+        overview: sql`coalesce(${banks.overview}, ${b.overview})`,
+        website: sql`coalesce(${banks.website}, ${b.website})`,
+        appName: sql`coalesce(${banks.appName}, ${b.appName})`,
+        foundedYear: sql`coalesce(${banks.foundedYear}, ${b.foundedYear})`,
+        headquarters: sql`coalesce(${banks.headquarters}, ${b.headquarters})`,
+      })
+      .where(eq(banks.code, b.code));
+  }
   return `Thêm ${added.length} ngân hàng, tải logo cho ${missing.length} ngân hàng.`;
 }
 

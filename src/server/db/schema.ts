@@ -124,6 +124,10 @@ export const banks = pgTable("banks", {
   logoKey: text("logo_key"),
   hotline: text("hotline"),
   overview: text("overview"),
+  website: text("website"),
+  appName: text("app_name"),
+  foundedYear: smallint("founded_year"),
+  headquarters: text("headquarters"),
 });
 
 export const userManagedBanks = pgTable(
