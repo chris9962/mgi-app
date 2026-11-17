@@ -76,7 +76,7 @@ export function ChooseBanks({ state, notice, onDone, onEdit }: { state: StudentS
       <ul className="anim-stagger mt-3 grid grid-cols-2 gap-3">
         {banks.map((b) => {
           const slot = chosen.indexOf(b.id) + 1;
-          const box = clsx("relative flex h-full w-full flex-col items-center gap-2 rounded-2xl border p-2.5 pb-3 text-center text-[15px] leading-tight font-semibold", slot ? "border-accent bg-accent-soft/40 shadow-md ring-1 ring-accent" : "border-field-border bg-card shadow-sm");
+          const box = clsx("relative flex h-full w-full flex-col items-center gap-2 rounded-2xl border p-2.5 pb-4 text-center text-[15px] leading-tight font-semibold", slot ? "border-accent bg-accent-soft/40 shadow-md ring-1 ring-accent" : "border-field-border bg-card shadow-sm");
           const nameId = `bank-name-${b.id}`;
           return (
             <li key={b.id} className="relative">
@@ -94,8 +94,8 @@ export function ChooseBanks({ state, notice, onDone, onEdit }: { state: StudentS
                 </button>
               )}
               {/* Tên nút không chứa tên ngân hàng để không lẫn với nút chọn; tên ngân hàng đi theo aria-describedby. */}
-              <button type="button" aria-label="Thông tin" aria-describedby={nameId} onClick={() => setInfo(b)} className="absolute top-1.5 left-1.5 z-10 grid size-9 place-items-center rounded-full bg-card/90 text-text-2 shadow-sm ring-1 ring-line hover:text-accent-ink">
-                <Info size={17} aria-hidden />
+              <button type="button" aria-label="Thông tin" aria-describedby={nameId} onClick={() => setInfo(b)} className="absolute -right-2.5 -bottom-2.5 z-10 grid size-7 place-items-center rounded-full bg-card text-accent-ink shadow-md ring-1 ring-line transition-transform duration-200 hover:scale-110 active:scale-95">
+                <Info size={15} aria-hidden />
               </button>
             </li>
           );
