@@ -1,3 +1,4 @@
+import { confirmSend, dismissGift, finishButton, sendDialog } from "./edge-student-support";
 import { expect, test, type Page } from "@playwright/test";
 import { BANK, CODE, GUIDE_LONG, LONG_CODE, NAME, SCHOOL, SLOT } from "../scripts/e2e-data-student";
 import {
@@ -258,7 +259,7 @@ test.describe("D. B3 mở tài khoản", () => {
     expect(await panel.getByText(LONG_CODE, { exact: true }).evaluate((el) => getComputedStyle(el).userSelect)).toBe("all");
   });
 
-  test("D8 ngân hàng chưa cài hướng dẫn: tab chỉ có mã, ghi đủ ảnh; gửi kiểm tra được khi ngân hàng kia đủ ảnh", async ({ page, request }) => {
+  test("D8 ngân hàng chưa cài hướng dẫn: tab chỉ có mã, ghi đủ ảnh, Hoàn thành gửi được ngay; ngân hàng kia gửi sau khi đủ ảnh", async ({ page, request }) => {
     const s = await apiCreate(request, SCHOOL.noGuide, info("Chưa Có Hướng Dẫn"));
     await apiPick(request, s, [BANK.p2, BANK.p3]);
     await openAt(page, SCHOOL.noGuide, s);
@@ -269,7 +270,11 @@ test.describe("D. B3 mở tài khoản", () => {
     await expect(tab(page, NAME.p2)).toContainText("đủ ảnh");
     await tab(page, NAME.p3).click();
     await uploadIn(page, "Ảnh màn hình chính");
-    await page.getByRole("button", { name: "Gửi kiểm tra" }).click();
+    await confirmSend(page);
+    await tab(page, NAME.p2).click();
+    await finishButton(page, NAME.p2).click();
+    await confirmSend(page);
+    await dismissGift(page);
     await expect(page.getByText("Chờ kiểm tra")).toHaveCount(2);
   });
 
@@ -306,7 +311,11 @@ test.describe("D. B3 mở tài khoản", () => {
       await expect(page.getByRole("button", { name: "Quay lại chọn ngân hàng" })).toHaveCount(0);
       await tab(page, NAME.p3).click();
       await uploadIn(page, "Ảnh màn hình chính");
-      await page.getByRole("button", { name: "Gửi kiểm tra" }).click();
+      await confirmSend(page);
+      await tab(page, NAME.p1).click();
+      await finishButton(page, NAME.p1).click();
+      await confirmSend(page);
+      await dismissGift(page);
       await expect(page.getByText("Chờ kiểm tra")).toHaveCount(2);
     } finally {
       dbOp("school", SCHOOL.closing, "open");
@@ -413,7 +422,7 @@ test.describe("D. B3 mở tài khoản", () => {
     await apiPick(request, s, [BANK.p1, BANK.p3]);
     await apiPhotos(request, s);
     await openAt(page, SCHOOL.photo, s);
-    await expect(page.getByRole("button", { name: "Gửi kiểm tra" })).toBeEnabled();
+    await expect(finishButton(page, NAME.p1)).toBeEnabled();
     await apiSubmit(request, s);
     await page.getByRole("button", { name: "Quay lại chọn ngân hàng" }).click();
     await page.getByRole("dialog", { name: "Quay lại chọn ngân hàng" }).getByRole("button", { name: "Quay lại", exact: true }).click();
@@ -505,62 +514,75 @@ test.describe("D. B3 mở tài khoản", () => {
     await expectNoSideScroll(page);
   });
 
-  test("D11 còn khung trống thì Gửi kiểm tra khoá; đủ ảnh bấm đúp chỉ gửi một lần, vào màn kết quả", async ({ page, request }) => {
+  test("D11 còn khung trống thì Hoàn thành khoá; đủ ảnh bấm đúp Gửi kiểm tra chỉ gửi một lần; gửi nốt ngân hàng kia thì vào màn kết quả", async ({ page, request }) => {
     const s = await apiCreate(request, SCHOOL.photo, info("Gửi Bấm Đúp"));
     await apiPick(request, s, [BANK.p1, BANK.p3]);
     await apiPhotos(request, s, [SLOT.p3]);
     await openAt(page, SCHOOL.photo, s);
-    const send = page.getByRole("button", { name: "Gửi kiểm tra" });
-    await expect(send).toBeDisabled();
+    await tab(page, NAME.p3).click();
+    await expect(finishButton(page, NAME.p3)).toBeDisabled();
     let posts = 0;
     page.on("request", (r) => {
-      if (r.method() === "POST" && new URL(r.url()).pathname === "/api/customers/me/submit") posts += 1;
+      if (r.method() === "POST" && /\/api\/customers\/me\/banks\/[^/]+\/submit$/.test(new URL(r.url()).pathname)) posts += 1;
     });
-    await tab(page, NAME.p3).click();
     await uploadIn(page, "Ảnh màn hình chính");
-    await send.dblclick();
+    await sendDialog(page).getByRole("button", { name: "Gửi kiểm tra" }).dblclick();
+    await expect(tab(page, NAME.p3)).toContainText("đã gửi");
+    expect(posts).toBe(1);
+    await tab(page, NAME.p1).click();
+    await finishButton(page, NAME.p1).click();
+    await confirmSend(page);
+    await dismissGift(page);
     await expect(page.getByText("Chờ kiểm tra")).toHaveCount(2);
     await expect(alertIn(page)).toHaveCount(0);
-    expect(posts).toBe(1);
+    expect(posts).toBe(2);
   });
 
-  test("D13 người quản lý bỏ một khung trống lúc học sinh ở B3: nộp vào khung đó thì web tải lại, khung biến mất, Gửi kiểm tra bật", async ({ page, request }) => {
+  test("D13 người quản lý bỏ một khung trống lúc học sinh ở B3: nộp vào khung đó thì web tải lại, khung biến mất, hộp hỏi đã hoàn thành mở", async ({ page, request }) => {
     const s = await apiCreate(request, SCHOOL.stale, info("Khung Vừa Bỏ"));
     await apiPick(request, s, [BANK.stale, BANK.p3]);
     await apiPhotos(request, s, [SLOT.stale2]);
     await openAt(page, SCHOOL.stale, s);
-    const send = page.getByRole("button", { name: "Gửi kiểm tra" });
-    await expect(send).toBeDisabled();
+    await expect(finishButton(page, NAME.stale)).toBeDisabled();
     dbOp("slot-remove", SLOT.stale2);
     try {
       const panel = page.getByRole("tabpanel");
       await panel.getByLabel("Ảnh 2: chọn ảnh").setInputFiles(PHOTO);
       await expect(panel.getByText("2. Ảnh 2")).toHaveCount(0, { timeout: 30_000 });
-      await expect(send).toBeEnabled();
-      await send.click();
+      // Khung bị bỏ làm ngân hàng đủ ảnh: hộp hỏi đã hoàn thành tự mở.
+      await confirmSend(page);
+      await tab(page, NAME.p3).click();
+      await finishButton(page, NAME.p3).click();
+      await confirmSend(page);
+      await dismissGift(page);
       await expect(page.getByText("Chờ kiểm tra")).toHaveCount(2);
     } finally {
       dbOp("slot-reset");
     }
   });
 
-  test("D12 người quản lý thêm khung lúc học sinh đã đủ ảnh: Gửi kiểm tra báo còn khung trống, web tải lại hiện khung mới", async ({ page, request }) => {
+  test("D12 người quản lý thêm khung lúc học sinh đã đủ ảnh: Hoàn thành báo còn khung trống, web tải lại hiện khung mới", async ({ page, request }) => {
     const s = await apiCreate(request, SCHOOL.stale, info("Khung Vừa Thêm"));
     await apiPick(request, s, [BANK.stale, BANK.p3]);
     await apiPhotos(request, s);
     await openAt(page, SCHOOL.stale, s);
-    const send = page.getByRole("button", { name: "Gửi kiểm tra" });
+    const send = finishButton(page, NAME.stale);
     await expect(send).toBeEnabled();
     dbOp("slot-add", BANK.stale, SLOT.staleAdded, "Ảnh mới");
     try {
       await send.click();
+      await confirmSend(page);
       await expect(alertIn(page)).toHaveText("Còn khung chưa có ảnh.");
       await tab(page, NAME.stale).click();
       await expect(page.getByRole("tabpanel").getByLabel("Ảnh mới: chọn ảnh")).toBeAttached();
       await expect(send).toBeDisabled();
       await uploadIn(page, "Ảnh mới");
       await expect(alertIn(page)).toHaveCount(0);
-      await send.click();
+      await confirmSend(page);
+      await tab(page, NAME.p3).click();
+      await finishButton(page, NAME.p3).click();
+      await confirmSend(page);
+      await dismissGift(page);
       await expect(page.getByText("Chờ kiểm tra")).toHaveCount(2);
     } finally {
       dbOp("slot-reset");

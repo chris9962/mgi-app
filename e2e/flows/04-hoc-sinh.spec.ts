@@ -1,3 +1,4 @@
+import { confirmSend, dismissGift, sendDialog } from "../edge-student-support";
 import { E2E_STUDENT_SCHOOL_ID } from "../../scripts/e2e-data";
 import { flowVideo } from "./video";
 import { PHONE, PHOTO, STUDENT, expect, test } from "./support";
@@ -82,16 +83,22 @@ test("Flow 4: học sinh mở link QR, chọn 2 ngân hàng, nộp ảnh, gửi 
     await expect(panel.getByText("Đã gửi")).toHaveCount(0);
   });
 
-  await test.step("Nộp ảnh mọi khung: khung ghi Đã gửi, tab có dấu đủ ảnh", async () => {
-    for (const [bank, slots] of [
-      ["ZZE2E HS TPBank", ["Ảnh màn hình chính"]],
-      ["ZZE2E HS VPBank", ["Ảnh màn hình chính", "Ảnh chuyển khoản"]],
-    ] as const) {
-      await tab(bank).click();
-      for (const slot of slots) await upload(slot);
-      await expect(panel.getByText("Đã gửi")).toHaveCount(slots.length);
-      await expect(tab(bank)).toContainText("đủ ảnh");
-    }
+  await test.step("Nộp đủ ảnh TPBank: hộp hỏi đã hoàn thành tự mở, gửi riêng ngân hàng này", async () => {
+    await tab("ZZE2E HS TPBank").click();
+    await upload("Ảnh màn hình chính");
+    await expect(panel.getByText("Đã gửi")).toHaveCount(1);
+    await expect(tab("ZZE2E HS TPBank")).toContainText("đủ ảnh");
+    await expect(sendDialog(page)).toContainText("Đã hoàn thành ZZE2E HS TPBank?");
+    await confirmSend(page);
+    await expect(tab("ZZE2E HS TPBank")).toContainText("đã gửi");
+  });
+
+  await test.step("Nộp đủ ảnh VPBank: khung ghi Đã gửi, tab có dấu đủ ảnh, để sau", async () => {
+    await tab("ZZE2E HS VPBank").click();
+    for (const slot of ["Ảnh màn hình chính", "Ảnh chuyển khoản"]) await upload(slot);
+    await expect(panel.getByText("Đã gửi")).toHaveCount(2);
+    await expect(tab("ZZE2E HS VPBank")).toContainText("đủ ảnh");
+    await sendDialog(page).getByRole("button", { name: "Huỷ" }).click();
   });
 
   await test.step("Cuộn xuống: thanh tab ngân hàng dính đầu màn hình", async () => {
@@ -102,8 +109,10 @@ test("Flow 4: học sinh mở link QR, chọn 2 ngân hàng, nộp ảnh, gửi 
     await expect(tabs).toBeInViewport();
   });
 
-  await test.step("Gửi kiểm tra, thấy màn chờ", async () => {
-    await page.getByRole("button", { name: "Gửi kiểm tra" }).click();
+  await test.step("Hoàn thành ngân hàng còn lại, thấy màn chờ", async () => {
+    await page.getByRole("button", { name: "Hoàn thành ZZE2E HS VPBank" }).click();
+    await confirmSend(page);
+    await dismissGift(page);
     await expect(page.getByRole("heading", { name: `${NAME} - 11A3` })).toBeVisible();
     await expect(page.getByText("Chờ kiểm tra")).toHaveCount(2);
     await expect(page.getByText(/voucher/i)).toHaveCount(0);

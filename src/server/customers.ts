@@ -392,7 +392,8 @@ export async function studentState(customer: Customer, month = currentYearMonth(
     banks: chosen,
     zaloUrl: settings.zaloUrl,
     pviAppUrl: settings.pviAppUrl,
-    insurance: insuranceOf(settings),
+    // Bảo hiểm chỉ mời khi đã có voucher, tức có ngân hàng Đạt; chưa duyệt thì chưa mua được.
+    insurance: voucher ? insuranceOf(settings) : [],
     thanksText: settings.thanksText,
     gift: await giftState(customer.id),
   };

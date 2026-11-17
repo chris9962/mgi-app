@@ -1,8 +1,9 @@
+import { finishButton } from "./edge-student-support";
 import { randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
 import sharp from "sharp";
-import { BANK, SCHOOL, SLOT } from "../scripts/e2e-data-student";
+import { BANK, NAME, SCHOOL, SLOT } from "../scripts/e2e-data-student";
 import { PHONE, PHOTO, apiCreate, apiPhotos, apiPick, device, info, onDevice, withEdgeData, type ApiStudent } from "./edge-student-support";
 
 test.use(PHONE);
@@ -86,7 +87,7 @@ test("E6, E7 ảnh JPEG 6000x8000 và ảnh PNG 1x1: gửi được, ảnh lớn
   expect(transfer.photo!.sizeBytes).toBeGreaterThan(0);
 });
 
-test("E8 đang tải ảnh ở một khung: ô chọn của khung đó khoá, khung khác vẫn tải được, Gửi kiểm tra khoá tới khi xong", async ({ page, request }) => {
+test("E8 đang tải ảnh ở một khung: ô chọn của khung đó khoá, khung khác vẫn tải được, Hoàn thành khoá tới khi xong", async ({ page, request }) => {
   const s = await atB3(page, request, "Hai Khung Cùng Lúc");
   await apiPhotos(request, s, [SLOT.p1Main, SLOT.p1Transfer]);
   let release = () => {};
@@ -99,7 +100,7 @@ test("E8 đang tải ảnh ở một khung: ô chọn của khung đó khoá, kh
     }
     await route.continue();
   });
-  const send = page.getByRole("button", { name: "Gửi kiểm tra" });
+  const send = finishButton(page, NAME.p1);
   await pick(page, MAIN, PHOTO);
   await expect(slotItem(page, MAIN).getByText("Đang tải ảnh")).toBeVisible();
   await expect(page.getByRole("tabpanel").getByLabel(`${MAIN}: chọn ảnh`)).toBeDisabled();

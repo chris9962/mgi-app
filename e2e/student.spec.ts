@@ -1,3 +1,4 @@
+import { confirmSend, dismissGift, finishButton, sendDialog } from "./edge-student-support";
 import { randomBytes } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import sharp from "sharp";
@@ -36,8 +37,7 @@ test("Học sinh quét link trường, khai thông tin, chọn 2 ngân hàng, n�
 
   await expect(page.getByRole("heading", { name: "Mở tài khoản" })).toBeVisible();
   await expect(page.getByRole("tab", { name: /ZZE2E HS TPBank/ })).toHaveAttribute("aria-selected", "true");
-  const send = page.getByRole("button", { name: "Gửi kiểm tra" });
-  await expect(send).toBeDisabled();
+  await expect(finishButton(page, "ZZE2E HS TPBank")).toBeDisabled();
 
   await page.getByRole("tab", { name: /ZZE2E HS VPBank/ }).click();
   const panel = page.getByRole("tabpanel");
@@ -55,10 +55,10 @@ test("Học sinh quét link trường, khai thông tin, chọn 2 ngân hàng, n�
       await expect(panel.getByLabel(`${name}: chọn lại`)).toBeAttached({ timeout: 30_000 });
     }
     await expect(page.getByRole("tab", { name: new RegExp(tab) })).toContainText("đủ ảnh");
+    // Nộp xong ảnh cuối thì hộp hỏi đã hoàn thành tự mở; xác nhận gửi riêng ngân hàng này.
+    await confirmSend(page);
   }
-
-  await expect(send).toBeEnabled();
-  await send.click();
+  await dismissGift(page);
   await expect(page.getByText("Chờ kiểm tra")).toHaveCount(2);
   await expect(page.getByText(/voucher/i)).toHaveCount(0);
   await expect(page.getByRole("heading", { name: "Trần Minh Anh - 11A3" })).toBeVisible();
@@ -80,11 +80,13 @@ test("đang tải ảnh thì không gửi kiểm tra được; tải ảnh lỗi
   await page.getByRole("button", { name: "Tiếp tục" }).click();
 
   const panel = page.getByRole("tabpanel");
-  const send = page.getByRole("button", { name: "Gửi kiểm tra" });
+  const send = finishButton(page, "ZZE2E HS TPBank");
   for (const tab of ["ZZE2E HS MB", "ZZE2E HS TPBank"]) {
     await page.getByRole("tab", { name: new RegExp(tab) }).click();
     await panel.getByLabel("Ảnh màn hình chính: chọn ảnh").setInputFiles(PHOTO);
     await expect(panel.getByLabel("Ảnh màn hình chính: chọn lại")).toBeAttached({ timeout: 30_000 });
+    // Hộp hỏi đã hoàn thành tự mở: để sau, test này kiểm lúc đang tải ảnh.
+    await sendDialog(page).getByRole("button", { name: "Huỷ" }).click();
   }
   await expect(send).toBeEnabled();
 

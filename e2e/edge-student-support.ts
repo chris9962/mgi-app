@@ -193,6 +193,22 @@ export const cameraOptions = (file: string) => ({
   permissions: ["camera"],
 });
 
+
+// Gửi kiểm tra từng ngân hàng (2026-11-17): nộp xong ảnh cuối của một ngân hàng thì hộp "Đã hoàn thành ...?" tự mở; nút Hoàn thành ở panel mở lại hộp đó.
+export const sendDialog = (page: Page) => page.getByRole("dialog", { name: "Gửi kiểm tra" });
+export async function confirmSend(page: Page) {
+  await sendDialog(page).getByRole("button", { name: "Gửi kiểm tra" }).click();
+  await expect(sendDialog(page)).toHaveCount(0);
+}
+export const finishButton = (page: Page, bank: string) => page.getByRole("tabpanel").getByRole("button", { name: `Hoàn thành ${bank}` });
+// Gửi xong ngân hàng thứ hai thì hộp quà 20.000 đồng mở: test không kiểm quà thì đóng để bấm tiếp được.
+export async function dismissGift(page: Page) {
+  const gift = page.getByRole("dialog", { name: /Nhận 20\.000/ });
+  await gift.waitFor({ state: "visible", timeout: 10_000 }).catch(() => {});
+  if (await gift.count()) await gift.getByRole("button", { name: "Để sau" }).click();
+  await expect(gift).toHaveCount(0);
+}
+
 export const PHONE_ERROR = "SĐT phải có 10 số, bắt đầu bằng 0.";
 export const NETWORK = "Không kết nối được máy chủ. Kiểm tra mạng rồi thử lại.";
 export const LATER = "Thử lại sau ít phút.";

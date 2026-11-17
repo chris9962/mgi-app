@@ -1,3 +1,4 @@
+import { confirmSend, finishButton } from "./edge-student-support";
 import { expect, test } from "@playwright/test";
 import { BANK, CODE, NAME, SCHOOL } from "../scripts/e2e-data-student";
 import {
@@ -225,17 +226,18 @@ test.describe("A. Mở link và chọn trường", () => {
     await expect(page.getByRole("tabpanel").getByLabel("Ảnh màn hình chính: chọn lại")).toBeAttached();
   });
 
-  test("A13 hai tab ở B3: tab kia đã gửi kiểm tra, bấm Gửi kiểm tra thì sang màn kết quả", async ({ page, request }) => {
+  test("A13 hai tab ở B3: tab kia đã gửi kiểm tra, bấm Hoàn thành thì sang màn kết quả", async ({ page, request }) => {
     const who = info("Hai Tab Gửi");
     const s = await apiCreate(request, SCHOOL.photo, who);
     await apiPick(request, s, [BANK.p1, BANK.p3]);
     await apiPhotos(request, s);
     await onDevice(page, device(SCHOOL.photo, s));
     await page.goto("/");
-    const send = page.getByRole("button", { name: "Gửi kiểm tra" });
+    const send = finishButton(page, NAME.p1);
     await expect(send).toBeEnabled();
     await apiSubmit(request, s);
     await send.click();
+    await confirmSend(page);
     await expect(page.getByRole("heading", { name: `${who.fullName} - ${who.className}` })).toBeVisible();
     await expect(page.getByText("Chờ kiểm tra")).toHaveCount(2);
   });

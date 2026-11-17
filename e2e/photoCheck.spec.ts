@@ -1,3 +1,4 @@
+import { confirmSend, dismissGift } from "./edge-student-support";
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 import { expect, test, type Browser, type Page } from "@playwright/test";
@@ -43,8 +44,9 @@ async function submitWithScreens(browser: Browser) {
       await panel.getByLabel(`${name}: chọn ảnh`).setInputFiles({ name: "man-hinh.png", mimeType: "image/png", buffer });
       await expect(panel.getByLabel(`${name}: chọn lại`)).toBeAttached({ timeout: 30_000 });
     }
+    await confirmSend(page);
   }
-  await page.getByRole("button", { name: "Gửi kiểm tra" }).click();
+  await dismissGift(page);
   await expect(page.getByText("Chờ kiểm tra")).toHaveCount(2);
   await expect(page.getByText("Xác thực ảnh")).toHaveCount(0);
 }

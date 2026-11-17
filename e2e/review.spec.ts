@@ -1,3 +1,4 @@
+import { confirmSend, dismissGift } from "./edge-student-support";
 import { expect, test, type Browser, type Page } from "@playwright/test";
 import { E2E_STUDENT_SCHOOL_ID } from "../scripts/e2e-data";
 
@@ -36,8 +37,9 @@ async function submittedStudent(browser: Browser): Promise<Page> {
       await panel.getByLabel(`${name}: chọn ảnh`).setInputFiles(PHOTO);
       await expect(panel.getByLabel(`${name}: chọn lại`)).toBeAttached({ timeout: 30_000 });
     }
+    await confirmSend(page);
   }
-  await page.getByRole("button", { name: "Gửi kiểm tra" }).click();
+  await dismissGift(page);
   await expect(page.getByText("Chờ kiểm tra")).toHaveCount(2);
   return page;
 }
