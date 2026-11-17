@@ -34,16 +34,16 @@ Web học sinh hiện có 3 bước: 1 Thông tin, 2 Chọn ngân hàng, 3 Mở 
 
 ## 4. Màn Kết quả
 
-- [ ] Thêm câu "Mời bạn chọn bảo hiểm" và 3 lựa chọn. Mỗi lựa chọn mở link tới MyPVI.
+- [x] Thêm câu "Mời bạn chọn bảo hiểm" và 3 lựa chọn. Mỗi lựa chọn mở link tới MyPVI. Làm 2026-11-17: link từng sản phẩm nhập ở trang Cài đặt, chưa có link thì ẩn.
   - BH tai nạn học sinh.
   - BH xe máy.
   - BH tai nạn hộ sử dụng điện.
   - Việc này khác quyết định 2026-11-06: màn Kết quả chỉ có QR và nút "Mở app PVI".
-- [ ] Thêm hướng dẫn mua sản phẩm.
-- [ ] Thêm hướng dẫn chi tiết cho từng loại bảo hiểm.
+- [x] Thêm hướng dẫn mua sản phẩm. Làm 2026-11-17: ô Hướng dẫn mua của từng sản phẩm ở trang Cài đặt, web học sinh hiện dạng gấp mở.
+- [x] Thêm hướng dẫn chi tiết cho từng loại bảo hiểm. Nội dung do chủ dự án nhập ở Cài đặt.
   - BH xe máy: học sinh làm gì, nhập gì.
   - BH học sinh: học sinh nhập gì, làm gì.
-- [ ] Thêm lời cảm ơn ở bước cuối: "Cảm ơn các bạn tham gia chương trình khuyến học của tỉnh."
+- [x] Thêm lời cảm ơn ở bước cuối: "Cảm ơn các bạn tham gia chương trình khuyến học của tỉnh." Làm 2026-11-17: câu mặc định, sửa được ở Cài đặt.
 
 ## 5. Câu cần hỏi lại chủ dự án
 

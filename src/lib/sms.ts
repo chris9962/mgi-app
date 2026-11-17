@@ -1,6 +1,7 @@
 import { z } from "zod";
 import { removeDiacritics } from "./text";
-import { CONTROL_CHAR_MESSAGE, noControlChar } from "./controlChars";
+import { CONTROL_CHAR_MESSAGE, noControlChar, wellFormed } from "./controlChars";
+import { DEFAULT_THANKS_TEXT } from "./insurance";
 
 // Loại tin duy nhất hiện có; DB chỉ nhận giá trị này (check sms_messages_kind).
 export const SMS_KIND_VOUCHER = "voucher";
@@ -55,6 +56,13 @@ const unknownField = (template: string): string | null => {
   return /[{}]/.test(rest) ? (/\{[^{}]*\}/.exec(rest)?.[0] ?? "{") : null;
 };
 
+// Hướng dẫn mua nhiều dòng: chỉ cấm ký tự điều khiển khác xuống dòng.
+const guide = z
+  .string()
+  .transform((v) => v.replace(/\r\n?/g, "\n").trim())
+  .pipe(z.string().max(2000, "Hướng dẫn tối đa 2000 ký tự").refine((v) => !/[\u0000-\u0009\u000b-\u001f\u007f]/.test(v) && wellFormed(v), CONTROL_CHAR_MESSAGE))
+  .default("");
+
 export const SettingsForm = z.object({
   smsTemplate: z
     .string()
@@ -72,5 +80,19 @@ export const SettingsForm = z.object({
     }),
   zaloUrl: url,
   pviAppUrl: url,
+  // Bảo hiểm ở màn Kết quả: không gửi thì để trống, web học sinh ẩn sản phẩm chưa có link.
+  insuranceStudentUrl: url.default(""),
+  insuranceStudentGuide: guide,
+  insuranceMotoUrl: url.default(""),
+  insuranceMotoGuide: guide,
+  insuranceElectricUrl: url.default(""),
+  insuranceElectricGuide: guide,
+  thanksText: z
+    .string()
+    .trim()
+    .max(300, "Lời cảm ơn tối đa 300 ký tự")
+    .refine(noControlChar, CONTROL_CHAR_MESSAGE)
+    .transform((v) => v || DEFAULT_THANKS_TEXT)
+    .default(DEFAULT_THANKS_TEXT),
 });
 export type SettingsValues = z.output<typeof SettingsForm>;

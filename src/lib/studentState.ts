@@ -1,3 +1,5 @@
+import type { StudentInsurance } from "./insurance";
+
 export type CustomerStatus = "new" | "banks_selected" | "pending_review" | "reviewed" | "no_bank";
 
 export type StudentSchool = { id: string; name: string; active: boolean; banks: { id: string; name: string; logoUrl: string | null }[] };
@@ -46,4 +48,6 @@ export type StudentState = {
   banks: StudentBank[];
   zaloUrl: string;
   pviAppUrl: string;
+  insurance: StudentInsurance[];
+  thanksText: string;
 };

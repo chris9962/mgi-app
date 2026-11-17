@@ -4,10 +4,12 @@ import { cleanTestUsers, makeActor } from "./helpers";
 import { db } from "../../src/server/db/client";
 import { auditLog, settings } from "../../src/server/db/schema";
 import { getSettings, saveSettings } from "../../src/server/settings";
+import { DEFAULT_THANKS_TEXT } from "../../src/lib/insurance";
 import { DEFAULT_SMS_TEMPLATE } from "../../src/lib/sms";
 import type { SessionUser } from "../../src/lib/types";
 
-const KEYS = ["sms_template", "zalo_url", "pvi_app_url"];
+const KEYS = ["sms_template", "zalo_url", "pvi_app_url", "insurance_student_url", "insurance_student_guide", "insurance_moto_url", "insurance_moto_guide", "insurance_electric_url", "insurance_electric_guide", "thanks_text"];
+const EMPTY = { insuranceStudentUrl: "", insuranceStudentGuide: "", insuranceMotoUrl: "", insuranceMotoGuide: "", insuranceElectricUrl: "", insuranceElectricGuide: "", thanksText: DEFAULT_THANKS_TEXT };
 let admin: SessionUser;
 let manager: SessionUser;
 let saved: { key: string; value: unknown }[] = [];
@@ -28,11 +30,11 @@ afterAll(async () => {
 
 describe("cài đặt", () => {
   test("chưa lưu thì trả mặc định", async () => {
-    expect(await getSettings()).toEqual({ smsTemplate: DEFAULT_SMS_TEMPLATE, zaloUrl: "", pviAppUrl: "https://www.pvi.com.vn" });
+    expect(await getSettings()).toEqual({ smsTemplate: DEFAULT_SMS_TEMPLATE, zaloUrl: "", pviAppUrl: "https://www.pvi.com.vn", ...EMPTY });
   });
 
   test("Quản trị lưu rồi đọc lại được, ghi audit_log", async () => {
-    const values = { smsTemplate: "{HO_TEN} da mo {NGAN_HANG}. Ma: {MA_VOUCHER}", zaloUrl: "https://zalo.me/0900000000", pviAppUrl: "https://pvi.example/app" };
+    const values = { smsTemplate: "{HO_TEN} da mo {NGAN_HANG}. Ma: {MA_VOUCHER}", zaloUrl: "https://zalo.me/0900000000", pviAppUrl: "https://pvi.example/app", ...EMPTY, insuranceMotoUrl: "https://mypvi.vn/xe-may", insuranceMotoGuide: "Chọn gói, nhập biển số" };
     expect((await saveSettings(admin, values)).ok).toBe(true);
     expect(await getSettings()).toEqual(values);
     const rows = await db.select().from(auditLog).where(and(eq(auditLog.userId, admin.id), eq(auditLog.action, "save_settings")));
@@ -40,13 +42,13 @@ describe("cài đặt", () => {
   });
 
   test("Quản lý không lưu được", async () => {
-    expect((await saveSettings(manager, { smsTemplate: "x", zaloUrl: "", pviAppUrl: "" })).ok).toBe(false);
+    expect((await saveSettings(manager, { smsTemplate: "x", zaloUrl: "", pviAppUrl: "", ...EMPTY })).ok).toBe(false);
   });
 
   // Form đã chặn hai ký tự này; máy chủ vẫn phải lưu được nếu chúng lọt qua, vì Postgres từ chối cả hai trong jsonb và trả lỗi 500.
   test("giá trị có NUL hay nửa cặp surrogate lọt qua form vẫn lưu được, ký tự hỏng thành U+FFFD ở cài đặt và audit_log", async () => {
-    const values = { smsTemplate: "Ma \ud83c {MA_VOUCHER}\u0000", zaloUrl: "https://zalo.me/\udf93", pviAppUrl: "" };
-    const clean = { smsTemplate: "Ma \ufffd {MA_VOUCHER}\ufffd", zaloUrl: "https://zalo.me/\ufffd", pviAppUrl: "" };
+    const values = { smsTemplate: "Ma \ud83c {MA_VOUCHER}\u0000", zaloUrl: "https://zalo.me/\udf93", pviAppUrl: "", ...EMPTY };
+    const clean = { smsTemplate: "Ma \ufffd {MA_VOUCHER}\ufffd", zaloUrl: "https://zalo.me/\ufffd", pviAppUrl: "", ...EMPTY };
     expect(await saveSettings(admin, values)).toEqual({ ok: true });
     expect(await getSettings()).toEqual(clean);
     const rows = await db.select({ detail: auditLog.detail }).from(auditLog).where(and(eq(auditLog.userId, admin.id), eq(auditLog.action, "save_settings")));

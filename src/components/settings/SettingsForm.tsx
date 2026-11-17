@@ -1,18 +1,27 @@
 "use client";
 
-import { MessageSquareText, QrCode } from "lucide-react";
+import { HeartHandshake, MessageSquareText, QrCode, ShieldCheck } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useId, useState } from "react";
 import { Button } from "@/components/ui/Button";
 import { Card } from "@/components/ui/Card";
-import { inputClass } from "@/components/ui/Field";
+import { Field, inputClass } from "@/components/ui/Field";
 import { TextField } from "@/components/ui/TextField";
 import { apiSend } from "@/lib/api";
+import { INSURANCE_PRODUCTS, type InsuranceKey } from "@/lib/insurance";
 import { renderSms, SettingsForm as Schema, SMS_FIELDS, SMS_SAMPLE, smsParts, type SettingsValues } from "@/lib/sms";
 import { QrPreview } from "./QrPreview";
 
+// Khoá cài đặt của từng sản phẩm bảo hiểm: link và hướng dẫn mua.
+const INSURANCE_FIELDS: Record<InsuranceKey, { url: keyof SettingsValues; guide: keyof SettingsValues }> = {
+  student: { url: "insuranceStudentUrl", guide: "insuranceStudentGuide" },
+  moto: { url: "insuranceMotoUrl", guide: "insuranceMotoGuide" },
+  electric: { url: "insuranceElectricUrl", guide: "insuranceElectricGuide" },
+};
+
 export function SettingsForm({ initial }: { initial: SettingsValues }) {
   const router = useRouter();
+  const id = useId();
   const [values, setValues] = useState(initial);
   const [errors, setErrors] = useState<Record<string, string>>({});
   const [status, setStatus] = useState("");
@@ -31,6 +40,15 @@ export function SettingsForm({ initial }: { initial: SettingsValues }) {
     setStatus(r.ok ? "Đã lưu cấu hình." : r.message);
     if (r.ok) router.refresh();
   }
+
+  const textarea = (k: keyof SettingsValues, label: string, rows: number, hint?: string) => {
+    const fieldId = `${id}-${k}`;
+    return (
+      <Field id={fieldId} label={label} error={errors[k]} hint={hint}>
+        <textarea id={fieldId} rows={rows} value={values[k]} onChange={(e) => set(k)(e.target.value)} aria-invalid={errors[k] ? true : undefined} aria-describedby={errors[k] ? `${fieldId}-error` : undefined} className={`${inputClass} leading-6`} />
+      </Field>
+    );
+  };
 
   return (
     <div className="flex flex-col gap-4">
@@ -91,6 +109,20 @@ export function SettingsForm({ initial }: { initial: SettingsValues }) {
             </div>
           </Card>
         </div>
+        <Card title="Bảo hiểm ở màn Kết quả" icon={<ShieldCheck size={17} aria-hidden />} meta="Sản phẩm chưa có link thì web học sinh không hiện">
+          <div className="flex flex-col gap-5">
+            {INSURANCE_PRODUCTS.map((p) => (
+              <fieldset key={p.key} className="flex flex-col gap-3">
+                <legend className="mb-2 text-sm font-semibold">{p.name}</legend>
+                <TextField label="Link MyPVI" value={values[INSURANCE_FIELDS[p.key].url]} onChange={(e) => set(INSURANCE_FIELDS[p.key].url)(e.target.value)} error={errors[INSURANCE_FIELDS[p.key].url]} placeholder="https://" />
+                {textarea(INSURANCE_FIELDS[p.key].guide, "Hướng dẫn mua", 3)}
+              </fieldset>
+            ))}
+          </div>
+        </Card>
+        <Card title="Lời cảm ơn cuối màn Kết quả" icon={<HeartHandshake size={17} aria-hidden />}>
+          {textarea("thanksText", "Nội dung", 2, "Để trống thì dùng câu mặc định")}
+        </Card>
       </div>
       <div className="flex items-center justify-end gap-3">
         {status && (

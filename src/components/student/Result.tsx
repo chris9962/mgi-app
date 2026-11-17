@@ -1,6 +1,6 @@
 "use client";
 
-import { ClipboardCheck, Clock, ExternalLink } from "lucide-react";
+import { ChevronDown, ClipboardCheck, Clock, ExternalLink, HeartHandshake, ShieldCheck } from "lucide-react";
 import { QrPreview } from "@/components/settings/QrPreview";
 import { StatusTag, type Tone } from "@/components/ui/StatusTag";
 import { formatDateTime } from "@/lib/dates";
@@ -32,6 +32,39 @@ function PviQr({ state }: { state: StudentState }) {
   );
 }
 
+// Ba sản phẩm bảo hiểm PVI: mỗi thẻ có hướng dẫn mua gấp lại và nút mở MyPVI. Sản phẩm chưa có link thì không hiện.
+function Insurance({ list }: { list: StudentState["insurance"] }) {
+  if (!list.length) return null;
+  return (
+    <section aria-labelledby="insurance-title" className="mt-5 flex flex-col gap-3">
+      <h2 id="insurance-title" className="flex items-center gap-2 text-[15px] font-semibold">
+        <ShieldCheck size={18} aria-hidden className="text-accent-ink" />
+        Mời bạn chọn bảo hiểm
+      </h2>
+      <ul className="anim-stagger flex flex-col gap-3">
+        {list.map((p) => (
+          <li key={p.key} className="flex flex-col gap-3 rounded-2xl border border-line bg-card p-4 shadow-sm">
+            <h3 className="text-[15px] font-semibold">{p.name}</h3>
+            {p.guide && (
+              <details className="group rounded-xl bg-surface px-3.5 py-2.5 text-sm">
+                <summary className="flex cursor-pointer list-none items-center justify-between font-medium text-accent-ink [&::-webkit-details-marker]:hidden">
+                  Hướng dẫn mua
+                  <ChevronDown size={16} aria-hidden className="transition-transform duration-200 group-open:rotate-180" />
+                </summary>
+                <p className="mt-2 leading-relaxed whitespace-pre-line text-text-2">{p.guide}</p>
+              </details>
+            )}
+            <a href={p.url} target="_blank" rel="noopener noreferrer" className="inline-flex h-10 items-center gap-2 self-start rounded-[10px] border border-accent px-4 text-sm font-semibold text-accent-ink hover:bg-accent-soft/40">
+              <ExternalLink size={16} aria-hidden />
+              Mua trên MyPVI
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 export function Result({ state }: { state: StudentState }) {
   return (
     <>
@@ -57,6 +90,13 @@ export function Result({ state }: { state: StudentState }) {
         ))}
       </ul>
       <PviQr state={state} />
+      <Insurance list={state.insurance} />
+      {state.thanksText && (
+        <p className="mt-5 flex items-center gap-3 rounded-2xl bg-accent-soft/60 px-4 py-3.5 text-[15px] leading-snug font-medium text-accent-ink">
+          <HeartHandshake size={22} aria-hidden className="flex-none" />
+          {state.thanksText}
+        </p>
+      )}
       <Bottom>
         <ZaloBox url={state.zaloUrl} text="Cần hỏi: kết bạn Zalo với nhân viên." />
       </Bottom>

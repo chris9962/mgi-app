@@ -8,6 +8,7 @@ import { queuePhotoChecks } from "./photoChecks";
 import { hashToken } from "./auth/session";
 import { publicSchool } from "./schools";
 import { getSettings } from "./settings";
+import { INSURANCE_PRODUCTS, type StudentInsurance } from "@/lib/insurance";
 import { CONSENT_VERSION } from "@/lib/consent";
 import { currentYearMonth, isYearMonth } from "@/lib/month";
 import { maskPhone, plain } from "@/lib/text";
@@ -354,5 +355,16 @@ export async function studentState(customer: Customer, month = currentYearMonth(
     banks: await chosenBanks({ ...customer, status }, store),
     zaloUrl: settings.zaloUrl,
     pviAppUrl: settings.pviAppUrl,
+    insurance: insuranceOf(settings),
+    thanksText: settings.thanksText,
   };
+}
+
+// Sản phẩm có link mới hiện ở màn Kết quả.
+function insuranceOf(s: Awaited<ReturnType<typeof getSettings>>): StudentInsurance[] {
+  const fields = { student: ["insuranceStudentUrl", "insuranceStudentGuide"], moto: ["insuranceMotoUrl", "insuranceMotoGuide"], electric: ["insuranceElectricUrl", "insuranceElectricGuide"] } as const;
+  return INSURANCE_PRODUCTS.flatMap((p) => {
+    const [url, guide] = fields[p.key];
+    return s[url] ? [{ key: p.key, name: p.name, url: s[url], guide: s[guide] }] : [];
+  });
 }
