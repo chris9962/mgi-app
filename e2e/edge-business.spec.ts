@@ -157,7 +157,7 @@ test("Trang 3 URL lạ: số trang sai, giá trị lọc không có, ngày sai h
     await expect(pager(page), p).toContainText(shown);
   }
 
-  await open(page, `/customers?${q("bien phan trang")}&status=foo&passed=3&check=x`);
+  await open(page, `/customers?${q("bien phan trang")}&status=foo&passed=9&check=x`);
   await expect(meta(page)).toHaveText("16 hồ sơ");
   await expect(page.getByText("Đang lọc")).toHaveCount(0);
 

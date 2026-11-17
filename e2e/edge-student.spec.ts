@@ -1,4 +1,4 @@
-import { confirmSend, finishButton } from "./edge-student-support";
+import { confirmSend, sendDialog } from "./edge-student-support";
 import { expect, test } from "@playwright/test";
 import { BANK, CODE, NAME, SCHOOL } from "../scripts/e2e-data-student";
 import {
@@ -13,7 +13,7 @@ import {
   apiSubmit,
   dbOp,
   device,
-  expectBoxSize,
+  expectInsideBox,
   expectInsideScreen,
   expectNoSideScroll,
   fillInfo,
@@ -226,17 +226,15 @@ test.describe("A. Mở link và chọn trường", () => {
     await expect(page.getByRole("tabpanel").getByLabel("Ảnh màn hình chính: chọn lại")).toBeAttached();
   });
 
-  test("A13 hai tab ở B3: tab kia đã gửi kiểm tra, bấm Hoàn thành thì sang màn kết quả", async ({ page, request }) => {
+  test("A13 hai tab ở B3: tab kia đã gửi kiểm tra, xác nhận Gửi kiểm tra thì sang màn kết quả", async ({ page, request }) => {
     const who = info("Hai Tab Gửi");
     const s = await apiCreate(request, SCHOOL.photo, who);
     await apiPick(request, s, [BANK.p1, BANK.p3]);
     await apiPhotos(request, s);
     await onDevice(page, device(SCHOOL.photo, s));
     await page.goto("/");
-    const send = finishButton(page, NAME.p1);
-    await expect(send).toBeEnabled();
+    await expect(sendDialog(page)).toContainText(`Đã hoàn thành ${NAME.p1}?`);
     await apiSubmit(request, s);
-    await send.click();
     await confirmSend(page);
     await expect(page.getByRole("heading", { name: `${who.fullName} - ${who.className}` })).toBeVisible();
     await expect(page.getByText("Chờ kiểm tra")).toHaveCount(2);
@@ -406,9 +404,12 @@ test.describe("B. B1 khai thông tin", () => {
     for (const school of [SCHOOL.long, SCHOOL.mixed]) {
       await onDevice(page, device(school));
       await page.goto("/");
-      const boxes = page.getByRole("group", { name: "Ngân hàng đã có tài khoản" }).getByRole("checkbox");
-      await expect(boxes).toHaveCount(2);
-      await expectBoxSize(boxes, 18, 18);
+      // Mỗi ngân hàng một hàng, ô tick trong suốt phủ cả hàng: hàng nằm gọn trong màn hình, logo giữ 72 px.
+      const group = page.getByRole("group", { name: "Ngân hàng đã có tài khoản" });
+      await expect(group.getByRole("checkbox")).toHaveCount(2);
+      await expectInsideScreen(page, group.locator("label"));
+      await expectInsideBox(group.locator("label"), ":scope > span");
+      for (const w of await group.locator("label > span:first-of-type").evaluateAll((els) => els.map((el) => el.getBoundingClientRect().width))) expect(w, "bề ngang logo").toBeCloseTo(72, 0);
       await expectNoSideScroll(page);
     }
   });

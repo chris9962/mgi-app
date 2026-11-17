@@ -1,4 +1,4 @@
-import { finishButton } from "./edge-student-support";
+import { dismissSend, sendDialog } from "./edge-student-support";
 import { randomBytes } from "node:crypto";
 import { readFileSync } from "node:fs";
 import { expect, test, type Page } from "@playwright/test";
@@ -10,6 +10,8 @@ test.use(PHONE);
 withEdgeData();
 
 const MAIN = "Ảnh màn hình chính";
+const BANK_NAME_P1 = NAME.p1;
+const BANK_NAME_P3 = NAME.p3;
 const TRANSFER = "Ảnh chuyển khoản";
 
 // Mỗi ca một học sinh đã giữ chỗ P1 (2 khung) và P3 (1 khung), đang ở tab P1 của B3.
@@ -87,7 +89,7 @@ test("E6, E7 ảnh JPEG 6000x8000 và ảnh PNG 1x1: gửi được, ảnh lớn
   expect(transfer.photo!.sizeBytes).toBeGreaterThan(0);
 });
 
-test("E8 đang tải ảnh ở một khung: ô chọn của khung đó khoá, khung khác vẫn tải được, Hoàn thành khoá tới khi xong", async ({ page, request }) => {
+test("E8 đang tải ảnh ở một khung: ô chọn của khung đó khoá, khung khác vẫn tải được, hộp hỏi đã hoàn thành chỉ mở khi xong", async ({ page, request }) => {
   const s = await atB3(page, request, "Hai Khung Cùng Lúc");
   await apiPhotos(request, s, [SLOT.p1Main, SLOT.p1Transfer]);
   let release = () => {};
@@ -100,15 +102,16 @@ test("E8 đang tải ảnh ở một khung: ô chọn của khung đó khoá, kh
     }
     await route.continue();
   });
-  const send = finishButton(page, NAME.p1);
   await pick(page, MAIN, PHOTO);
   await expect(slotItem(page, MAIN).getByText("Đang tải ảnh")).toBeVisible();
   await expect(page.getByRole("tabpanel").getByLabel(`${MAIN}: chọn ảnh`)).toBeDisabled();
   await pick(page, TRANSFER, PHOTO);
   await expect(page.getByRole("tabpanel").getByLabel(`${TRANSFER}: chọn lại`)).toBeAttached({ timeout: 30_000 });
   await expect(slotItem(page, MAIN).getByText("Đang tải ảnh")).toBeVisible();
-  await expect(send).toBeDisabled();
+  // P3 đã đủ ảnh từ API nên lượt tải lại đầu tiên hỏi gửi P3; P1 còn khung đang tải thì chưa hỏi.
+  await expect(sendDialog(page)).toContainText(`Đã hoàn thành ${BANK_NAME_P3}?`);
+  await dismissSend(page);
   release();
   await expect(page.getByRole("tabpanel").getByLabel(`${MAIN}: chọn lại`)).toBeAttached({ timeout: 30_000 });
-  await expect(send).toBeEnabled();
+  await expect(sendDialog(page)).toContainText(`Đã hoàn thành ${BANK_NAME_P1}?`);
 });

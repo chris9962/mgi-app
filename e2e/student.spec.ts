@@ -1,4 +1,4 @@
-import { confirmSend, dismissGift, finishButton, sendDialog } from "./edge-student-support";
+import { confirmSend, dismissGift, sendDialog } from "./edge-student-support";
 import { randomBytes } from "node:crypto";
 import { expect, test } from "@playwright/test";
 import sharp from "sharp";
@@ -37,7 +37,7 @@ test("Học sinh quét link trường, khai thông tin, chọn 2 ngân hàng, n�
 
   await expect(page.getByRole("heading", { name: "Mở tài khoản" })).toBeVisible();
   await expect(page.getByRole("tab", { name: /ZZE2E HS TPBank/ })).toHaveAttribute("aria-selected", "true");
-  await expect(finishButton(page, "ZZE2E HS TPBank")).toBeDisabled();
+  await expect(sendDialog(page)).toHaveCount(0);
 
   await page.getByRole("tab", { name: /ZZE2E HS VPBank/ }).click();
   const panel = page.getByRole("tabpanel");
@@ -80,7 +80,6 @@ test("đang tải ảnh thì không gửi kiểm tra được; tải ảnh lỗi
   await page.getByRole("button", { name: "Tiếp tục" }).click();
 
   const panel = page.getByRole("tabpanel");
-  const send = finishButton(page, "ZZE2E HS TPBank");
   for (const tab of ["ZZE2E HS MB", "ZZE2E HS TPBank"]) {
     await page.getByRole("tab", { name: new RegExp(tab) }).click();
     await panel.getByLabel("Ảnh màn hình chính: chọn ảnh").setInputFiles(PHOTO);
@@ -88,7 +87,6 @@ test("đang tải ảnh thì không gửi kiểm tra được; tải ảnh lỗi
     // Hộp hỏi đã hoàn thành tự mở: để sau, test này kiểm lúc đang tải ảnh.
     await sendDialog(page).getByRole("button", { name: "Huỷ" }).click();
   }
-  await expect(send).toBeEnabled();
 
   let release = () => {};
   const gate = new Promise<void>((resolve) => (release = resolve));
@@ -98,10 +96,9 @@ test("đang tải ảnh thì không gửi kiểm tra được; tải ảnh lỗi
   });
   await panel.getByLabel("Ảnh màn hình chính: chọn lại").setInputFiles(PHOTO);
   await expect(panel.getByText("Đang tải ảnh")).toBeVisible();
-  await expect(send).toBeDisabled();
   release();
   await expect(panel.getByText("Đang tải ảnh")).toHaveCount(0, { timeout: 30_000 });
-  await expect(send).toBeEnabled();
+  await expect(sendDialog(page)).toHaveCount(0);
   await page.unroute("**/api/customers/me/photos");
 
   await page.route("**/api/customers/me/photos", (route) => route.abort("connectionreset"));
@@ -111,7 +108,6 @@ test("đang tải ảnh thì không gửi kiểm tra được; tải ảnh lỗi
   await page.unroute("**/api/customers/me/photos");
   await panel.getByLabel("Ảnh màn hình chính: chọn lại").setInputFiles(PHOTO);
   await expect(panel.getByRole("alert")).toHaveCount(0, { timeout: 30_000 });
-  await expect(send).toBeEnabled();
 });
 
 test("ảnh 15 MB gửi qua API tới đủ route: proxy không cắt body ở 10 MB, máy chủ đổi sang WebP", async ({ request }) => {

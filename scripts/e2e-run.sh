@@ -11,10 +11,17 @@ if [ "${E2E_SKIP_BUILD:-0}" != "1" ]; then
   bun run build > "$LOG_DIR/mgi-bank-e2e-build.log" 2>&1 || { tail -40 "$LOG_DIR/mgi-bank-e2e-build.log"; echo "Build lỗi, log ở $LOG_DIR/mgi-bank-e2e-build.log"; exit 1; }
 fi
 
-pids=$(lsof -ti tcp:3100 -sTCP:LISTEN || true)
+# Máy Windows (Git Bash) không có lsof: tìm PID giữ cổng bằng netstat và dừng bằng taskkill, không thì server cũ còn chạy và test chạy nhầm bản build cũ.
+listening() {
+  if command -v lsof > /dev/null; then lsof -ti tcp:3100 -sTCP:LISTEN || true
+  else netstat -ano 2>/dev/null | awk '/[:.]3100 .*LISTEN/ {print $NF}' | sort -u; fi
+}
+pids=$(listening)
 if [ -n "$pids" ]; then
-  kill $pids
-  for _ in $(seq 1 30); do lsof -ti tcp:3100 -sTCP:LISTEN > /dev/null || break; sleep 1; done
+  for pid in $pids; do
+    if command -v taskkill > /dev/null; then taskkill //F //PID "$pid" > /dev/null 2>&1 || true; else kill "$pid"; fi
+  done
+  for _ in $(seq 1 30); do [ -z "$(listening)" ] && break; sleep 1; done
 fi
 
 # COOKIE_SECURE=false: cookie Secure trên http không đi kèm request API của Playwright.

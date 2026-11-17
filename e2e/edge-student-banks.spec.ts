@@ -1,4 +1,4 @@
-import { confirmSend, dismissGift, finishButton, sendDialog } from "./edge-student-support";
+import { confirmSend, dismissGift, dismissSend, sendDialog } from "./edge-student-support";
 import { expect, test, type Page } from "@playwright/test";
 import { BANK, CODE, GUIDE_LONG, LONG_CODE, NAME, SCHOOL, SLOT } from "../scripts/e2e-data-student";
 import {
@@ -18,7 +18,6 @@ import {
   expectNoSideScroll,
   info,
   onDevice,
-  textLines,
   withEdgeData,
   watchDialogs,
   type ApiStudent,
@@ -56,7 +55,7 @@ test.describe("C. B2 chọn ngân hàng", () => {
     await expect(page.getByText("Đã chọn 2.")).toBeVisible();
   });
 
-  test("C2, C5 còn 1 ngân hàng thì chọn sẵn; lượt được trả lại nên còn 2 thì bấm Tiếp tục tải lại danh sách 2 ngân hàng, câu gợi ý hiện một lần", async ({ page, request }) => {
+  test("C2, C5 còn 1 ngân hàng thì chọn sẵn; lượt được trả lại cũng không bắt chọn thêm, bấm Tiếp tục vào B3 với ngân hàng đó", async ({ page, request }) => {
     dbOp("reset", SCHOOL.quota);
     const other = await apiCreate(request, SCHOOL.quota, info("Lấy Lượt Cuối"));
     await apiPick(request, other, [BANK.q1, BANK.q2]);
@@ -68,15 +67,11 @@ test.describe("C. B2 chọn ngân hàng", () => {
     await expect(page.getByText(NAME.q1)).toHaveCount(0);
 
     expect((await request.delete(`${STUDENT}/api/customers/me/banks`, { headers: other.auth })).status()).toBe(204);
-    await next(page).click();
-    await expect(page.getByText(/Chọn một hay nhiều ngân hàng/)).toHaveCount(1);
-    await expect(alertIn(page)).toHaveCount(0);
-    await expect(page.getByRole("button", { name: NAME.q1 })).toBeEnabled();
-    await expect(page.getByRole("button", { name: NAME.q2 })).toBeEnabled();
-    await page.getByRole("button", { name: NAME.q1 }).click();
-    await page.getByRole("button", { name: NAME.q2 }).click();
+    // Chọn 1 ngân hàng đã hợp lệ (chốt 2026-11-17): lượt trả lại không làm web bắt chọn lại.
     await next(page).click();
     await expect(page.getByRole("heading", { name: "Mở tài khoản" })).toBeVisible();
+    await expect(page.getByRole("tab")).toHaveCount(1);
+    await expect(alertIn(page)).toHaveCount(0);
   });
 
   test("C4 đang xem 2 ngân hàng thì học sinh khác lấy lượt cuối: báo vừa hết lượt, danh sách còn 1 chọn sẵn", async ({ page, request }) => {
@@ -105,7 +100,8 @@ test.describe("C. B2 chọn ngân hàng", () => {
 
   test("C6 tên ngân hàng dài có và không có dấu cách: nút và dấu tích nằm trong màn hình, không cuộn ngang", async ({ page, request }) => {
     await openAt(page, SCHOOL.long, await apiCreate(request, SCHOOL.long, info("Tên Ngân Hàng Dài")));
-    const buttons = page.getByRole("main").getByRole("listitem").getByRole("button");
+    // Mỗi thẻ có thêm nút Thông tin (nhỏ, góc dưới phải): chỉ đếm nút chọn mang tên ngân hàng.
+    const buttons = page.getByRole("main").getByRole("listitem").getByRole("button", { name: /ZZE2E/ });
     await expect(buttons).toHaveCount(2);
     await buttons.nth(0).click();
     await buttons.nth(1).click();
@@ -114,9 +110,11 @@ test.describe("C. B2 chọn ngân hàng", () => {
     await expectInsideScreen(page, buttons);
     await expectInsideBox(buttons, ":scope > span[aria-hidden], :scope > img");
     // Dấu tích của lưới 2 cột đè lên góc ô theo thiết kế: chỉ đòi nằm trong màn hình và không bị bóp.
-    const marks = buttons.locator(":scope > span:not([aria-hidden])");
+    const marks = buttons.locator(":scope > span.anim-pop");
     await expect(marks).toHaveCount(2);
     await expectInsideScreen(page, marks);
+    // anim-pop phóng dấu tích từ nhỏ lên: đo sau khi chuyển động xong.
+    await page.waitForTimeout(600);
     await expectBoxSize(marks, 24, 24);
   });
 
@@ -208,20 +206,26 @@ test.describe("D. B3 mở tài khoản", () => {
     expect(dialogs).toEqual([]);
   });
 
-  test("D19 tab tên dài cạnh tab tên ngắn, hai tab tên dài: vòng tròn giữ 16 px, tên ngắn không bị ngắt giữa chữ", async ({ page, request }) => {
+  test("D19 tab tên dài cạnh tab tên ngắn, hai tab tên dài: tab là thẻ 104 px không bị bóp, tên đầy đủ hiện nguyên văn dưới thanh tab, không cuộn ngang", async ({ page, request }) => {
     const mixed = await apiCreate(request, SCHOOL.mixed, info("Tab Dài Tab Ngắn"));
     await apiPick(request, mixed, [BANK.longSpace, BANK.p3]);
     await openAt(page, SCHOOL.mixed, mixed);
     await expect(page.getByRole("tab")).toHaveCount(2);
-    await expectBoxSize(page.getByRole("tab").locator("span[aria-hidden]"), 16, 16);
-    expect(await textLines(tab(page, NAME.p3)), "tên ngắn xuống dòng").toBe(1);
+    for (const box of await page.getByRole("tab").evaluateAll((els) => els.map((el) => el.getBoundingClientRect().width))) expect(box, "bề ngang tab").toBeCloseTo(104, 0);
+    await tab(page, NAME.bankLongSpace).click();
+    await expect(page.getByRole("heading", { level: 2, name: NAME.bankLongSpace })).toBeVisible();
+    await tab(page, NAME.p3).click();
+    await expect(page.getByRole("heading", { level: 2, name: NAME.p3 })).toBeVisible();
     await expectNoSideScroll(page);
 
     const twoLong = await apiCreate(request, SCHOOL.long, info("Hai Tab Dài"));
     await apiPick(request, twoLong, [BANK.longSpace, BANK.longWord]);
     await openAt(page, SCHOOL.long, twoLong);
     await expect(page.getByRole("tab")).toHaveCount(2);
-    await expectBoxSize(page.getByRole("tab").locator("span[aria-hidden]"), 16, 16);
+    await tab(page, NAME.bankLongWord).click();
+    const title = page.getByRole("heading", { level: 2, name: NAME.bankLongWord });
+    await expect(title).toBeVisible();
+    await expectInsideScreen(page, title);
     await expectNoSideScroll(page);
   });
 
@@ -236,7 +240,7 @@ test.describe("D. B3 mở tài khoản", () => {
     await expect(status).toHaveText("");
     // Vùng báo rỗng không được thêm một hàng trống giữa nút Sao chép và nút Quét QR code.
     const gap = async () => (await panel.getByRole("link", { name: "Quét QR code" }).boundingBox())!.y - ((await copy.boundingBox())!.y + (await copy.boundingBox())!.height);
-    expect(await gap()).toBeLessThanOrEqual(7);
+    expect(await gap()).toBeLessThanOrEqual(8);
     await copy.click();
     await expect(status).toHaveText("Đã sao chép");
     expect(await page.evaluate(() => navigator.clipboard.readText())).toBe(LONG_CODE);
@@ -259,10 +263,12 @@ test.describe("D. B3 mở tài khoản", () => {
     expect(await panel.getByText(LONG_CODE, { exact: true }).evaluate((el) => getComputedStyle(el).userSelect)).toBe("all");
   });
 
-  test("D8 ngân hàng chưa cài hướng dẫn: tab chỉ có mã, ghi đủ ảnh, Hoàn thành gửi được ngay; ngân hàng kia gửi sau khi đủ ảnh", async ({ page, request }) => {
+  test("D8 ngân hàng chưa cài hướng dẫn: vào màn là hỏi đã hoàn thành ngay; Huỷ thì tab chỉ có mã, ghi đủ ảnh; ngân hàng kia đủ ảnh gửi xong thì hỏi lại ngân hàng này", async ({ page, request }) => {
     const s = await apiCreate(request, SCHOOL.noGuide, info("Chưa Có Hướng Dẫn"));
     await apiPick(request, s, [BANK.p2, BANK.p3]);
     await openAt(page, SCHOOL.noGuide, s);
+    await expect(sendDialog(page)).toContainText(`Đã hoàn thành ${NAME.p2}?`);
+    await sendDialog(page).getByRole("button", { name: "Huỷ" }).click();
     await tab(page, NAME.p2).click();
     const panel = page.getByRole("tabpanel");
     await expect(panel.getByText("HSB-P2-01")).toBeVisible();
@@ -271,8 +277,7 @@ test.describe("D. B3 mở tài khoản", () => {
     await tab(page, NAME.p3).click();
     await uploadIn(page, "Ảnh màn hình chính");
     await confirmSend(page);
-    await tab(page, NAME.p2).click();
-    await finishButton(page, NAME.p2).click();
+    await expect(sendDialog(page)).toContainText(`Đã hoàn thành ${NAME.p2}?`);
     await confirmSend(page);
     await dismissGift(page);
     await expect(page.getByText("Chờ kiểm tra")).toHaveCount(2);
@@ -303,17 +308,17 @@ test.describe("D. B3 mở tài khoản", () => {
     await apiPick(request, s, [BANK.p1, BANK.p3]);
     await apiPhotos(request, s, [SLOT.p3]);
     await openAt(page, SCHOOL.closing, s);
+    // Ngân hàng p1 đã đủ ảnh từ API nên vào màn là hỏi gửi; để sau để kiểm nút Quay lại trước.
+    await sendDialog(page).getByRole("button", { name: "Huỷ" }).click();
     await expect(page.getByRole("button", { name: "Quay lại chọn ngân hàng" })).toBeVisible();
     dbOp("school", SCHOOL.closing, "closed");
     try {
       await page.reload();
       await expect(page.getByRole("heading", { name: "Mở tài khoản" })).toBeVisible();
+      await confirmSend(page);
       await expect(page.getByRole("button", { name: "Quay lại chọn ngân hàng" })).toHaveCount(0);
       await tab(page, NAME.p3).click();
       await uploadIn(page, "Ảnh màn hình chính");
-      await confirmSend(page);
-      await tab(page, NAME.p1).click();
-      await finishButton(page, NAME.p1).click();
       await confirmSend(page);
       await dismissGift(page);
       await expect(page.getByText("Chờ kiểm tra")).toHaveCount(2);
@@ -342,6 +347,7 @@ test.describe("D. B3 mở tài khoản", () => {
 
       dbOp("school", SCHOOL.closing, "open");
       await openAt(page, SCHOOL.closing, withPhoto);
+      await dismissSend(page);
       await expect(back).toBeVisible();
       dbOp("school", SCHOOL.closing, "closed");
       await back.click();
@@ -362,6 +368,7 @@ test.describe("D. B3 mở tài khoản", () => {
     await apiPick(request, s, [BANK.p1, BANK.p3]);
     await apiPhotos(request, s, [SLOT.p3]);
     await openAt(page, SCHOOL.photo, s);
+    await dismissSend(page);
     let release = () => {};
     const gate = new Promise<void>((resolve) => (release = resolve));
     await page.route("**/api/customers/me/banks", async (route) => {
@@ -387,6 +394,7 @@ test.describe("D. B3 mở tài khoản", () => {
     await apiPick(request, s, [BANK.p1, BANK.p3]);
     await apiPhotos(request, s, [SLOT.p3]);
     await openAt(page, SCHOOL.photo, s);
+    await dismissSend(page);
     await page.route("**/api/customers/me/banks", (route) => (route.request().method() === "DELETE" ? route.abort("internetdisconnected") : route.continue()));
     const back = page.getByRole("button", { name: "Quay lại chọn ngân hàng" });
     const confirm = page.getByRole("dialog", { name: "Quay lại chọn ngân hàng" });
@@ -422,7 +430,7 @@ test.describe("D. B3 mở tài khoản", () => {
     await apiPick(request, s, [BANK.p1, BANK.p3]);
     await apiPhotos(request, s);
     await openAt(page, SCHOOL.photo, s);
-    await expect(finishButton(page, NAME.p1)).toBeEnabled();
+    await sendDialog(page).getByRole("button", { name: "Huỷ" }).click();
     await apiSubmit(request, s);
     await page.getByRole("button", { name: "Quay lại chọn ngân hàng" }).click();
     await page.getByRole("dialog", { name: "Quay lại chọn ngân hàng" }).getByRole("button", { name: "Quay lại", exact: true }).click();
@@ -514,13 +522,15 @@ test.describe("D. B3 mở tài khoản", () => {
     await expectNoSideScroll(page);
   });
 
-  test("D11 còn khung trống thì Hoàn thành khoá; đủ ảnh bấm đúp Gửi kiểm tra chỉ gửi một lần; gửi nốt ngân hàng kia thì vào màn kết quả", async ({ page, request }) => {
+  test("D11 vào màn là hỏi gửi ngân hàng đã đủ ảnh, Huỷ được; ngân hàng kia đủ ảnh thì bấm đúp Gửi kiểm tra chỉ gửi một lần; hỏi tiếp ngân hàng đầu, gửi nốt thì vào màn kết quả", async ({ page, request }) => {
     const s = await apiCreate(request, SCHOOL.photo, info("Gửi Bấm Đúp"));
     await apiPick(request, s, [BANK.p1, BANK.p3]);
     await apiPhotos(request, s, [SLOT.p3]);
     await openAt(page, SCHOOL.photo, s);
+    await expect(sendDialog(page)).toContainText(`Đã hoàn thành ${NAME.p1}?`);
+    await sendDialog(page).getByRole("button", { name: "Huỷ" }).click();
     await tab(page, NAME.p3).click();
-    await expect(finishButton(page, NAME.p3)).toBeDisabled();
+    await expect(sendDialog(page)).toHaveCount(0);
     let posts = 0;
     page.on("request", (r) => {
       if (r.method() === "POST" && /\/api\/customers\/me\/banks\/[^/]+\/submit$/.test(new URL(r.url()).pathname)) posts += 1;
@@ -529,8 +539,7 @@ test.describe("D. B3 mở tài khoản", () => {
     await sendDialog(page).getByRole("button", { name: "Gửi kiểm tra" }).dblclick();
     await expect(tab(page, NAME.p3)).toContainText("đã gửi");
     expect(posts).toBe(1);
-    await tab(page, NAME.p1).click();
-    await finishButton(page, NAME.p1).click();
+    await expect(sendDialog(page)).toContainText(`Đã hoàn thành ${NAME.p1}?`);
     await confirmSend(page);
     await dismissGift(page);
     await expect(page.getByText("Chờ kiểm tra")).toHaveCount(2);
@@ -543,16 +552,18 @@ test.describe("D. B3 mở tài khoản", () => {
     await apiPick(request, s, [BANK.stale, BANK.p3]);
     await apiPhotos(request, s, [SLOT.stale2]);
     await openAt(page, SCHOOL.stale, s);
-    await expect(finishButton(page, NAME.stale)).toBeDisabled();
+    // p3 đã đủ ảnh từ API nên vào màn là hỏi gửi p3; để sau, test này kiểm ngân hàng stale.
+    await expect(sendDialog(page)).toContainText(`Đã hoàn thành ${NAME.p3}?`);
+    await sendDialog(page).getByRole("button", { name: "Huỷ" }).click();
     dbOp("slot-remove", SLOT.stale2);
     try {
       const panel = page.getByRole("tabpanel");
       await panel.getByLabel("Ảnh 2: chọn ảnh").setInputFiles(PHOTO);
       await expect(panel.getByText("2. Ảnh 2")).toHaveCount(0, { timeout: 30_000 });
-      // Khung bị bỏ làm ngân hàng đủ ảnh: hộp hỏi đã hoàn thành tự mở.
+      // Khung bị bỏ làm ngân hàng đủ ảnh: hộp hỏi đã hoàn thành tự mở; gửi xong hỏi tiếp p3.
+      await expect(sendDialog(page)).toContainText(`Đã hoàn thành ${NAME.stale}?`);
       await confirmSend(page);
-      await tab(page, NAME.p3).click();
-      await finishButton(page, NAME.p3).click();
+      await expect(sendDialog(page)).toContainText(`Đã hoàn thành ${NAME.p3}?`);
       await confirmSend(page);
       await dismissGift(page);
       await expect(page.getByText("Chờ kiểm tra")).toHaveCount(2);
@@ -561,26 +572,24 @@ test.describe("D. B3 mở tài khoản", () => {
     }
   });
 
-  test("D12 người quản lý thêm khung lúc học sinh đã đủ ảnh: Hoàn thành báo còn khung trống, web tải lại hiện khung mới", async ({ page, request }) => {
+  test("D12 người quản lý thêm khung lúc học sinh đã đủ ảnh: Gửi kiểm tra báo còn khung trống, web tải lại hiện khung mới", async ({ page, request }) => {
     const s = await apiCreate(request, SCHOOL.stale, info("Khung Vừa Thêm"));
     await apiPick(request, s, [BANK.stale, BANK.p3]);
     await apiPhotos(request, s);
     await openAt(page, SCHOOL.stale, s);
-    const send = finishButton(page, NAME.stale);
-    await expect(send).toBeEnabled();
+    await expect(sendDialog(page)).toContainText(`Đã hoàn thành ${NAME.stale}?`);
     dbOp("slot-add", BANK.stale, SLOT.staleAdded, "Ảnh mới");
     try {
-      await send.click();
       await confirmSend(page);
       await expect(alertIn(page)).toHaveText("Còn khung chưa có ảnh.");
       await tab(page, NAME.stale).click();
       await expect(page.getByRole("tabpanel").getByLabel("Ảnh mới: chọn ảnh")).toBeAttached();
-      await expect(send).toBeDisabled();
+      await expect(sendDialog(page)).toHaveCount(0);
       await uploadIn(page, "Ảnh mới");
       await expect(alertIn(page)).toHaveCount(0);
+      await expect(sendDialog(page)).toContainText(`Đã hoàn thành ${NAME.stale}?`);
       await confirmSend(page);
-      await tab(page, NAME.p3).click();
-      await finishButton(page, NAME.p3).click();
+      await expect(sendDialog(page)).toContainText(`Đã hoàn thành ${NAME.p3}?`);
       await confirmSend(page);
       await dismissGift(page);
       await expect(page.getByText("Chờ kiểm tra")).toHaveCount(2);

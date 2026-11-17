@@ -660,11 +660,13 @@ test("Nhân viên bị bỏ giao ngân hàng lúc đang mở hộp: Lưu ghi ch�
   }
 });
 
-test("Trang 4 rỗng và giờ: hồ sơ chưa chọn ngân hàng chỉ có thẻ Thông tin và SMS; chưa có ảnh, chưa có ghi chú; voucher cấp 23:45 ngày 31/10 giờ Việt Nam; hồ sơ trùng tên và SĐT phụ huynh có link sang nhau", async ({ browser }) => {
+test("Trang 4 rỗng và giờ: hồ sơ chưa chọn ngân hàng chỉ có thẻ Thông tin, Quà và SMS; chưa có ảnh, chưa có ghi chú; voucher cấp 23:45 ngày 31/10 giờ Việt Nam; hồ sơ trùng tên và SĐT phụ huynh có link sang nhau", async ({ browser }) => {
   for (const device of [DESKTOP, PHONE]) {
     const page = await loginAs(browser, "zz_e2e_admin", device);
     await open(page, detail(B.B_IDS.none));
-    await expect(page.getByRole("main").getByRole("region")).toHaveCount(2);
+    // Thẻ Thông tin, Quà 20.000 đồng (chưa đủ 2 ngân hàng) và SMS.
+    await expect(page.getByRole("main").getByRole("region")).toHaveCount(3);
+    await expect(page.getByRole("region", { name: "Quà 20.000 đồng" })).toContainText("Chưa đủ 2 ngân hàng");
     await expect(page.getByRole("region", { name: "SMS cho phụ huynh" })).toContainText("Chưa gửi");
 
     await open(page, detail(B.B_IDS.long));

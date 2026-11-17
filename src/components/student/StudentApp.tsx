@@ -229,20 +229,20 @@ export function StudentApp({ linkId }: { linkId?: string }) {
           </>
         );
       case "closed":
-        return <AppHead title="Trường đã đóng" />;
+        return <AppHead title="Trường đã đóng" subtitle={screen.school.name} />;
       case "ask":
         return <SwitchSchool current={screen.current} next={screen.next} onSwitch={() => go()} onKeep={() => go()} />;
       case "form":
         return (
           <>
-            <AppHead title="Thông tin" />
+            <AppHead title="Thông tin" subtitle={screen.school.name} />
             <InfoForm school={screen.school} onSaved={() => go()} />
           </>
         );
       case "edit":
         return (
           <>
-            <AppHead title="Thông tin" />
+            <AppHead title="Thông tin" subtitle={screen.school.name} />
             <InfoForm school={screen.school} initial={screen.info} onSaved={() => go()} />
           </>
         );
@@ -282,7 +282,7 @@ const INFO_LOCKED = "Đã gửi kiểm tra, không sửa được thông tin.";
 
 function Profile({ state, notice, adding, onAddMore, giftOpen, onGift, onChange, onEdit }: ProfileProps) {
   const { status } = state.customer;
-  if (!state.school.active && (status === "new" || status === "no_bank")) return <AppHead title="Trường đã đóng" />;
+  if (!state.school.active && (status === "new" || status === "no_bank")) return <AppHead title="Trường đã đóng" subtitle={state.school.name} />;
   const gift = giftOpen && state.gift.eligible && !state.gift.claim && <GiftDialog gift={state.gift} fullName={state.customer.fullName} onClose={() => onGift(false)} onSaved={() => onChange()} />;
   // Gửi xong ngân hàng thứ hai thì hỏi tài khoản nhận quà ngay.
   const onSubmitted = (submitted: number) => submitted >= 2 && onGift(true);

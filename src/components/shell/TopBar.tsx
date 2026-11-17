@@ -6,9 +6,9 @@ export function TopBar({ title, actions }: { title: string; actions?: ReactNode 
   return (
     <header className="sticky top-0 z-[5] flex min-h-[66px] flex-none flex-wrap items-center gap-3 border-b border-line bg-bg px-7 py-2.5 mobile:px-4">
       <h1 className="min-w-0 text-[20px] leading-[1.12] font-semibold tracking-[-0.015em] wrap-anywhere mobile:truncate">{title}</h1>
-      {/* Phần tử cuối là hành động chính của trang: cách thêm 6 px để tách khỏi nhóm tìm, lọc. Bỏ qua thẻ dialog: hộp thoại của nút nằm cuối khối này, dính margin trái 6 px thì mất m-auto và lệch sang trái. Ô tìm giãn hết hàng ở điện thoại. */}
+      {/* Phần tử cuối là hành động chính của trang: cách thêm 6 px để tách khỏi nhóm tìm, lọc. Bỏ qua thẻ dialog: hộp thoại của nút nằm cuối khối này, dính margin trái 6 px thì mất m-auto và lệch sang trái. Ô tìm chiếm trọn một hàng ở điện thoại (basis-full), nút hành động xuống hàng dưới. */}
       {actions && (
-        <div className="flex min-w-0 flex-auto flex-wrap items-center justify-end gap-2.5 *:flex-none [&>:nth-last-child(1_of_:not(dialog))]:ml-1.5 mobile:[&>[role=search]]:flex-1">
+        <div className="flex min-w-0 flex-auto flex-wrap items-center justify-end gap-2.5 *:flex-none [&>:nth-last-child(1_of_:not(dialog))]:ml-1.5 mobile:[&>[role=search]]:basis-full">
           {actions}
         </div>
       )}

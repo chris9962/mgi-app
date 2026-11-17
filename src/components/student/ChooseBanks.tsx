@@ -18,7 +18,7 @@ const pickedMark = (
 type Edit = () => Promise<string | null>;
 
 // Đầu trang của các màn dừng ở bước 2: bấm bước 1 thì chờ tải thông tin đã khai rồi mới chuyển màn.
-function EditHead({ onEdit }: { onEdit: Edit }) {
+function EditHead({ onEdit, school }: { onEdit: Edit; school: string }) {
   const nav = useStepNav();
   const [error, setError] = useState("");
   useStepBack(nav, async () => {
@@ -28,7 +28,7 @@ function EditHead({ onEdit }: { onEdit: Edit }) {
   });
   return (
     <>
-      <AppHead title="Chọn ngân hàng" />
+      <AppHead title="Chọn ngân hàng" subtitle={school} />
       {error && (
         <p role="alert" className="text-sm text-danger">
           {error}
@@ -70,7 +70,7 @@ export function ChooseBanks({ state, notice, onDone, onEdit }: { state: StudentS
   const message = error || notice;
   return (
     <>
-      <AppHead title="Chọn ngân hàng" />
+      <AppHead title="Chọn ngân hàng" subtitle={state.school.name} />
       <p className="text-sm text-text-2" aria-live="polite">
         {single ? "Chỉ còn 1 ngân hàng chưa có tài khoản." : `Chọn một hay nhiều ngân hàng. Đã chọn ${chosen.length}.`}
       </p>
@@ -121,7 +121,7 @@ export function ChooseBanks({ state, notice, onDone, onEdit }: { state: StudentS
 export function NoBank({ state, onEdit }: { state: StudentState; onEdit: Edit }) {
   return (
     <>
-      <EditHead onEdit={onEdit} />
+      <EditHead onEdit={onEdit} school={state.school.name} />
       <EndBlock mark title="Không có ngân hàng nào phù hợp" hint="Đã có tài khoản ở tất cả ngân hàng trong chương trình." />
       <Bottom>
         <ZaloBox url={state.zaloUrl} text="Khai nhầm ngân hàng đã có: kết bạn Zalo để nhân viên sửa." />
@@ -133,7 +133,7 @@ export function NoBank({ state, onEdit }: { state: StudentState; onEdit: Edit })
 export function BanksFull({ state, onEdit }: { state: StudentState; onEdit: Edit }) {
   return (
     <>
-      <EditHead onEdit={onEdit} />
+      <EditHead onEdit={onEdit} school={state.school.name} />
       <EndBlock mark title="Ngân hàng đã hết lượt trong tháng này" />
       <Bottom>
         <ZaloBox url={state.zaloUrl} text="Cần hỏi: kết bạn Zalo với nhân viên." />

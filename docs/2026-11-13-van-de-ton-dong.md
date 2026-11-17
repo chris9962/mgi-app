@@ -37,7 +37,7 @@ Ba điểm chủ dự án chưa chốt:
 
 | Việc | Hiện trạng |
 |---|---|
-| E2E | Chưa chạy sau commit `79e3626`. Lượt chạy đủ gần nhất là 11 flow ngày 2026-11-12, trước khi sửa giao diện |
+| E2E | Project chromium chạy lại ngày 2026-11-17 trên Windows sau khi sửa spec theo luồng gửi từng ngân hàng. Lỗi có sẵn từ lượt chép giao diện tìm ra và đã sửa: tên trường mất khỏi đầu trang học sinh (5e0d029), tiêu đề hộp thoại không xuống dòng vì thừa hưởng nowrap của ô bảng, ô tìm ở điện thoại không chiếm trọn hàng. Còn fail trên Windows: ops.spec (cần ops-watch chạy trên Linux). Project flows (video) chưa chạy lại |
 | Test e2e đã sửa mà chưa chạy thử | Mở nhóm sidebar trước khi tìm link (10 file), phân trang ẩn khi 1 trang (3 file), nút Bộ lọc không còn huy hiệu số, ô ngày |
 | Test dễ fail nhất | Các ca đo hình học bảng Bộ lọc ở `e2e/mobile.spec.ts`: bảng ở màn hẹp cao khoảng 586 px, trước là 544 px |
 | Nhìn bằng mắt | Đã xem ảnh chụp trang Trường, Hồ sơ học sinh, chi tiết hồ sơ, hộp Sửa trường. Các trang còn lại và giao diện Tối chưa ai xem |

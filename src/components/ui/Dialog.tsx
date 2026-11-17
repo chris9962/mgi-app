@@ -74,12 +74,13 @@ export function Dialog({ open, title, onClose, footer, children, width = 560, di
       // Tên trường, tên ngân hàng liền một chữ dài hơn hộp: cho xuống hàng ở bất kỳ ký tự nào, không đẩy nút Đóng ra ngoài.
       // open:flex chứ không flex: đặt display thẳng lên thẻ thì đè display none lúc đóng.
       className={clsx(
-        "flex-col overflow-hidden bg-bg p-0 text-text shadow-(--elev-lg) [overflow-wrap:anywhere] backdrop:bg-(--backdrop) open:flex",
+        // whitespace-normal: hộp mở từ ô bảng thừa hưởng white-space nowrap của .data-table td, tiêu đề dài không xuống dòng.
+        "flex-col overflow-hidden bg-bg p-0 text-text whitespace-normal shadow-(--elev-lg) [overflow-wrap:anywhere] backdrop:bg-(--backdrop) open:flex",
         fullscreen ? "m-0 h-dvh max-h-dvh w-screen max-w-none rounded-none" : "m-auto max-h-[calc(100dvh-64px)] max-w-[calc(100vw-32px)] rounded-[14px]",
       )}
     >
       <div className="flex flex-none items-center gap-3 px-5 pt-[18px] pb-3">
-        <h2 id={titleId} className="min-w-0 flex-1 text-[19px] leading-[1.12] font-semibold tracking-[-0.015em]">
+        <h2 id={titleId} className="min-w-0 flex-1 text-[19px] leading-[1.12] font-semibold tracking-[-0.015em] wrap-anywhere">
           {title}
         </h2>
         {dismissible && (

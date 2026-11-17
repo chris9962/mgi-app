@@ -93,13 +93,18 @@ export async function fillInfo(page: Page, who: Info) {
   await page.getByRole("checkbox", { name: "Đồng ý" }).check();
 }
 
+// Màn mới trượt vào từ mép (anim-step, anim-rise): đo hình học lúc đang chuyển động thì phần tử còn lệch vài px.
+export const settled = (page: Page) => page.evaluate(() => Promise.all(document.getAnimations().map((a) => a.finished.catch(() => undefined))).then(() => undefined));
+
 export async function expectNoSideScroll(page: Page) {
+  await settled(page);
   const { scroll, client } = await page.evaluate(() => ({ scroll: document.documentElement.scrollWidth, client: document.documentElement.clientWidth }));
   expect(scroll, "trang cuộn ngang").toBeLessThanOrEqual(client);
 }
 
 // Phần tử phải nằm trọn trong bề ngang màn hình: chữ dài không đẩy nút hay nhãn ra ngoài.
 export async function expectInsideScreen(page: Page, selector: ReturnType<Page["locator"]>) {
+  await settled(page);
   const width = page.viewportSize()!.width;
   for (const box of await selector.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().toJSON() as { left: number; right: number })))
     expect(box.right, "phần tử tràn mép phải").toBeLessThanOrEqual(width);
@@ -107,6 +112,7 @@ export async function expectInsideScreen(page: Page, selector: ReturnType<Page["
 
 // Phần tử con phải nằm trọn trong khung của chính nó: đo với khung cha, không đo với màn hình.
 export async function expectInsideBox(boxes: Locator, childSelector: string) {
+  await settled(boxes.page());
   const gaps = await boxes.evaluateAll(
     (els, selector) =>
       els.flatMap((el) => {
@@ -124,6 +130,7 @@ export async function expectInsideBox(boxes: Locator, childSelector: string) {
 
 // Ô tick, vòng tròn đánh dấu phải giữ kích thước khi chữ bên cạnh dài: phần tử flex thiếu flex-none bị bóp hẹp.
 export async function expectBoxSize(items: Locator, width: number, height: number) {
+  await settled(items.page());
   const boxes = await items.evaluateAll((els) => els.map((el) => el.getBoundingClientRect().toJSON() as { width: number; height: number }));
   expect(boxes.length, "không thấy phần tử nào").toBeGreaterThan(0);
   for (const box of boxes) {
@@ -194,13 +201,18 @@ export const cameraOptions = (file: string) => ({
 });
 
 
-// Gửi kiểm tra từng ngân hàng (2026-11-17): nộp xong ảnh cuối của một ngân hàng thì hộp "Đã hoàn thành ...?" tự mở; nút Hoàn thành ở panel mở lại hộp đó.
+// Gửi kiểm tra từng ngân hàng (2026-11-17): hộp "Đã hoàn thành ...?" tự mở khi ngân hàng vừa đủ ảnh, khi vào màn còn ngân hàng đủ ảnh chưa gửi, và sau khi gửi một ngân hàng mà ngân hàng kế đã đủ ảnh.
 export const sendDialog = (page: Page) => page.getByRole("dialog", { name: "Gửi kiểm tra" });
+// Hồ sơ dựng qua API đã đủ ảnh một ngân hàng thì vào màn là hộp hỏi gửi mở: test không kiểm việc gửi thì đóng để bấm tiếp được.
+export async function dismissSend(page: Page) {
+  await sendDialog(page).waitFor({ state: "visible", timeout: 5_000 }).catch(() => {});
+  if (await sendDialog(page).count()) await sendDialog(page).getByRole("button", { name: "Huỷ" }).click();
+  await expect(sendDialog(page)).toHaveCount(0);
+}
 export async function confirmSend(page: Page) {
   await sendDialog(page).getByRole("button", { name: "Gửi kiểm tra" }).click();
   await expect(sendDialog(page)).toHaveCount(0);
 }
-export const finishButton = (page: Page, bank: string) => page.getByRole("tabpanel").getByRole("button", { name: `Hoàn thành ${bank}` });
 // Gửi xong ngân hàng thứ hai thì hộp quà 20.000 đồng mở: test không kiểm quà thì đóng để bấm tiếp được.
 export async function dismissGift(page: Page) {
   const gift = page.getByRole("dialog", { name: /Nhận 20\.000/ });

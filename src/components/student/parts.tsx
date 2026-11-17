@@ -20,13 +20,15 @@ export function BankLogo({ src }: { src: string | null }) {
 // Đầu trang đứng yên khi đổi bước: StudentApp giữ logo, thanh bước và chỗ chứa tiêu đề; mỗi màn đưa tiêu đề của mình vào chỗ chứa đó.
 export const HeadSlotContext = createContext<HTMLElement | null>(null);
 
-export function AppHead({ title }: { title: string }) {
+// subtitle: tên trường, để học sinh biết mình đang khai cho trường nào.
+export function AppHead({ title, subtitle }: { title: string; subtitle?: string }) {
   const slot = use(HeadSlotContext);
   if (!slot) return null;
   return createPortal(
     <>
       <span className="text-xs font-semibold tracking-wide text-text-2">{BRAND_SHORT}</span>
       <h1 className="anim-fade text-lg leading-tight font-bold tracking-tight">{title}</h1>
+      {subtitle && <p className="text-[12.5px] leading-snug text-text-2 wrap-anywhere">{subtitle}</p>}
     </>,
     slot,
   );

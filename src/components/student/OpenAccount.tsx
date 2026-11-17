@@ -82,9 +82,9 @@ function CodeBox({ bank }: { bank: StudentBank }) {
   );
 }
 
-type PanelProps = { bank: StudentBank; busy: boolean; onSaved: () => Promise<void>; onBusy: (slotId: string, busy: boolean) => void; onSubmit: () => void };
+type PanelProps = { bank: StudentBank; onSaved: () => Promise<void>; onBusy: (slotId: string, busy: boolean) => void };
 
-function BankPanel({ bank, busy, onSaved, onBusy, onSubmit }: PanelProps) {
+function BankPanel({ bank, onSaved, onBusy }: PanelProps) {
   const done = bank.slots.filter((s) => s.photo).length;
   const samples = bank.slots.flatMap((s, i) => (s.sampleUrl ? [{ slotId: s.id, src: s.sampleUrl, alt: `Ảnh mẫu ${s.name}`, caption: `${i + 1}. ${s.name}` }] : []));
   const [sampleAt, setSampleAt] = useState<number | null>(null);
@@ -129,11 +129,6 @@ function BankPanel({ bank, busy, onSaved, onBusy, onSubmit }: PanelProps) {
           </ul>
         </section>
       )}
-      {/* Gửi riêng ngân hàng này; đang tải hoặc chọn lại ảnh thì chưa gửi: gửi lúc đó là gửi ảnh cũ. */}
-      <Button large block disabled={!complete(bank) || busy} onClick={onSubmit}>
-        <Send size={16} aria-hidden />
-        Hoàn thành {bank.name}
-      </Button>
       {sampleAt !== null && <ImageLightbox photos={samples} startIndex={sampleAt} onClose={() => setSampleAt(null)} />}
     </div>
   );
@@ -161,22 +156,24 @@ export function OpenAccount({ state, onChange, onEdit, onSubmitted }: Props) {
   const current = banks.find((b) => b.id === active) ?? banks[0];
   const hasPhoto = open.some((b) => b.slots.some((s) => s.photo));
   const markBusy = (slotId: string, busy: boolean) => setBusySlots((list) => (busy ? [...list, slotId] : list.filter((id) => id !== slotId)));
-  const busyIn = (b: StudentBank) => b.slots.some((s) => busySlots.includes(s.id));
   // Ảnh vừa nộp có thể lấp đúng khung mà câu lỗi đang nhắc: câu cũ không được ở lại tới lần bấm sau.
   const photoSaved = () => {
     setError("");
     return onChange();
   };
 
-  // Nộp xong ảnh cuối của một ngân hàng thì hỏi đã hoàn thành chưa (feedback 2026-11-16): so với lượt tải trước để chỉ hỏi đúng lúc vừa đủ.
-  const wasComplete = useRef(new Map(banks.map((b) => [b.id, complete(b)])));
+  // Không có nút gửi riêng: hộp "đã hoàn thành chưa" tự mở khi ngân hàng vừa đủ ảnh (feedback 2026-11-16), và khi vào màn
+  // mà còn ngân hàng đủ ảnh chưa gửi (kể cả ngân hàng không có khung ảnh), nên bấm Huỷ rồi cũng không kẹt.
+  const wasComplete = useRef(new Map<string, boolean>());
   useEffect(() => {
+    let ask: string | null = null;
     for (const b of banks) {
       const before = wasComplete.current.get(b.id) ?? false;
       const now = complete(b);
       wasComplete.current.set(b.id, now);
-      if (!before && now && isOpen(b) && b.slots.length > 0) setConfirmSubmit(b.id);
+      if (!before && now && isOpen(b)) ask ??= b.id;
     }
+    if (ask) setConfirmSubmit(ask);
   }, [banks]);
 
   async function submitBank(id: string) {
@@ -185,12 +182,13 @@ export function OpenAccount({ state, onChange, onEdit, onSubmitted }: Props) {
     setConfirmSubmit(null);
     const r = await studentApi<{ submitted: number }>("POST", `/api/customers/me/banks/${id}/submit`);
     if (r.ok) {
-      // Chuyển sang ngân hàng còn đang mở để học sinh làm tiếp.
+      // Chuyển sang ngân hàng còn đang mở để học sinh làm tiếp; ngân hàng đó đã đủ ảnh thì hỏi gửi luôn, quà hỏi sau khi gửi hết.
       const next = open.find((b) => b.id !== id);
       if (next) setActive(next.id);
       await onChange();
       setSending(false);
-      onSubmitted?.(r.data.submitted);
+      if (next && complete(next)) setConfirmSubmit(next.id);
+      else onSubmitted?.(r.data.submitted);
       return;
     }
     // Hồ sơ đã đổi ở máy chủ (tab khác đã gửi, người quản lý thêm khung ảnh): tải lại để màn khớp máy chủ.
@@ -246,7 +244,7 @@ export function OpenAccount({ state, onChange, onEdit, onSubmitted }: Props) {
   const asking = confirmSubmit ? banks.find((b) => b.id === confirmSubmit) : undefined;
   return (
     <>
-      <AppHead title="Mở tài khoản" />
+      <AppHead title="Mở tài khoản" subtitle={state.school.name} />
       {/* Tên đầy đủ dài và có thể nhiều ngân hàng: tab là thẻ logo cuộn ngang, tên hiện ở dòng dưới thanh tab; không có logo thì tab ghi tên. */}
       <div role="tablist" aria-label="Ngân hàng đã chọn" className="sticky top-0 z-10 -mx-4 flex gap-2 overflow-x-auto bg-bg px-4 pt-1 pb-2.5 [scrollbar-width:none]">
         {banks.map((b, i) => (
@@ -282,10 +280,10 @@ export function OpenAccount({ state, onChange, onEdit, onSubmitted }: Props) {
           </button>
         ))}
       </div>
-      <p className="mb-3 text-[15px] leading-snug font-semibold">{current.name}</p>
+      <h2 className="mb-3 text-[15px] leading-snug font-semibold">{current.name}</h2>
       {banks.map((b) => (
         <div key={b.id} role="tabpanel" id={`panel-${b.id}`} aria-labelledby={`tab-${b.id}`} hidden={b.id !== current.id} className="anim-rise">
-          <BankPanel bank={b} busy={busyIn(b) || sending || leaving !== null} onSaved={photoSaved} onBusy={markBusy} onSubmit={() => setConfirmSubmit(b.id)} />
+          <BankPanel bank={b} onSaved={photoSaved} onBusy={markBusy} />
         </div>
       ))}
       {error && (
@@ -321,7 +319,7 @@ export function OpenAccount({ state, onChange, onEdit, onSubmitted }: Props) {
           title="Gửi kiểm tra"
           text={`Đã hoàn thành ${asking.name}?`}
           confirmLabel="Gửi kiểm tra"
-          busy={sending}
+          busy={sending || asking.slots.some((s) => busySlots.includes(s.id))}
           onConfirm={async () => {
             await submitBank(asking.id);
             return null;

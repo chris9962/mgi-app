@@ -206,6 +206,9 @@ test("điện thoại: đóng ngăn bằng Esc hay lớp phủ thì trang cuộn
 test("điện thoại: không trang quản lý nào cuộn ngang cả trang", async ({ browser }) => {
   test.setTimeout(120_000);
   const page = await loginAs(browser, "zz_e2e_admin", PHONE);
+  // Ở điện thoại sidebar ẩn tới khi bấm Thêm: nút mở nhóm phải nhìn thấy được mới bấm được.
+  await bottomNav(page).getByRole("button", { name: "Thêm" }).click();
+  await expect(sidebar(page)).toBeVisible();
   await openSidebarGroups(page);
   const menu = await page.locator("#main-nav a").evaluateAll((links) => links.map((a) => a.getAttribute("href")!));
   await page.goto("/users?q=zz_e2e_staff");
