@@ -99,7 +99,7 @@ test("Trang 4 URL sai: id không phải uuid, uuid không có trả 404 ở tran
   }
 });
 
-test("Trang 4 Sửa thông tin: ô trống, chỉ khoảng trắng, quá dài, SĐT sai dạng, SĐT trùng báo ở đúng ô; Huỷ rồi mở lại hiện dữ liệu đã lưu; Enter gửi form; bấm Lưu hai lần chỉ gửi một request", async ({ browser }) => {
+test("Trang 4 Sửa thông tin: ô trống, chỉ khoảng trắng, quá dài, SĐT phụ huynh sai dạng; Huỷ rồi mở lại hiện dữ liệu đã lưu; Enter gửi form; bấm Lưu hai lần chỉ gửi một request", async ({ browser }) => {
   const page = await loginAs(browser, "zz_e2e_admin");
   await open(page, detail(B.B_IDS.form));
   const dialog = page.getByRole("dialog", { name: "Sửa thông tin" });
@@ -660,7 +660,7 @@ test("Nhân viên bị bỏ giao ngân hàng lúc đang mở hộp: Lưu ghi ch�
   }
 });
 
-test("Trang 4 rỗng và giờ: hồ sơ chưa chọn ngân hàng chỉ có thẻ Thông tin và SMS; chưa có ảnh, chưa có ghi chú; voucher cấp 23:45 ngày 31/10 giờ Việt Nam; hồ sơ trùng tên và SĐT có link sang nhau", async ({ browser }) => {
+test("Trang 4 rỗng và giờ: hồ sơ chưa chọn ngân hàng chỉ có thẻ Thông tin và SMS; chưa có ảnh, chưa có ghi chú; voucher cấp 23:45 ngày 31/10 giờ Việt Nam; hồ sơ trùng tên và SĐT phụ huynh có link sang nhau", async ({ browser }) => {
   for (const device of [DESKTOP, PHONE]) {
     const page = await loginAs(browser, "zz_e2e_admin", device);
     await open(page, detail(B.B_IDS.none));

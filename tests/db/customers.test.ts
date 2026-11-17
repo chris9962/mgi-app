@@ -94,12 +94,6 @@ describe("B1 khai thông tin", () => {
     expect(fails({ schoolId: "abc" })).toBe(true);
   });
 
-  test("SĐT trùng nhau báo ở ô SĐT phụ huynh", () => {
-    const r = CustomerForm.safeParse(form({ parentPhone: "0912345678" }));
-    expect(r.success).toBe(false);
-    expect(r.error?.issues[0].path).toEqual(["parentPhone"]);
-  });
-
   test("lưu hồ sơ: lớp viết hoa bỏ khoảng trắng, họ tên gọn khoảng trắng, name_search bỏ dấu, ngân hàng đã có, IP", async () => {
     const r = await createCustomer(CustomerForm.parse(form({ existingBankIds: [bank.MB] })), "203.0.113.7");
     if (!r.ok) throw new Error(r.message);

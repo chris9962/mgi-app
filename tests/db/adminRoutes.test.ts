@@ -66,13 +66,13 @@ describe("route quản lý theo quyền", () => {
     expect((await photoRoute(req(`/api/admin/photos/${photoB}`, "manager"), params(photoB))).status).toBe(302);
   });
 
-  test("danh sách voucher không trả SĐT của học sinh hay phụ huynh", async () => {
+  test("danh sách voucher không trả SĐT phụ huynh", async () => {
     const res = await vouchersRoute(req("/api/admin/vouchers?q=routeds", "manager"));
     expect(res.status).toBe(200);
     const body = await res.json();
     expect(body.rows.length).toBe(1);
     expect(Object.keys(body.rows[0]).sort()).toEqual(["className", "code", "customerId", "fullName", "id", "issuedAt", "schoolName", "smsStatus"]);
-    expect(JSON.stringify(body)).not.toMatch(/phone|0987|0912/i);
+    expect(JSON.stringify(body)).not.toMatch(/phone|0987654321/i);
   });
 
   test("người có quyền Xuất Excel tải được file", async () => {

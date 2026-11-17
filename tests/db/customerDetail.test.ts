@@ -17,8 +17,8 @@ const key = () => `proofs/2026-11-05/${randomUUID()}.webp`;
 const edit = (v: Partial<Record<string, string>> = {}) =>
   CustomerEditForm.parse({ fullName: "Detail Trần Minh Anh", className: "11a3", parentPhone: "0987654321", ...v });
 
-async function submitted(fullName = "Detail Trần Minh Anh") {
-  const c = await insertCustomer(p, { fullName, parentPhone: "0987654321", status: "pending_review", submittedAt: new Date(), banks: [{ key: "A", status: "pending" }, { key: "B", status: "pending" }] });
+async function submitted(fullName = "Detail Trần Minh Anh", parentPhone = "0987654321") {
+  const c = await insertCustomer(p, { fullName, parentPhone, status: "pending_review", submittedAt: new Date(), banks: [{ key: "A", status: "pending" }, { key: "B", status: "pending" }] });
   const [a] = await db.insert(proofPhotos).values({ customerBankId: c.rows.A, slotId: p.slot.A, s3Key: key(), sizeBytes: 1000 }).returning({ id: proofPhotos.id });
   const [b] = await db.insert(proofPhotos).values({ customerBankId: c.rows.B, slotId: p.slot.B, s3Key: key(), sizeBytes: 1000 }).returning({ id: proofPhotos.id });
   return { ...c, photoA: a.id, photoB: b.id };
@@ -64,8 +64,9 @@ describe("chi tiết hồ sơ", () => {
     expect([all.banks[1].note, all.banks[1].check?.total]).toEqual(["Ghi chú của ngân hàng B", 1]);
   });
 
-  test("hồ sơ trùng cùng tên và SĐT phụ huynh", async () => {
+  test("hồ sơ trùng cùng tên và SĐT phụ huynh; cùng tên khác SĐT phụ huynh thì không", async () => {
     const first = await submitted("Detail Trùng Tên");
+    await submitted("Detail Trùng Tên", "0987000999");
     const second = await submitted("Detail Trùng Tên");
     const d = (await getCustomerDetail(p.manager, second.id))!;
     expect(d.duplicates.map((x) => x.id)).toEqual([first.id]);
