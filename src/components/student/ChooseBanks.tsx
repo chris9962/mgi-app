@@ -4,7 +4,6 @@ import { clsx } from "clsx";
 import { Check, Info } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/Button";
-import { shortName } from "@/lib/bankName";
 import { studentApi } from "@/lib/studentApi";
 import type { StudentBankInfo, StudentState } from "@/lib/studentState";
 import { BankInfoDialog } from "./BankInfoDialog";
@@ -84,13 +83,13 @@ export function ChooseBanks({ state, notice, onDone, onEdit }: { state: StudentS
               {need === 1 ? (
                 <div className={box}>
                   <BankLogo src={b.logoUrl} />
-                  <span id={nameId}>{shortName(b.name)}</span>
+                  <span id={nameId}>{b.name}</span>
                   {pickedMark}
                 </div>
               ) : (
                 <button type="button" aria-pressed={slot > 0} disabled={!slot && chosen.length >= 2} onClick={() => toggle(b.id)} className={clsx(box, "text-text disabled:opacity-50")}>
                   <BankLogo src={b.logoUrl} />
-                  <span id={nameId}>{shortName(b.name)}</span>
+                  <span id={nameId}>{b.name}</span>
                   {slot > 0 && pickedMark}
                 </button>
               )}
@@ -102,7 +101,7 @@ export function ChooseBanks({ state, notice, onDone, onEdit }: { state: StudentS
           );
         })}
       </ul>
-      {need === 1 && state.existingBanks.length > 0 && <p className="mt-3 text-sm text-text-2">Đã có: {state.existingBanks.map(shortName).join(", ")}.</p>}
+      {need === 1 && state.existingBanks.length > 0 && <p className="mt-3 text-sm text-text-2">Đã có: {state.existingBanks.join(", ")}.</p>}
       {message && (
         <p role="alert" className="mt-3 text-sm text-danger">
           {message}

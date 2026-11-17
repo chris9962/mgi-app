@@ -6,7 +6,6 @@ import { useEffect, useRef, useState, type KeyboardEvent } from "react";
 import { Button } from "@/components/ui/Button";
 import { ImageLightbox } from "@/components/ui/ImageLightbox";
 import { ConfirmDialog } from "@/components/users/ConfirmDialog";
-import { shortName } from "@/lib/bankName";
 import { studentApi } from "@/lib/studentApi";
 import type { StudentBank, StudentState } from "@/lib/studentState";
 import { AppHead, Bottom, useStepBack, useStepNav } from "./parts";
@@ -27,7 +26,7 @@ function CodeBox({ bank }: { bank: StudentBank }) {
     <div className="flex gap-3 rounded-2xl border border-line bg-card p-3 shadow-sm">
       {bank.qrUrl && (
         // eslint-disable-next-line @next/next/no-img-element
-        <img src={bank.qrUrl} alt={`QR mã giới thiệu ${shortName(bank.name)}`} width={96} height={96} className="size-24 flex-none rounded-lg border border-line bg-white object-contain" />
+        <img src={bank.qrUrl} alt={`QR mã giới thiệu ${bank.name}`} width={96} height={96} className="size-24 flex-none rounded-lg border border-line bg-white object-contain" />
       )}
       <div className="flex min-w-0 flex-col items-start gap-1.5">
         {bank.referralCode && (
@@ -90,7 +89,7 @@ function BankPanel({ bank, onSaved, onBusy }: { bank: StudentBank; onSaved: () =
       )}
       <CodeBox bank={bank} />
       {bank.slots.length > 0 && (
-        <section aria-label={`Ảnh cần nộp ${shortName(bank.name)}`} className="flex flex-col gap-2">
+        <section aria-label={`Ảnh cần nộp ${bank.name}`} className="flex flex-col gap-2">
           <h3 className="text-[13px] text-text-2">
             Ảnh cần nộp {done}/{bank.slots.length}
           </h3>
@@ -212,7 +211,7 @@ export function OpenAccount({ state, onChange, onEdit }: { state: StudentState; 
             <span aria-hidden className={clsx("grid size-4 flex-none place-items-center rounded-full text-[10px] leading-none transition-colors duration-300", complete(b) ? "border border-ok bg-ok-soft text-ok-ink" : "border border-field-border")}>
               {complete(b) ? "✓" : ""}
             </span>
-            {shortName(b.name)}
+            {b.name}
             <span className="sr-only">{complete(b) ? ", đủ ảnh" : ", chưa đủ ảnh"}</span>
           </button>
         ))}
