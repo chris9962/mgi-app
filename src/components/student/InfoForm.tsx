@@ -74,19 +74,20 @@ export function InfoForm({ school, initial, onSaved }: { school: StudentSchool; 
       {school.banks.length > 0 && (
         <fieldset className="flex flex-col gap-1.5">
           <legend className="mb-1.5 text-[13px] text-text-2">Ngân hàng đã có tài khoản</legend>
-          <div className="grid grid-cols-3 gap-2">
+          {/* Mỗi ngân hàng một hàng: tên đầy đủ dài, xếp ba cột thì gãy bốn dòng. */}
+          <div className="flex flex-col gap-2">
             {school.banks.map((b) => (
-              <label key={b.id} className="flex min-w-0 cursor-pointer flex-col gap-1.5 rounded-xl border border-field-border bg-card p-1.5 transition-colors duration-200 has-[:checked]:border-accent has-[:checked]:bg-accent-soft/40">
-                <BankLogo src={b.logoUrl} />
-                <span className="flex items-center gap-1.5 text-[13px] leading-tight">
-                  <input
-                    type="checkbox"
-                    className="size-[18px] shrink-0 accent-[var(--accent)]"
-                    checked={existing.includes(b.id)}
-                    onChange={(e) => setExisting((list) => (e.target.checked ? [...list, b.id] : list.filter((id) => id !== b.id)))}
-                  />
-                  <span className="min-w-0 wrap-anywhere">{b.name}</span>
+              <label key={b.id} className="flex min-h-14 cursor-pointer items-center gap-3 rounded-xl border border-field-border bg-card py-2 pr-3 pl-3.5 transition-colors duration-200 has-[:checked]:border-accent has-[:checked]:bg-accent-soft/40">
+                <input
+                  type="checkbox"
+                  className="size-[18px] shrink-0 accent-[var(--accent)]"
+                  checked={existing.includes(b.id)}
+                  onChange={(e) => setExisting((list) => (e.target.checked ? [...list, b.id] : list.filter((id) => id !== b.id)))}
+                />
+                <span className="w-[72px] flex-none">
+                  <BankLogo src={b.logoUrl} />
                 </span>
+                <span className="min-w-0 flex-1 text-[14px] leading-snug wrap-anywhere">{b.name}</span>
               </label>
             ))}
           </div>
