@@ -68,7 +68,7 @@ test.describe("C. B2 chọn ngân hàng", () => {
 
     expect((await request.delete(`${STUDENT}/api/customers/me/banks`, { headers: other.auth })).status()).toBe(204);
     await next(page).click();
-    await expect(page.getByText(/Chọn 1 tới 2 ngân hàng/)).toHaveCount(1);
+    await expect(page.getByText(/Chọn một hay nhiều ngân hàng/)).toHaveCount(1);
     await expect(alertIn(page)).toHaveCount(0);
     await expect(page.getByRole("button", { name: NAME.q1 })).toBeEnabled();
     await expect(page.getByRole("button", { name: NAME.q2 })).toBeEnabled();

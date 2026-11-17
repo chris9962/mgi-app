@@ -72,7 +72,7 @@ export function ChooseBanks({ state, notice, onDone, onEdit }: { state: StudentS
     <>
       <AppHead title="Chọn ngân hàng" />
       <p className="text-sm text-text-2" aria-live="polite">
-        {single ? "Chỉ còn 1 ngân hàng chưa có tài khoản." : `Chọn 1 tới ${banks.length} ngân hàng. Đã chọn ${chosen.length}.`}
+        {single ? "Chỉ còn 1 ngân hàng chưa có tài khoản." : `Chọn một hay nhiều ngân hàng. Đã chọn ${chosen.length}.`}
       </p>
       <ul className="anim-stagger mt-3 grid grid-cols-2 gap-3">
         {banks.map((b) => {
