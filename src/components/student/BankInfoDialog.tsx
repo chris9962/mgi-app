@@ -31,8 +31,8 @@ export function BankInfoDialog({ bank, pick, onClose }: { bank: StudentBankInfo;
   const footer = pick && (
     <div className="w-full">
       {pick.picked ? (
-        <Button large block variant="secondary" onClick={() => (pick.onToggle(), onClose())}>
-          Bỏ chọn
+        <Button large block variant="secondary" onClick={onClose}>
+          Đóng
         </Button>
       ) : (
         <Button large block disabled={pick.full} onClick={() => (pick.onToggle(), onClose())}>
