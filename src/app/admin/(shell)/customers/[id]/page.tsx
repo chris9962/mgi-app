@@ -2,6 +2,7 @@ import { Gift, Landmark, MessageSquareText, ScanText, UserRound } from "lucide-r
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { CustomerEditButton } from "@/components/customers/CustomerEditButton";
+import { DeleteCustomerBankButton, DeleteCustomerButton } from "@/components/customers/DeleteButtons";
 import { GiftPaidButton } from "@/components/customers/GiftPaidButton";
 import { NoteButton, ReviewActions } from "@/components/customers/ReviewActions";
 import { bankTag, customerTag } from "@/components/customers/customerView";
@@ -67,11 +68,17 @@ function PhotoCheck({ check }: { check: NonNullable<DetailBank["check"]> }) {
   );
 }
 
-function BankCard({ bank, customer }: { bank: DetailBank; customer: CustomerDetail }) {
+function BankCard({ bank, customer, canDelete }: { bank: DetailBank; customer: CustomerDetail; canDelete: boolean }) {
   const actionBank = { id: bank.id, name: bank.name, status: bank.status, note: bank.note, slots: bank.slots.filter((s) => !s.removed).map((s) => ({ id: s.id, name: s.name })), photos: bank.photos.map((ph) => ph.id) };
   const meta = [`Ngân hàng ${bank.slot}`, bank.referralCode && `Mã giới thiệu ${bank.referralCode}`, bank.managers.length && `Người quản ${bank.managers.join(", ")}`].filter(Boolean).join(" - ");
+  const action = (
+    <>
+      {bankTag(bank.status, true)}
+      {canDelete && <DeleteCustomerBankButton customerBankId={bank.id} bankName={bank.name} fullName={customer.fullName} />}
+    </>
+  );
   return (
-    <Card title={bank.name} icon={<Landmark size={17} aria-hidden />} meta={meta} action={bankTag(bank.status, true)}>
+    <Card title={bank.name} icon={<Landmark size={17} aria-hidden />} meta={meta} action={action}>
       {bank.managed && (
         <div className="flex flex-col gap-5">
           <ul className="grid gap-3 sm:grid-cols-[repeat(auto-fill,minmax(180px,1fr))]">
@@ -123,6 +130,7 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
   const { id } = await params;
   const c = isUuid(id) ? await getCustomerDetail(user, id) : null;
   if (!c) notFound();
+  const canDelete = can(user, "delete_customers");
 
   const info: [string, React.ReactNode][] = [
     ["Họ tên", c.fullName],
@@ -161,14 +169,15 @@ export default async function CustomerPage({ params }: { params: Promise<{ id: s
         <BackLink href="/customers">Hồ sơ học sinh</BackLink>
         <Card title="Thông tin" icon={<UserRound size={17} aria-hidden />} action={customerTag(c.status)}>
           <InfoList items={info} />
-          {c.canEdit && (
-            <div className="mt-4 flex justify-end border-t border-line pt-4">
-              <CustomerEditButton customer={{ id: c.id, fullName: c.fullName, className: c.className, parentPhone: c.parentPhone }} />
+          {(c.canEdit || canDelete) && (
+            <div className="mt-4 flex flex-wrap justify-end gap-2 border-t border-line pt-4">
+              {c.canEdit && <CustomerEditButton customer={{ id: c.id, fullName: c.fullName, className: c.className, parentPhone: c.parentPhone }} />}
+              {canDelete && <DeleteCustomerButton customerId={c.id} fullName={c.fullName} />}
             </div>
           )}
         </Card>
         {c.banks.map((b) => (
-          <BankCard key={b.id} bank={b} customer={c} />
+          <BankCard key={b.id} bank={b} customer={c} canDelete={canDelete} />
         ))}
         <Card
           title="Quà 20.000 đồng"

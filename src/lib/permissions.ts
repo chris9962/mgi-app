@@ -1,7 +1,7 @@
 import type { Permission, SessionUser } from "./types";
 
 // Hàm kiểm quyền duy nhất. Giao diện dùng để ẩn hiện, máy chủ dùng để chặn: hai nơi hỏi cùng một câu.
-export const ACTIONS = ["users", "system", "customers", "manage_banks", "export_excel", "schools", "vouchers"] as const;
+export const ACTIONS = ["users", "system", "customers", "delete_customers", "manage_banks", "export_excel", "schools", "vouchers"] as const;
 export type Action = (typeof ACTIONS)[number];
 
 const GRANTABLE: readonly string[] = ["manage_banks", "export_excel", "schools", "vouchers"] satisfies Permission[];

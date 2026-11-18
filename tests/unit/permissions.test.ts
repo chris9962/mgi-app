@@ -22,6 +22,7 @@ describe("can", () => {
     expect(can(staff, "export_excel")).toBe(false);
     expect(can(staff, "users")).toBe(false);
     expect(can(staff, "system")).toBe(false);
+    expect(can(staff, "delete_customers")).toBe(false);
   });
 
   test("Nhân viên được giao ngân hàng thì vào được hồ sơ, chưa giao thì không", () => {

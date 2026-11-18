@@ -13,6 +13,8 @@ import { GET as customerExportRoute } from "../../src/app/api/admin/customers/ex
 import { GET as customerBankExportRoute } from "../../src/app/api/admin/customer-banks/export/route";
 import { GET as photoRoute } from "../../src/app/api/admin/photos/[id]/route";
 import { POST as reviewRoute } from "../../src/app/api/admin/customer-banks/[id]/review/route";
+import { DELETE as deleteCustomerRoute } from "../../src/app/api/admin/customers/[id]/route";
+import { DELETE as deleteCustomerBankRoute } from "../../src/app/api/admin/customer-banks/[id]/route";
 import { XLSX_TYPE } from "../../src/lib/excel";
 
 const SITE = `http://${process.env.ADMIN_HOST ?? "admin.localhost"}:3100`;
@@ -20,6 +22,7 @@ let p: Program;
 const cookie: Record<string, string> = {};
 let photoB: string;
 let rowA: string;
+let customerId: string;
 
 const req = (path: string, who: string | null, init: { method?: string; body?: unknown; origin?: string } = {}) =>
   new Request(`${SITE}${path}`, {
@@ -39,6 +42,7 @@ beforeAll(async () => {
   const c = await insertCustomer(p, { fullName: "Routeds Trần Minh Anh", parentPhone: "0987654321", status: "pending_review", submittedAt: new Date(), banks: [{ key: "A", status: "pending" }, { key: "B", status: "pending" }] });
   await db.insert(vouchers).values({ customerId: c.id, code: "ZZROUTE-TMA-11A3-AAAA" });
   rowA = c.rows.A;
+  customerId = c.id;
   const [ph] = await db.insert(proofPhotos).values({ customerBankId: c.rows.B, slotId: p.slot.B, s3Key: `proofs/2026-11-05/${randomUUID()}.webp` }).returning({ id: proofPhotos.id });
   photoB = ph.id;
 });
@@ -54,6 +58,16 @@ describe("route quản lý theo quyền", () => {
     expect((await customerExportRoute(req("/api/admin/customers/export", "lonely"))).status).toBe(403);
     expect((await customerBankExportRoute(req("/api/admin/customer-banks/export", "staff"))).status).toBe(403);
     expect((await customerBankExportRoute(req("/api/admin/customer-banks/export", "lonely"))).status).toBe(403);
+    expect((await deleteCustomerBankRoute(req(`/api/admin/customer-banks/${rowA}`, "staff", { method: "DELETE" }), params(rowA))).status).toBe(403);
+    expect((await deleteCustomerRoute(req(`/api/admin/customers/${customerId}`, "staff", { method: "DELETE" }), params(customerId))).status).toBe(403);
+  });
+
+  test("Quản lý xoá ngân hàng rồi xoá hồ sơ; id sai dạng trả 404", async () => {
+    const c = await insertCustomer(p, { fullName: "Routedel Lê Văn Bình", status: "pending_review", submittedAt: new Date(), banks: [{ key: "A", status: "pending" }] });
+    expect((await deleteCustomerBankRoute(req("/api/admin/customer-banks/abc", "manager", { method: "DELETE" }), params("abc"))).status).toBe(404);
+    expect((await deleteCustomerBankRoute(req(`/api/admin/customer-banks/${c.rows.A}`, "manager", { method: "DELETE" }), params(c.rows.A))).status).toBe(204);
+    expect((await deleteCustomerRoute(req(`/api/admin/customers/${c.id}`, "manager", { method: "DELETE" }), params(c.id))).status).toBe(204);
+    expect((await deleteCustomerRoute(req(`/api/admin/customers/${c.id}`, "manager", { method: "DELETE" }), params(c.id))).status).toBe(404);
   });
 
   test("chưa đăng nhập 401, Origin của trang khác 403", async () => {

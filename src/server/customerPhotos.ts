@@ -37,7 +37,7 @@ async function targetFound(ex: Executor, customerId: string, t: PhotoTarget): Pr
   return Boolean(row);
 }
 
-async function removeQuietly(store: PhotoStore, keys: string[]) {
+export async function removeQuietly(store: Pick<PhotoStore, "remove">, keys: string[]) {
   for (const key of keys) await store.remove(key).catch((e) => console.error("[photos] không xoá được ảnh trên S3:", key, e));
 }
 
